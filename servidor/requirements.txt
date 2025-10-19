@@ -1,0 +1,79 @@
+aiofiles
+alembic
+annotated-types
+anyio
+APScheduler
+bcrypt
+certifi
+cffi
+charset-normalizer
+click
+cryptography
+dnspython
+ecdsa
+email-validator
+fastapi
+greenlet
+h11
+httptools
+idna
+Mako
+MarkupSafe
+psycopg2-binary
+pyasn1
+pycparser
+pydantic
+pydantic-settings
+pydantic_core
+python-dotenv
+python-jose
+python-multipart
+pytz
+PyYAML
+requests
+rsa
+six
+sniffio
+SQLAlchemy
+starlette
+typing-inspection
+typing_extensions
+tzlocal
+urllib3
+uvicorn
+uvloop
+watchfiles
+websockets
+
+# Email support
+aiosmtplib
+email-validator
+
+# Excel and PDF generation
+openpyxl
+xlsxwriter
+reportlab
+python-dateutil
+
+# Database drivers (choose one or both)
+psycopg2-binary # PostgreSQL
+# pymysql  # MySQL
+
+# para reconocimiento de imagenes
+deepface
+tf-keras
+# tensorflow[and-cuda]  # Descomentar si tienes GPU NVIDIA con CUDA
+
+# Testing & Quality Assurance
+pytest
+pytest-cov
+pytest-mock
+pytest-asyncio
+pytest-xdist
+coverage
+black
+flake8
+isort
+jinja2
+
+httpx

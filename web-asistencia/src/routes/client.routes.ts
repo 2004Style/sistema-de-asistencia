@@ -1,0 +1,16 @@
+export const CLIENT_ROUTES = {
+  urlHome: "/",
+  urlDashboardAdmin: "/admin",
+  urlUsers: "/admin/users",
+  urlAsistencias: "/admin/asistencias",
+  urlReportes: "/admin/reportes",
+  urlJustificaciones: "/admin/justificaciones",
+  urlHorarios: "/admin/horarios",
+  urlRoles: "/admin/roles",
+  urlDashboardClient: "/client",
+  urlSettings: "/client/settings",
+  urlPerfil: "/client/perfil",
+  urlLogin: "/auth",
+  urlRegister: "/auth/register",
+  urlSignOut: "/auth/signout",
+};

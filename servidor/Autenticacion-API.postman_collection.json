@@ -1,0 +1,160 @@
+{
+    "info": {
+        "_postman_id": "login-api-collection",
+        "name": "Sistema de Asistencia - Autenticación",
+        "description": "Endpoints de autenticación del sistema de asistencia",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Login",
+            "item": [
+                {
+                    "name": "Login con credenciales",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "// Guardar tokens en variables de Postman",
+                                    "if (pm.response.code === 200) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.environment.set('accessToken', jsonData.backendTokens.accessToken);",
+                                    "    pm.environment.set('refreshToken', jsonData.backendTokens.refreshToken);",
+                                    "    pm.environment.set('userId', jsonData.user.id);",
+                                    "    console.log('✓ Tokens guardados');",
+                                    "    pm.test('Login exitoso', function () {",
+                                    "        pm.expect(pm.response.code).to.equal(200);",
+                                    "        pm.expect(jsonData.user).to.have.property('id');",
+                                    "        pm.expect(jsonData.user).to.have.property('email');",
+                                    "        pm.expect(jsonData.backendTokens).to.have.property('accessToken');",
+                                    "        pm.expect(jsonData.backendTokens).to.have.property('refreshToken');",
+                                    "    });",
+                                    "}",
+                                    "else {",
+                                    "    pm.test('Error en login', function () {",
+                                    "        pm.expect(pm.response.code).to.not.equal(200);",
+                                    "    });",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123456\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/users/login/credentials",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "users",
+                                "login",
+                                "credentials"
+                            ]
+                        },
+                        "description": "Login con email y contraseña"
+                    },
+                    "response": [
+                        {
+                            "name": "Success Response",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123456\"\n}"
+                                },
+                                "url": {
+                                    "raw": "http://localhost:8000/users/login/credentials",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8000",
+                                    "path": [
+                                        "users",
+                                        "login",
+                                        "credentials"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [],
+                            "cookie": [],
+                            "body": "{\n  \"user\": {\n    \"id\": 1,\n    \"name\": \"Juan Pérez\",\n    \"email\": \"admin@example.com\",\n    \"codigo_user\": \"JP001\",\n    \"role_id\": 1,\n    \"is_active\": true,\n    \"huella\": null,\n    \"created_at\": \"2025-10-16T10:30:00\",\n    \"updated_at\": null\n  },\n  \"backendTokens\": {\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsInR5cGUiOiJhY2Nlc3MiLCJleHAiOjE2OTAyNDYwMDB9.signature\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsInR5cGUiOiJyZWZyZXNoIiwiZXhwIjoxNjkwODUwMjAwfQ.signature\",\n    \"expiresIn\": 900\n  }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Login - Credenciales inválidas",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"contraseña_incorrecta\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/users/login/credentials",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "users",
+                                "login",
+                                "credentials"
+                            ]
+                        },
+                        "description": "Intento de login con contraseña incorrecta"
+                    }
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8000",
+            "type": "string"
+        },
+        {
+            "key": "accessToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "refreshToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "userId",
+            "value": "",
+            "type": "string"
+        }
+    ]
+}

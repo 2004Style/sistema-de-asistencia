@@ -1,0 +1,42 @@
+{
+  "persons": {
+    "ronald": {
+      "num_embeddings": 80,
+      "registered_at": "2025-10-15 16:32:46",
+      "image_paths": [
+        "recognize/data/ronald/image_1.jpg",
+        "recognize/data/ronald/image_10.jpg",
+        "recognize/data/ronald/image_2.jpg",
+        "recognize/data/ronald/image_3.jpg",
+        "recognize/data/ronald/image_4.jpg",
+        "recognize/data/ronald/image_5.jpg",
+        "recognize/data/ronald/image_6.jpg",
+        "recognize/data/ronald/image_7.jpg",
+        "recognize/data/ronald/image_8.jpg",
+        "recognize/data/ronald/image_9.jpg"
+      ],
+      "embedding_dim": 512
+    },
+    "Juan Pérez": {
+      "num_embeddings": 80,
+      "registered_at": "2025-10-16 17:39:32",
+      "image_paths": [
+        "recognize/data/Juan Pérez/image_1.jpg",
+        "recognize/data/Juan Pérez/image_10.jpg",
+        "recognize/data/Juan Pérez/image_2.jpg",
+        "recognize/data/Juan Pérez/image_3.jpg",
+        "recognize/data/Juan Pérez/image_4.jpg",
+        "recognize/data/Juan Pérez/image_5.jpg",
+        "recognize/data/Juan Pérez/image_6.jpg",
+        "recognize/data/Juan Pérez/image_7.jpg",
+        "recognize/data/Juan Pérez/image_8.jpg",
+        "recognize/data/Juan Pérez/image_9.jpg"
+      ],
+      "embedding_dim": 512
+    }
+  },
+  "model": "Facenet512",
+  "distance_metric": "cosine",
+  "created_at": "2025-10-14 18:01:50",
+  "last_updated": "2025-10-16 17:39:32"
+}
