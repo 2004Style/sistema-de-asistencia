@@ -152,7 +152,7 @@ async def login(
             "backendTokens": {
                 "accessToken": "...",
                 "refreshToken": "...",
-                "expiresIn": 900
+                "expiresIn": 50m
             }
         }
     
@@ -203,6 +203,138 @@ async def login(
 # ============================================================================
 # RUTAS PROTEGIDAS (requieren autenticación)
 # ============================================================================
+
+
+@router.get("/me")
+def get_current_user_profile(
+    current_user: "User" = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Obtiene el perfil del usuario autenticado actual.
+    
+    🔒 RUTA PROTEGIDA (requiere autenticación)
+    
+    Returns:
+        {
+            "data": UserResponse,
+            "message": string
+        }
+    """
+    try:
+        user = user_service.get_user(db, current_user.id)
+        return create_single_response(
+            data=UserResponse.model_validate(user),
+            message="Perfil obtenido exitosamente"
+        )
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=create_error_response(
+                message="Error al obtener perfil",
+                error=str(e),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        )
+
+
+@router.put("/profile")
+def update_current_user_profile(
+    user_data: UserUpdate,
+    current_user: "User" = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Actualiza el perfil del usuario autenticado actual.
+    
+    🔒 RUTA PROTEGIDA (requiere autenticación)
+    
+    Los usuarios solo pueden actualizar su propio perfil.
+    
+    Returns:
+        {
+            "data": UserResponse,
+            "message": string
+        }
+    """
+    try:
+        user = user_service.update_user(db, current_user.id, user_data)
+        return create_single_response(
+            data=UserResponse.model_validate(user),
+            message="Perfil actualizado exitosamente"
+        )
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=create_error_response(
+                message="Error al actualizar perfil",
+                error=str(e),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        )
+
+
+@router.put("/change-password")
+def change_password(
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    confirm_password: str = Form(...),
+    current_user: "User" = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Cambia la contraseña del usuario autenticado.
+    
+    🔒 RUTA PROTEGIDA (requiere autenticación)
+    
+    Requiere:
+    - **current_password**: Contraseña actual (para verificación)
+    - **new_password**: Nueva contraseña (mínimo 8 caracteres)
+    - **confirm_password**: Confirmación de nueva contraseña
+    
+    Returns:
+        {
+            "data": {"password_changed": true},
+            "message": string
+        }
+    """
+    try:
+        # Validar que las contraseñas coincidan
+        if new_password != confirm_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Las contraseñas no coinciden"
+            )
+        
+        # Validar longitud mínima
+        if len(new_password) < 8:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="La contraseña debe tener mínimo 8 caracteres"
+            )
+        
+        # Cambiar contraseña
+        user_service.change_password(db, current_user.id, current_password, new_password)
+        
+        return create_single_response(
+            data={"password_changed": True},
+            message="Contraseña actualizada exitosamente"
+        )
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=create_error_response(
+                message="Error al cambiar contraseña",
+                error=str(e),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        )
 
 
 @router.get("/{user_id}")

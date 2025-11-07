@@ -10,29 +10,39 @@ Cubre:
 - Filtrado por usuario, tipo, estado
 """
 from http import HTTPStatus
+from tests.integration.auth_helpers import get_auth_headers
 
 
-def test_notificaciones_list(client):
+def test_notificaciones_list(client, admin_user_and_token):
     """Prueba obtención de lista de notificaciones."""
-    resp = client.get("/api/notificaciones?page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/notificaciones?page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code == HTTPStatus.OK
     data = resp.json()
     # Puede tener "data" o "notificaciones" como clave principal
     assert "notificaciones" in data or "data" in data
 
 
-def test_notificaciones_list_pagination(client):
+def test_notificaciones_list_pagination(client, admin_user_and_token):
     """Prueba paginación de notificaciones."""
-    resp1 = client.get("/api/notificaciones?page=1&pageSize=5")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp1 = client.get("/api/notificaciones?page=1&pageSize=5", headers=admin_headers)
     assert resp1.status_code == HTTPStatus.OK
     
-    resp2 = client.get("/api/notificaciones?page=2&pageSize=5")
+    resp2 = client.get("/api/notificaciones?page=2&pageSize=5", headers=admin_headers)
     assert resp2.status_code == HTTPStatus.OK
 
 
-def test_get_notificacion_not_found(client):
+def test_get_notificacion_not_found(client, admin_user_and_token):
     """Prueba obtención de notificación no existente."""
-    resp = client.get("/api/notificaciones/99999")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/notificaciones/99999", headers=admin_headers)
     assert resp.status_code == HTTPStatus.NOT_FOUND
 
 
@@ -83,27 +93,39 @@ def test_create_notificacion_complete(client):
     assert resp.status_code in [HTTPStatus.METHOD_NOT_ALLOWED, HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND, HTTPStatus.UNPROCESSABLE_ENTITY]
 
 
-def test_notificaciones_by_user(client):
+def test_notificaciones_by_user(client, admin_user_and_token):
     """Prueba obtención de notificaciones por usuario."""
-    resp = client.get("/api/notificaciones?user_id=1&page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/notificaciones?user_id=1&page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code == HTTPStatus.OK
 
 
-def test_notificaciones_unread(client):
+def test_notificaciones_unread(client, admin_user_and_token):
     """Prueba obtención de notificaciones no leídas."""
-    resp = client.get("/api/notificaciones?leido=false&page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/notificaciones?leido=false&page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code == HTTPStatus.OK
 
 
-def test_notificaciones_read(client):
+def test_notificaciones_read(client, admin_user_and_token):
     """Prueba obtención de notificaciones leídas."""
-    resp = client.get("/api/notificaciones?leido=true&page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/notificaciones?leido=true&page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code == HTTPStatus.OK
 
 
-def test_notificaciones_by_type(client):
+def test_notificaciones_by_type(client, admin_user_and_token):
     """Prueba obtención de notificaciones por tipo."""
-    resp = client.get("/api/notificaciones?tipo=RECORDATORIO&page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/notificaciones?tipo=RECORDATORIO&page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code == HTTPStatus.OK
 
 
@@ -149,15 +171,21 @@ def test_mark_multiple_notificaciones_as_read(client):
     ]
 
 
-def test_delete_notificacion_not_found(client):
+def test_delete_notificacion_not_found(client, admin_user_and_token):
     """Prueba eliminación de notificación no existente."""
-    resp = client.delete("/api/notificaciones/99999")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.delete("/api/notificaciones/99999", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.NOT_FOUND, HTTPStatus.OK, HTTPStatus.NO_CONTENT, HTTPStatus.METHOD_NOT_ALLOWED]
 
 
-def test_delete_all_user_notificaciones(client):
+def test_delete_all_user_notificaciones(client, admin_user_and_token):
     """Prueba eliminación de todas las notificaciones del usuario."""
-    resp = client.delete("/api/notificaciones/user/1")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.delete("/api/notificaciones/user/1", headers=admin_headers)
     assert resp.status_code in [
         HTTPStatus.OK,
         HTTPStatus.NO_CONTENT,
@@ -167,30 +195,36 @@ def test_delete_all_user_notificaciones(client):
     ]
 
 
-def test_get_unread_count(client):
+def test_get_unread_count(client, admin_user_and_token):
     """Prueba obtención de contador de notificaciones no leídas."""
-    resp = client.get("/api/notificaciones/user/1/unread-count")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/notificaciones/user/1/unread-count", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.OK, HTTPStatus.NOT_FOUND]
     if resp.status_code == HTTPStatus.OK:
         data = resp.json()
         assert "count" in data or "data" in data
 
 
-def test_notificacion_crud_flow(client):
+def test_notificacion_crud_flow(client, admin_user_and_token):
     """Flujo completo CRUD de notificación - solo lectura y actualización soportadas."""
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
     # Las notificaciones se crean automáticamente, solo podemos leer y actualizar
     # Intentar obtener notificación existente
-    get_resp = client.get("/api/notificaciones/1")
+    get_resp = client.get("/api/notificaciones/1", headers=admin_headers)
     if get_resp.status_code == HTTPStatus.OK:
         # Si existe, intentar actualizar
         update_payload = {
             "leido": True
         }
-        update_resp = client.put("/api/notificaciones/1", json=update_payload)
+        update_resp = client.put("/api/notificaciones/1", json=update_payload, headers=admin_headers)
         assert update_resp.status_code in [HTTPStatus.OK, HTTPStatus.BAD_REQUEST]
         
         # Intentar eliminar
-        delete_resp = client.delete("/api/notificaciones/1")
+        delete_resp = client.delete("/api/notificaciones/1", headers=admin_headers)
         assert delete_resp.status_code in [
             HTTPStatus.OK,
             HTTPStatus.NO_CONTENT,
@@ -221,7 +255,10 @@ def test_create_notificacion_invalid_user(client):
     ]
 
 
-def test_notificaciones_for_user(client):
+def test_notificaciones_for_user(client, admin_user_and_token):
     """Prueba obtención de todas las notificaciones de un usuario."""
-    resp = client.get("/api/notificaciones/user/1?page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/notificaciones/user/1?page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.OK, HTTPStatus.NOT_FOUND]

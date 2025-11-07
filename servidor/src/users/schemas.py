@@ -82,6 +82,8 @@ class UserResponse(UserBase):
     huella: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
+    isAdmin: bool
+    isSupervisor: bool
     
     model_config = {"from_attributes": True}
 

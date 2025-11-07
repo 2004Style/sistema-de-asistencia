@@ -33,10 +33,61 @@
         "recognize/data/Juan Pérez/image_9.jpg"
       ],
       "embedding_dim": 512
+    },
+    "Ronald": {
+      "num_embeddings": 80,
+      "registered_at": "2025-10-21 10:11:34",
+      "image_paths": [
+        "recognize/data/Ronald/image_1.jpg",
+        "recognize/data/Ronald/image_10.jpg",
+        "recognize/data/Ronald/image_2.jpg",
+        "recognize/data/Ronald/image_3.jpg",
+        "recognize/data/Ronald/image_4.jpg",
+        "recognize/data/Ronald/image_5.jpg",
+        "recognize/data/Ronald/image_6.jpg",
+        "recognize/data/Ronald/image_7.jpg",
+        "recognize/data/Ronald/image_8.jpg",
+        "recognize/data/Ronald/image_9.jpg"
+      ],
+      "embedding_dim": 512
+    },
+    "martin curay": {
+      "num_embeddings": 80,
+      "registered_at": "2025-10-21 11:47:49",
+      "image_paths": [
+        "recognize/data/martin curay/image_1.jpg",
+        "recognize/data/martin curay/image_10.jpg",
+        "recognize/data/martin curay/image_2.jpg",
+        "recognize/data/martin curay/image_3.jpg",
+        "recognize/data/martin curay/image_4.jpg",
+        "recognize/data/martin curay/image_5.jpg",
+        "recognize/data/martin curay/image_6.jpg",
+        "recognize/data/martin curay/image_7.jpg",
+        "recognize/data/martin curay/image_8.jpg",
+        "recognize/data/martin curay/image_9.jpg"
+      ],
+      "embedding_dim": 512
+    },
+    "style": {
+      "num_embeddings": 80,
+      "registered_at": "2025-11-04 16:29:28",
+      "image_paths": [
+        "recognize/data/style/image_1.jpg",
+        "recognize/data/style/image_10.jpg",
+        "recognize/data/style/image_2.jpg",
+        "recognize/data/style/image_3.jpg",
+        "recognize/data/style/image_4.jpg",
+        "recognize/data/style/image_5.jpg",
+        "recognize/data/style/image_6.jpg",
+        "recognize/data/style/image_7.jpg",
+        "recognize/data/style/image_8.jpg",
+        "recognize/data/style/image_9.jpg"
+      ],
+      "embedding_dim": 512
     }
   },
   "model": "Facenet512",
   "distance_metric": "cosine",
   "created_at": "2025-10-14 18:01:50",
-  "last_updated": "2025-10-16 17:39:32"
+  "last_updated": "2025-11-04 16:29:28"
 }

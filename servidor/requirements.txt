@@ -41,9 +41,14 @@ typing_extensions
 tzlocal
 urllib3
 uvicorn
+uvicorn[standard]
 uvloop
 watchfiles
 websockets
+wsproto
+
+# Socket.IO server support
+python-socketio[asyncio_server]
 
 # Email support
 aiosmtplib

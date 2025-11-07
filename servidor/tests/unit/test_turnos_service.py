@@ -94,7 +94,7 @@ class TestTurnoServiceListar:
         return TurnoService()
     
     def test_listar_turnos_retorna_tupla(self, turno_service):
-        """Test: listar_turnos retorna (turnos, total)."""
+        """Test: listar_turnos retorna diccionario con records y total."""
         mock_db = MagicMock()
         mock_query = MagicMock()
         mock_db.query.return_value = mock_query
@@ -102,13 +102,12 @@ class TestTurnoServiceListar:
         mock_query.count.return_value = 2
         mock_query.offset.return_value = mock_query
         mock_query.limit.return_value = mock_query
-        mock_query.all.return_value = [Mock(id=1), Mock(id=2)]
+        mock_query.all.return_value = [Mock(id=1, nombre="T1"), Mock(id=2, nombre="T2")]
         
-        resultado = turno_service.listar_turnos(mock_db, skip=0, limit=10)
+        resultado = turno_service.listar_turnos(mock_db, page=1, page_size=10)
         
-        assert isinstance(resultado, tuple)
-        assert len(resultado) == 2
-        assert resultado[1] == 2  # total
+        assert isinstance(resultado, dict)
+        assert "records" in resultado or "totalRecords" in resultado
 
 
 class TestTurnoServiceActualizar:

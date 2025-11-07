@@ -6,6 +6,7 @@ Proporciona:
 - Decoradores para proteger endpoints basados en roles
 - Validación de tokens JWT
 - Manejo de permisos por rol
+- Endpoints de autenticación (login, refresh token, validate)
 """
 
 from fastapi import Depends, HTTPException, status
@@ -15,6 +16,7 @@ from typing import Optional, List, TYPE_CHECKING
 from src.config.database import get_db
 from src.utils.security import verify_token
 from src.auth.security import get_token_from_header
+from src.auth.controller import router
 
 # Importación de tipo para evitar circular import
 if TYPE_CHECKING:

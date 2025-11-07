@@ -5,7 +5,7 @@ Define la estructura de datos para usuarios en el sistema,
 incluyendo relaciones con roles, horarios, asistencias y notificaciones.
 """
 
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from src.base_model import BaseModel
 
@@ -45,7 +45,7 @@ class User(BaseModel):
     password = Column(String(255), nullable=False)
     role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
-    huella = Column(String(500), nullable=True)
+    huella = Column(Text, nullable=True)  # Huella encriptada en base64 con formato: "<slot>|<datos_encriptados>"
     
     # Relaciones
     # Use la referencia por nombre de clase simple para evitar errores de
@@ -79,3 +79,14 @@ class User(BaseModel):
     
     def __repr__(self):
         return f"<User(id={self.id}, name='{self.name}', email='{self.email}', codigo='{self.codigo_user}')>"
+
+    # Propiedades compatibles con los schemas/serializadores frontend
+    @property
+    def isAdmin(self) -> bool:
+        """Compatibilidad: `isAdmin` -> True si el rol es ADMINISTRADOR."""
+        return self.role.nombre.lower() == "administrador" if self.role and getattr(self.role, "nombre", None) else False
+
+    @property
+    def isSupervisor(self) -> bool:
+        """Compatibilidad: `isSupervisor` -> True si el rol es SUPERVISOR."""
+        return self.role.nombre.lower() == "supervisor" if self.role and getattr(self.role, "nombre", None) else False

@@ -1,48 +1,3 @@
-"""
-Main application entry point
-FastAPI application with WebSocket, HTTP endpoints, and scheduled jobs
-"""
-import os
-
-# --- Supresión temprana de logs ruidosos de TensorFlow/absl ---
-# Debe ejecutarse antes de importar cualquier librería que cargue TensorFlow
-# Evita: "All log messages before absl::InitializeLog() is called are written to STDERR"
-# y reduce logs C++ de TensorFlow.
-os.environ.setdefault('TF_CPP_MIN_LOG_LEVEL', '3')  # 0 = all, 1 = INFO, 2 = WARNING, 3 = ERROR
-os.environ.setdefault('TF_FORCE_GPU_ALLOW_GROWTH', 'true')  # intenta evitar grandes asignaciones iniciales
-
-try:
-    # Intentar silenciar el aviso pre-inicialización de absl si está disponible
-    from absl import logging as _absl_logging
-    try:
-        _absl_logging.set_verbosity(_absl_logging.ERROR)
-    except Exception:
-        pass
-    # Función privada pero útil para evitar el warning que menciona STDERR antes de init
-    try:
-        _absl_logging._warn_preinit_stderr(False)
-    except Exception:
-        pass
-except Exception:
-    # absl puede no estar instalado; no es crítico
-    pass
-
-try:
-    # Intentar habilitar memory growth para GPUs (reduce mensajes de OOM/allocator)
-    import tensorflow as _tf
-    try:
-        gpus = _tf.config.list_physical_devices('GPU')
-        for gpu in gpus:
-            try:
-                _tf.config.experimental.set_memory_growth(gpu, True)
-            except Exception:
-                pass
-    except Exception:
-        pass
-except Exception:
-    # TensorFlow puede no estar presente en todos los entornos; ignorar si falla
-    pass
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -55,11 +10,11 @@ from src.roles import router as role_router
 from src.turnos import router as turno_router
 from src.notificaciones import router as notificacion_router
 from src.users import router as user_router
+from src.auth import router as auth_router
 from src.horarios import router as horario_router
 from src.asistencias import router as asistencia_router
 from src.justificaciones import router as justificacion_router
 from src.reportes import router as reportes_router
-from src.websockets.sensor_handlers import router as websocket_router
 from src.jobs.scheduler import start_scheduler, shutdown_scheduler
 
 #hacemos la importacion para arrancar los servicion del sistema de reconocimiento
@@ -138,6 +93,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(role_router, prefix="/api")
+app.include_router(auth_router, prefix="/api")
 app.include_router(user_router, prefix="/api")
 app.include_router(turno_router, prefix="/api")
 app.include_router(notificacion_router, prefix="/api")
@@ -145,7 +101,19 @@ app.include_router(asistencia_router, prefix="/api")
 app.include_router(reportes_router, prefix="/api")
 app.include_router(horario_router, prefix="/api")
 app.include_router(justificacion_router, prefix="/api")
-app.include_router(websocket_router)
+# El router de WebSocket basado en FastAPI queda deshabilitado porque ahora se usa Socket.IO
+# app.include_router(websocket_router)
+
+
+
+# --- Socket.IO ASGI wrapper (exponer `asgi_app` para uvicorn) ---
+from socketio import ASGIApp
+from src.socketsio.socketio_app import sio
+# Import the bridge module so the event handlers (connect/disconnect/...) register on `sio`.
+# Without importing this module the decorators in `socketio_bridge.py` are not executed,
+# so the server accepts socket.io connections but our handlers don't run.
+from src.socketsio import socketio_bridge
+asgi_app = ASGIApp(sio, other_asgi_app=app)
 
 
 @app.get("/")
@@ -180,11 +148,26 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    
-    uvicorn.run(
-        "main:app",
-        host=settings.HOST,
-        port=settings.PORT,
-        reload=settings.DEBUG,
-        ws="none"  # Disable uvicorn's WebSocket implementation, use FastAPI's native WebSocket
-    )
+    import os
+    # When running `python main.py` from inside the `servidor` directory,
+    # the import string "servidor.main:asgi_app" may fail because the
+    # parent package is not on sys.path for the reloader subprocess.
+    # To be robust we prefer to pass the ASGI app object directly when
+    # possible. If DEBUG/reload is requested while running as a script,
+    # the auto-reloader will spawn a subprocess that imports the module
+    # by name — which will still fail in the common "cd servidor && python main.py"
+    # case. So we disable reload in that scenario and print a helpful hint.
+
+    # If running as a module from project root (python -m servidor.main) then
+    # using the import string keeps reload working as expected.
+    if settings.DEBUG and (not getattr(__package__, "__len__", lambda: 1)() or __package__ is None):
+        print("⚠ DEBUG/reload requested but running as script; starting without reload.")
+        print("   To enable reload use: python -m servidor.main (from project root) or: uvicorn servidor.main:asgi_app --reload")
+        uvicorn.run(asgi_app, host=settings.HOST, port=settings.PORT, reload=False)
+    else:
+        # Prefer import string when possible so uvicorn's reloader works.
+        try:
+            uvicorn.run("servidor.main:asgi_app", host=settings.HOST, port=settings.PORT, reload=settings.DEBUG)
+        except Exception:
+            # Fallback: run using the ASGI object directly.
+            uvicorn.run(asgi_app, host=settings.HOST, port=settings.PORT, reload=False)

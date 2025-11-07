@@ -151,7 +151,7 @@ async def generar_reporte_mensual(
     
     **Requerimiento #13:** Reporte mensual de asistencia
     
-    - **anio**: Año del reporte (2000-2100)
+    - **anio**: Año del reporte (2024-2025)
     - **mes**: Mes del reporte (1-12)
     - **user_id**: ID del usuario específico (opcional)
     - **formato**: pdf, excel o both

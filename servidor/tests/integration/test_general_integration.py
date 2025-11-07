@@ -9,6 +9,7 @@ Cubre:
 - Performance
 """
 from http import HTTPStatus
+from tests.integration.auth_helpers import assert_unauthorized
 
 
 def test_root_endpoint(client):
@@ -83,20 +84,15 @@ def test_invalid_method(client):
 
 
 def test_missing_required_field(client):
-    """Prueba POST sin campo requerido."""
+    """Prueba POST sin campo requerido - requiere autenticación de admin."""
     payload = {
         "nombre": "Test Role"
         # Falta descripción que puede ser requerida
     }
     
     resp = client.post("/api/roles/", json=payload)
-    # Puede ser BAD_REQUEST o UNPROCESSABLE_ENTITY dependiendo de la validación
-    assert resp.status_code in [
-        HTTPStatus.BAD_REQUEST,
-        HTTPStatus.UNPROCESSABLE_ENTITY,
-        HTTPStatus.CREATED,  # Si el campo no es requerido
-        HTTPStatus.OK
-    ]
+    # Sin autenticación = 401
+    assert_unauthorized(resp)
 
 
 def test_invalid_json_payload(client):
@@ -113,14 +109,10 @@ def test_invalid_json_payload(client):
 
 
 def test_empty_payload(client):
-    """Prueba POST con payload vacío."""
+    """Prueba POST con payload vacío - requiere autenticación de admin."""
     resp = client.post("/api/roles/", json={})
-    assert resp.status_code in [
-        HTTPStatus.BAD_REQUEST,
-        HTTPStatus.UNPROCESSABLE_ENTITY,
-        HTTPStatus.CREATED,
-        HTTPStatus.OK
-    ]
+    # Sin autenticación = 401
+    assert_unauthorized(resp)
 
 
 def test_query_parameter_validation(client):

@@ -10,28 +10,38 @@ Cubre:
 - Filtrado por usuario, día de semana
 """
 from http import HTTPStatus
+from tests.integration.auth_helpers import get_auth_headers
 
 
-def test_horarios_list(client):
+def test_horarios_list(client, admin_user_and_token):
     """Prueba obtención de lista de horarios."""
-    resp = client.get("/api/horarios?page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/horarios?page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code == HTTPStatus.OK
     data = resp.json()
     assert "data" in data
 
 
-def test_horarios_list_pagination(client):
+def test_horarios_list_pagination(client, admin_user_and_token):
     """Prueba paginación de horarios."""
-    resp1 = client.get("/api/horarios?page=1&pageSize=5")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp1 = client.get("/api/horarios?page=1&pageSize=5", headers=admin_headers)
     assert resp1.status_code == HTTPStatus.OK
     
-    resp2 = client.get("/api/horarios?page=2&pageSize=5")
+    resp2 = client.get("/api/horarios?page=2&pageSize=5", headers=admin_headers)
     assert resp2.status_code == HTTPStatus.OK
 
 
-def test_get_horario_not_found(client):
+def test_get_horario_not_found(client, admin_user_and_token):
     """Prueba obtención de horario no existente."""
-    resp = client.get("/api/horarios/99999")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/horarios/99999", headers=admin_headers)
     assert resp.status_code == HTTPStatus.NOT_FOUND
 
 
@@ -101,28 +111,49 @@ def test_create_horario_all_days(client):
         ]
 
 
-def test_horarios_by_user(client):
+def test_horarios_by_user(client, admin_user_and_token):
     """Prueba obtención de horarios por usuario."""
-    resp = client.get("/api/horarios?user_id=1&page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/horarios?user_id=1&page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.OK, HTTPStatus.BAD_REQUEST, HTTPStatus.UNPROCESSABLE_ENTITY]
 
 
-def test_horarios_by_day(client):
+def test_horarios_by_day(client, admin_user_and_token):
     """Prueba obtención de horarios por día de semana."""
-    resp = client.get("/api/horarios?dia_semana=LUNES&page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/horarios?dia_semana=LUNES&page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.OK, HTTPStatus.BAD_REQUEST, HTTPStatus.UNPROCESSABLE_ENTITY, HTTPStatus.NOT_FOUND]
 
 
-def test_horarios_activos(client):
+def test_horarios_activos(client, admin_user_and_token):
     """Prueba obtención de horarios activos."""
-    resp = client.get("/api/horarios?activo=true&page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/horarios?activo=true&page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.OK, HTTPStatus.BAD_REQUEST, HTTPStatus.UNPROCESSABLE_ENTITY]
 
 
-def test_horarios_by_user_and_day(client):
+def test_horarios_by_user_and_day(client, admin_user_and_token):
     """Prueba obtención de horarios por usuario y día."""
-    resp = client.get("/api/horarios?user_id=1&dia_semana=LUNES&page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/horarios?user_id=1&dia_semana=LUNES&page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.OK, HTTPStatus.BAD_REQUEST, HTTPStatus.UNPROCESSABLE_ENTITY, HTTPStatus.NOT_FOUND]
+
+
+def test_get_turno_activo_for_user_today(client, admin_user_and_token):
+    """Prueba obtener turno activo para usuario hoy."""
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/horarios/usuario/1/turno-activo", headers=admin_headers)
+    assert resp.status_code in [HTTPStatus.OK, HTTPStatus.NOT_FOUND, HTTPStatus.UNPROCESSABLE_ENTITY, HTTPStatus.BAD_REQUEST]
 
 
 def test_update_horario_not_found(client):
@@ -258,7 +289,10 @@ def test_horario_crud_flow(client):
                 ]
 
 
-def test_get_turno_activo_for_user_today(client):
+def test_get_turno_activo_for_user_today(client, admin_user_and_token):
     """Prueba obtención del turno activo para un usuario hoy."""
-    resp = client.get("/api/horarios/turno-actual?user_id=1")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/horarios/turno-actual?user_id=1", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.OK, HTTPStatus.NOT_FOUND, HTTPStatus.UNPROCESSABLE_ENTITY, HTTPStatus.BAD_REQUEST]

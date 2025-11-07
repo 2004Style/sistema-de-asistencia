@@ -316,7 +316,7 @@ class UserService(BaseService):
         
         Args:
             codigo_user: Código único del usuario
-            huella: Datos de la huella digital (formato específico del sensor)
+            huella: Datos de la huella digital en formato "<slot>|<datos_encriptados>"
             
         Returns:
             Dict con información del resultado
@@ -339,7 +339,7 @@ class UserService(BaseService):
             )
         
         try:
-            # Actualizar campo de huella
+            # Actualizar campo de huella (contiene: "<slot>|<datos_encriptados>")
             user.huella = huella
             db.commit()
             db.refresh(user)
@@ -388,6 +388,45 @@ class UserService(BaseService):
             return None
         
         return user
+
+    def change_password(self, db: Session, user_id: int, current_password: str, new_password: str) -> bool:
+        """
+        Cambia la contraseña de un usuario.
+        
+        Args:
+            db: Sesión de base de datos
+            user_id: ID del usuario
+            current_password: Contraseña actual (debe ser correcta)
+            new_password: Nueva contraseña
+            
+        Returns:
+            True si se cambió exitosamente
+            
+        Raises:
+            HTTPException: Si la contraseña actual es incorrecta
+        """
+        from src.utils.security import verify_password
+        
+        user = self.get_by_id(db, user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuario no encontrado"
+            )
+        
+        # Verificar que la contraseña actual es correcta
+        if not verify_password(current_password, user.password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Contraseña actual incorrecta"
+            )
+        
+        # Actualizar contraseña
+        user.password = hash_password(new_password)
+        db.commit()
+        db.refresh(user)
+        
+        return True
 
 
 # Singleton del servicio

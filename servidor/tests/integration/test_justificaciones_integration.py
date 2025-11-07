@@ -11,28 +11,38 @@ Cubre:
 """
 from http import HTTPStatus
 from datetime import datetime, timedelta
+from tests.integration.auth_helpers import get_auth_headers
 
 
-def test_justificaciones_list(client):
+def test_justificaciones_list(client, admin_user_and_token):
     """Prueba obtención de lista de justificaciones."""
-    resp = client.get("/api/justificaciones?page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/justificaciones?page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code == HTTPStatus.OK
     data = resp.json()
     assert "data" in data
 
 
-def test_justificaciones_list_pagination(client):
+def test_justificaciones_list_pagination(client, admin_user_and_token):
     """Prueba paginación de justificaciones."""
-    resp1 = client.get("/api/justificaciones?page=1&pageSize=5")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp1 = client.get("/api/justificaciones?page=1&pageSize=5", headers=admin_headers)
     assert resp1.status_code == HTTPStatus.OK
     
-    resp2 = client.get("/api/justificaciones?page=2&pageSize=5")
+    resp2 = client.get("/api/justificaciones?page=2&pageSize=5", headers=admin_headers)
     assert resp2.status_code == HTTPStatus.OK
 
 
-def test_get_justificacion_not_found(client):
+def test_get_justificacion_not_found(client, admin_user_and_token):
     """Prueba obtención de justificación no existente."""
-    resp = client.get("/api/justificaciones/99999")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/justificaciones/99999", headers=admin_headers)
     assert resp.status_code == HTTPStatus.NOT_FOUND
 
 
@@ -105,30 +115,42 @@ def test_create_justificacion_complete(client):
     ]
 
 
-def test_justificaciones_by_user(client):
+def test_justificaciones_by_user(client, admin_user_and_token):
     """Prueba obtención de justificaciones por usuario."""
-    resp = client.get("/api/justificaciones?user_id=1&page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/justificaciones?user_id=1&page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.OK, HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND]
 
 
-def test_justificaciones_by_status(client):
+def test_justificaciones_by_status(client, admin_user_and_token):
     """Prueba obtención de justificaciones por estado."""
-    resp = client.get("/api/justificaciones?estado=PENDIENTE&page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/justificaciones?estado=PENDIENTE&page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.OK, HTTPStatus.BAD_REQUEST, HTTPStatus.UNPROCESSABLE_ENTITY, HTTPStatus.NOT_FOUND]
 
 
-def test_justificaciones_by_type(client):
+def test_justificaciones_by_type(client, admin_user_and_token):
     """Prueba obtención de justificaciones por tipo."""
-    resp = client.get("/api/justificaciones?tipo=MEDICA&page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/justificaciones?tipo=MEDICA&page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.OK, HTTPStatus.BAD_REQUEST, HTTPStatus.UNPROCESSABLE_ENTITY, HTTPStatus.NOT_FOUND]
 
 
-def test_justificaciones_by_date_range(client):
+def test_justificaciones_by_date_range(client, admin_user_and_token):
     """Prueba obtención de justificaciones por rango de fechas."""
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
     today = datetime.now().date()
     start_date = (today - timedelta(days=30))
     
-    resp = client.get(f"/api/justificaciones?fecha_inicio={start_date}&fecha_fin={today}&page=1&pageSize=10")
+    resp = client.get(f"/api/justificaciones?fecha_inicio={start_date}&fecha_fin={today}&page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.OK, HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND]
 
 
@@ -273,18 +295,24 @@ def test_justificacion_crud_flow(client):
                 ]
 
 
-def test_justificaciones_pending(client):
+def test_justificaciones_pending(client, admin_user_and_token):
     """Prueba obtención de justificaciones pendientes."""
-    resp = client.get("/api/justificaciones?estado=PENDIENTE&page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/justificaciones?estado=PENDIENTE&page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.OK, HTTPStatus.BAD_REQUEST, HTTPStatus.UNPROCESSABLE_ENTITY, HTTPStatus.NOT_FOUND]
     if resp.status_code == HTTPStatus.OK:
         data = resp.json()
         assert "data" in data or "justificaciones" in data
 
 
-def test_justificaciones_approved(client):
+def test_justificaciones_approved(client, admin_user_and_token):
     """Prueba obtención de justificaciones aprobadas."""
-    resp = client.get("/api/justificaciones?estado=APROBADA&page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/justificaciones?estado=APROBADA&page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.OK, HTTPStatus.BAD_REQUEST, HTTPStatus.UNPROCESSABLE_ENTITY, HTTPStatus.NOT_FOUND]
     if resp.status_code == HTTPStatus.OK:
         data = resp.json()

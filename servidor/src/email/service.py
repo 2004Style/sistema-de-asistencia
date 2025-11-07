@@ -3,10 +3,9 @@ Email service for sending notifications and reports
 Similar to nodemailer in Node.js, but using aiosmtplib for Python
 """
 from typing import List, Optional, Dict, Any
-import aiosmtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.application import MIMEApplication
+import base64
+import mimetypes
+import httpx
 from pathlib import Path
 from jinja2 import Template
 from src.config.settings import get_settings
@@ -30,6 +29,10 @@ class EmailService:
         self.from_email = settings.SMTP_FROM_EMAIL
         self.from_name = settings.SMTP_FROM_NAME
         self.use_tls = settings.SMTP_TLS
+        # Mail API configuration
+        self.mail_api_url = settings.MAIL_API_URL.rstrip("/") if getattr(settings, 'MAIL_API_URL', None) else None
+        self.mail_api_client_id = getattr(settings, 'MAIL_API_CLIENT_ID', None)
+        self.mail_api_secret = getattr(settings, 'MAIL_API_SECRET', None)
     
     async def send_email(
         self,
@@ -57,62 +60,102 @@ class EmailService:
             bool: True if email was sent successfully
         """
         try:
-            # Validate configuration
-            if not self.smtp_user or not self.smtp_password:
-                logger.error("Email credentials not configured")
+            # If MAIL API is configured, use it. Otherwise, fallback: log and return False
+            if not self.mail_api_url:
+                logger.error("Mail API URL not configured (MAIL_API_URL)")
                 return False
-            
-            # Create message
-            message = MIMEMultipart("alternative")
-            message["Subject"] = subject
-            message["From"] = f"{self.from_name} <{self.from_email}>"
-            
-            # Handle recipients
+
+            # Ensure recipients list
             if isinstance(to_email, str):
-                to_email = [to_email]
-            message["To"] = ", ".join(to_email)
-            
-            if cc:
-                message["Cc"] = ", ".join(cc)
-            
-            # Add text and HTML parts
+                to_list = [to_email]
+            else:
+                to_list = list(to_email)
+
+            payload: Dict[str, Any] = {
+                "to": to_list,
+                "subject": subject,
+                "html": html_content,
+            }
+
             if text_content:
-                text_part = MIMEText(text_content, "plain")
-                message.attach(text_part)
-            
-            html_part = MIMEText(html_content, "html")
-            message.attach(html_part)
-            
-            # Add attachments
+                payload["text"] = text_content
+
+            if cc:
+                payload["cc"] = cc
+
+            if bcc:
+                payload["bcc"] = bcc
+
+            # Prepare attachments for the API: prefer sending base64 content
+            prepared_attachments: List[Dict[str, Any]] = []
             if attachments:
                 for attachment in attachments:
+                    att: Dict[str, Any] = {}
                     filename = attachment.get("filename")
-                    filepath = attachment.get("path")
-                    
-                    if filepath and Path(filepath).exists():
-                        with open(filepath, "rb") as f:
-                            part = MIMEApplication(f.read(), Name=filename)
-                            part["Content-Disposition"] = f'attachment; filename="{filename}"'
-                            message.attach(part)
-            
-            # Send email
-            recipients = to_email + (cc or []) + (bcc or [])
-            
-            await aiosmtplib.send(
-                message,
-                hostname=self.smtp_host,
-                port=self.smtp_port,
-                username=self.smtp_user,
-                password=self.smtp_password,
-                use_tls=self.use_tls,
-                recipients=recipients
-            )
-            
-            logger.info(f"Email sent successfully to {to_email}")
-            return True
-            
+                    path = attachment.get("path")
+                    content = attachment.get("content")
+                    content_type = attachment.get("contentType") or None
+
+                    if filename:
+                        att["filename"] = filename
+
+                    if content:
+                        # If content present, assume it's already a string (e.g., base64 or text)
+                        att["content"] = content
+                    elif path:
+                        # Read file and encode to base64
+                        file_path = Path(path)
+                        if file_path.exists():
+                            with open(file_path, "rb") as f:
+                                raw = f.read()
+                                att["content"] = base64.b64encode(raw).decode("ascii")
+                                att["encoding"] = "base64"
+                                if not content_type:
+                                    guessed, _ = mimetypes.guess_type(str(file_path))
+                                    content_type = guessed
+                        else:
+                            logger.warning(f"Attachment path does not exist: {path}")
+                            continue
+
+                    if content_type:
+                        att["contentType"] = content_type
+
+                    prepared_attachments.append(att)
+
+            if prepared_attachments:
+                payload["attachments"] = prepared_attachments
+
+            # Build headers for the mail API
+            headers: Dict[str, str] = {"Content-Type": "application/json"}
+            if self.mail_api_client_id:
+                headers["X-Client-Id"] = self.mail_api_client_id
+            if self.mail_api_secret:
+                headers["X-Secret-Key"] = self.mail_api_secret
+
+            url = f"{self.mail_api_url}/mail"
+            logger.info(f"Sending email via Mail API to {to_list} (subject={subject}) to: {url}")
+
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(url, json=payload, headers=headers)
+
+            try:
+                body = response.json()
+            except Exception:
+                body = response.text
+
+            if response.status_code >= 200 and response.status_code < 300:
+                logger.info(f"Mail API responded {response.status_code}: {body}")
+                # The API returns { ok: true, result: ... } on success in the provided controller
+                if isinstance(body, dict) and body.get("ok") is True:
+                    return True
+                # If response is not the expected shape, still consider 2xx a success
+                return True
+            else:
+                logger.error(f"Failed to send mail via API: status={response.status_code} body={body}")
+                return False
+
         except Exception as e:
-            logger.error(f"Error sending email: {str(e)}")
+            logger.error(f"Error sending email via Mail API: {str(e)}")
             return False
     
     async def send_tardanza_notification(

@@ -11,28 +11,38 @@ Cubre:
 """
 from http import HTTPStatus
 from datetime import datetime, timedelta
+from tests.integration.auth_helpers import get_auth_headers
 
 
-def test_asistencias_list(client):
+def test_asistencias_list(client, admin_user_and_token):
     """Prueba obtención de lista de asistencias."""
-    resp = client.get("/api/asistencia?page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/asistencia?page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code == HTTPStatus.OK
     data = resp.json()
     assert "data" in data
 
 
-def test_asistencias_list_pagination(client):
+def test_asistencias_list_pagination(client, admin_user_and_token):
     """Prueba paginación de asistencias."""
-    resp1 = client.get("/api/asistencia?page=1&pageSize=5")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp1 = client.get("/api/asistencia?page=1&pageSize=5", headers=admin_headers)
     assert resp1.status_code == HTTPStatus.OK
     
-    resp2 = client.get("/api/asistencia?page=2&pageSize=5")
+    resp2 = client.get("/api/asistencia?page=2&pageSize=5", headers=admin_headers)
     assert resp2.status_code == HTTPStatus.OK
 
 
-def test_get_asistencia_not_found(client):
+def test_get_asistencia_not_found(client, admin_user_and_token):
     """Prueba obtención de asistencia no existente."""
-    resp = client.get("/api/asistencia/99999")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/asistencia/99999", headers=admin_headers)
     assert resp.status_code == HTTPStatus.NOT_FOUND
 
 
@@ -81,34 +91,110 @@ def test_create_asistencia_entrada_salida(client):
     ]
 
 
-def test_asistencias_by_user(client):
+
+def test_asistencias_by_user(client, admin_user_and_token):
     """Prueba obtención de asistencias por usuario."""
-    resp = client.get("/api/asistencia?user_id=1&page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/asistencia?user_id=1&page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.OK, HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND]
     if resp.status_code == HTTPStatus.OK:
         data = resp.json()
         assert "data" in data or "asistencias" in data
 
 
-def test_asistencias_by_date_range(client):
+def test_asistencias_by_date_range(client, admin_user_and_token):
     """Prueba obtención de asistencias por rango de fechas."""
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
     today = datetime.now().date()
     start_date = (today - timedelta(days=7))
     end_date = today
     
-    resp = client.get(f"/api/asistencia?fecha_inicio={start_date}&fecha_fin={end_date}&page=1&pageSize=10")
+    resp = client.get(f"/api/asistencia?fecha_inicio={start_date}&fecha_fin={end_date}&page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.OK, HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND]
 
 
-def test_asistencias_by_status(client):
+def test_asistencias_by_status(client, admin_user_and_token):
     """Prueba obtención de asistencias por estado."""
-    resp = client.get("/api/asistencia?estado=PRESENTE&page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/asistencia?estado=PRESENTE&page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.OK, HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND, HTTPStatus.UNPROCESSABLE_ENTITY]
 
 
-def test_asistencias_by_method(client):
+def test_asistencias_by_method(client, admin_user_and_token):
     """Prueba obtención de asistencias por método."""
-    resp = client.get("/api/asistencia?metodo=MANUAL&page=1&pageSize=10")
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/asistencia?metodo=MANUAL&page=1&pageSize=10", headers=admin_headers)
+    assert resp.status_code in [HTTPStatus.OK, HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND]
+
+
+def test_asistencias_today(client, admin_user_and_token):
+    """Prueba obtención de asistencias de hoy."""
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    today = datetime.now().date()
+    resp = client.get(f"/api/asistencia?fecha={today}&page=1&pageSize=10", headers=admin_headers)
+    assert resp.status_code in [HTTPStatus.OK, HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND]
+
+
+def test_asistencias_user_today(client, admin_user_and_token):
+    """Prueba obtención de asistencia de usuario para hoy."""
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    today = datetime.now().date()
+    resp = client.get(f"/api/asistencia?user_id=1&fecha={today}", headers=admin_headers)
+    assert resp.status_code in [HTTPStatus.OK, HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST]
+
+
+def test_get_asistencia_by_date_range(client, admin_user_and_token):
+    """Prueba reporte de asistencias por rango de fechas."""
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    today = datetime.now().date()
+    start_date = (today - timedelta(days=30))
+    
+    resp = client.get(f"/api/asistencia/reporte?fecha_inicio={start_date}&fecha_fin={today}", headers=admin_headers)
+    assert resp.status_code in [HTTPStatus.OK, HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST, HTTPStatus.UNPROCESSABLE_ENTITY]
+
+
+def test_asistencias_by_date_range(client, admin_user_and_token):
+    """Prueba obtención de asistencias por rango de fechas."""
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    today = datetime.now().date()
+    start_date = (today - timedelta(days=7))
+    end_date = today
+    
+    resp = client.get(f"/api/asistencia?fecha_inicio={start_date}&fecha_fin={end_date}&page=1&pageSize=10", headers=admin_headers)
+    assert resp.status_code in [HTTPStatus.OK, HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND]
+
+
+def test_asistencias_by_status(client, admin_user_and_token):
+    """Prueba obtención de asistencias por estado."""
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/asistencia?estado=PRESENTE&page=1&pageSize=10", headers=admin_headers)
+    assert resp.status_code in [HTTPStatus.OK, HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND, HTTPStatus.UNPROCESSABLE_ENTITY]
+
+
+def test_asistencias_by_method(client, admin_user_and_token):
+    """Prueba obtención de asistencias por método."""
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
+    resp = client.get("/api/asistencia?metodo=MANUAL&page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.OK, HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND]
 
 
@@ -129,26 +215,35 @@ def test_delete_asistencia_not_found(client):
     assert resp.status_code in [HTTPStatus.NOT_FOUND, HTTPStatus.UNAUTHORIZED, HTTPStatus.METHOD_NOT_ALLOWED]
 
 
-def test_asistencias_today(client):
+def test_asistencias_today(client, admin_user_and_token):
     """Prueba obtención de asistencias de hoy."""
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
     today = datetime.now().date()
-    resp = client.get(f"/api/asistencia?fecha={today}&page=1&pageSize=10")
+    resp = client.get(f"/api/asistencia?fecha={today}&page=1&pageSize=10", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.OK, HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND]
 
 
-def test_asistencias_user_today(client):
+def test_asistencias_user_today(client, admin_user_and_token):
     """Prueba obtención de asistencia de usuario para hoy."""
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
     today = datetime.now().date()
-    resp = client.get(f"/api/asistencia?user_id=1&fecha={today}")
+    resp = client.get(f"/api/asistencia?user_id=1&fecha={today}", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.OK, HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST]
 
 
-def test_get_asistencia_by_date_range(client):
+def test_get_asistencia_by_date_range(client, admin_user_and_token):
     """Prueba reporte de asistencias por rango de fechas."""
+    admin_user, admin_token = admin_user_and_token
+    admin_headers = get_auth_headers(admin_token)
+    
     today = datetime.now().date()
     start_date = (today - timedelta(days=30))
     
-    resp = client.get(f"/api/asistencia/reporte?fecha_inicio={start_date}&fecha_fin={today}")
+    resp = client.get(f"/api/asistencia/reporte?fecha_inicio={start_date}&fecha_fin={today}", headers=admin_headers)
     assert resp.status_code in [HTTPStatus.OK, HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST, HTTPStatus.UNPROCESSABLE_ENTITY]
 
 
