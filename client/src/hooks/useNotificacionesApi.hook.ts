@@ -4,13 +4,6 @@ import { BACKEND_ROUTES } from "@/routes/backend.routes";
 import { useClientApi } from "./useClientApi.hook";
 import { NotificacionesUserList, NotificacionDetails } from "@/interfaces";
 
-interface PaginatedResponse<T> {
-  total: number;
-  page: number;
-  pageSize: number;
-  data: T[];
-}
-
 export function useNotificacionesApi() {
   const { get, put, del, data, loading, error, alert } = useClientApi(true, BACKEND_ROUTES.urlHttpBase);
 
@@ -62,14 +55,15 @@ export function useNotificacionesApi() {
 
   /**
    * Listar todas las notificaciones (solo admin)
+   * Retorna: { total, no_leidas, notificaciones }
    */
   const listAdmin = async (page: number = 1, pageSize: number = 10) => {
     const params = new URLSearchParams({
-      page: page.toString(),
-      pageSize: pageSize.toString(),
+      skip: ((page - 1) * pageSize).toString(),
+      limit: pageSize.toString(),
     });
 
-    const response = await get<PaginatedResponse<NotificacionDetails>>(`${BACKEND_ROUTES.urlNotificaciones}/admin/todas?${params}`);
+    const response = await get<NotificacionesUserList>(`${BACKEND_ROUTES.urlNotificaciones}/admin/todas?${params}`);
 
     return response;
   };

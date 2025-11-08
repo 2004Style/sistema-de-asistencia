@@ -64,9 +64,8 @@ export default function AdminHorarioEditPage() {
                 } else {
                     setError(response.message || "Error al cargar el horario");
                 }
-            } catch (err) {
+            } catch {
                 setError("Error al cargar el horario");
-                console.error(err);
             } finally {
                 setLoading(false);
             }
@@ -75,7 +74,7 @@ export default function AdminHorarioEditPage() {
         if (horarioId) {
             fetchHorario();
         }
-    }, [horarioId, getDetail]);
+    }, [horarioId]);
 
     const validateForm = () => {
         const errors: Record<string, string> = {};
@@ -135,9 +134,8 @@ export default function AdminHorarioEditPage() {
             } else {
                 setError(response.message || "Error al actualizar el horario");
             }
-        } catch (err) {
+        } catch {
             setError("Error al actualizar el horario");
-            console.error(err);
         } finally {
             setSaving(false);
         }

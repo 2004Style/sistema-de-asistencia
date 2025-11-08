@@ -20,5 +20,4 @@ export const CLIENT_ROUTES = {
   urlUserAsistencias: "/client/asistencias",
   urlUserHorarios: "/client/horarios",
   urlUserJustificaciones: "/client/justificaciones",
-  
 };

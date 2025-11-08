@@ -22,9 +22,11 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, Plus } from "lucide-react";
 import { useHorariosApi } from "@/hooks/useHorariosApi.hook";
 import { HorariosList } from "@/interfaces";
+import BtnLink from "@/components/btn-link";
+import { CLIENT_ROUTES } from "@/routes/client.routes";
 
 type DiaSemanaType = "lunes" | "martes" | "miercoles" | "jueves" | "viernes" | "sabado" | "domingo";
 
@@ -82,7 +84,6 @@ export default function HorariosPage() {
                 }
             } catch (err) {
                 setError("Error al cargar horarios");
-                console.error(err);
             } finally {
                 setLoading(false);
             }
@@ -109,11 +110,12 @@ export default function HorariosPage() {
                         Consulta tus horarios de trabajo asignados
                     </p>
                 </div>
-                <Link href="/client/horarios/create">
-                    <Button>
-                        + Crear Horario
-                    </Button>
-                </Link>
+                <BtnLink
+                    data={{
+                        href: `${CLIENT_ROUTES.urlUserHorarios}/create`,
+                        Icon: Plus,
+                        name: "Crear Horario"
+                    }} />
             </div>
 
             {/* Filtros */}

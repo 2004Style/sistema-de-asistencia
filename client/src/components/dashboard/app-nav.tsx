@@ -23,11 +23,11 @@ export function AppNav() {
     const segments = pathname.split("/").filter(Boolean)
 
     return (
-        <header className="bg-background sticky top-0 z-50 flex w-full items-center border-b">
+        <header className="bg-sidebar-primary sticky top-0 z-50 flex w-full items-center border-b">
             <div className="flex h-8 w-full items-center gap-2 px-4 justify-between">
                 <div className="flex items-center gap-2">
                     <Button
-                        className="h-8 w-8"
+                        className="h-8 w-8 text-sidebar-foreground"
                         variant="ghost"
                         size="icon"
                         onClick={toggleSidebar}
@@ -39,7 +39,7 @@ export function AppNav() {
                     <Breadcrumb className="hidden sm:block">
                         <BreadcrumbList>
                             {/* Siempre mostrar Home */}
-                            <BreadcrumbItem>
+                            <BreadcrumbItem >
                                 {segments.length === 0 ? (
                                     <BreadcrumbPage>Home</BreadcrumbPage>
                                 ) : (
@@ -55,7 +55,7 @@ export function AppNav() {
                                 const isLast = index === segments.length - 1
 
                                 return (
-                                    <BreadcrumbItem key={href}>
+                                    <BreadcrumbItem key={href} >
                                         {!isLast ? (
                                             <>
                                                 <BreadcrumbLink href={href}>

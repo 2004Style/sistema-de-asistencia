@@ -69,7 +69,7 @@ export function NavSubMenu() {
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="data-[state=open]:bg-accent h-7 w-7"
+                        className="data-[state=open]:bg-accent h-7 w-7 text-sidebar-foreground"
                     >
                         <MoreHorizontal />
                     </Button>
@@ -78,13 +78,14 @@ export function NavSubMenu() {
                     className="w-56 overflow-hidden rounded-lg p-0"
                     align="end"
                 >
-                    <Sidebar collapsible="none" className="bg-transparent">
+                    <Sidebar collapsible="none" className="bg-secondary text-secondary-foreground">
                         <SidebarContent>
                             {data?.user &&
                                 <div className="flex items-center gap-2 px-2 py-1.5 text-left text-sm border-b border-lime-400">
-                                    <Avatar className="h-8 w-8 rounded-lg border">
+                                    <Avatar className="h-8 w-8 rounded-lg border bg-primary
+                                    ">
                                         {/* <AvatarImage src="/next.svg" alt="User Avatar" /> */}
-                                        <AvatarFallback className="rounded-lg text-foreground">{getInitials(data.user.name)}</AvatarFallback>
+                                        <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">{getInitials(data.user.name)}</AvatarFallback>
                                     </Avatar>
                                     <div className="grid flex-1 text-left text-sm leading-tight">
                                         <span className="truncate font-medium">{data.user.name}</span>
@@ -97,7 +98,7 @@ export function NavSubMenu() {
                                     <SidebarMenu>
                                         {data_nav.map((item, index) => (
                                             <SidebarMenuItem key={index}>
-                                                <SidebarMenuButton onClick={() => { router.push(item.url) }}>
+                                                <SidebarMenuButton onClick={() => { router.push(item.url) }} className="hover:text-secondary-foreground/80 hover:bg-transparent">
                                                     <item.icon /> <span>{item.label}</span>
                                                 </SidebarMenuButton>
                                             </SidebarMenuItem>
@@ -110,7 +111,7 @@ export function NavSubMenu() {
                                     <SidebarMenu>
                                         {data?.user ? (
                                             <SidebarMenuItem >
-                                                <SidebarMenuButton onClick={() => { router.push(CLIENT_ROUTES.urlSignOut) }}>
+                                                <SidebarMenuButton onClick={() => { router.push(CLIENT_ROUTES.urlSignOut) }} className="text-red-400 hover:text-red-400/80 hover:bg-transparent">
                                                     <LogOutIcon /> <span>Cerrar Sesion</span>
                                                 </SidebarMenuButton>
                                             </SidebarMenuItem>
@@ -118,12 +119,12 @@ export function NavSubMenu() {
                                             (
                                                 <>
                                                     <SidebarMenuItem >
-                                                        <SidebarMenuButton onClick={() => { router.push(CLIENT_ROUTES.urlLogin) }}>
+                                                        <SidebarMenuButton onClick={() => { router.push(CLIENT_ROUTES.urlLogin) }} className="hover:text-secondary-foreground/80 hover:bg-transparent">
                                                             <ArrowUp /> <span>Iniciar Sesion</span>
                                                         </SidebarMenuButton>
                                                     </SidebarMenuItem>
                                                     <SidebarMenuItem >
-                                                        <SidebarMenuButton onClick={() => { router.push(CLIENT_ROUTES.urlRegister) }}>
+                                                        <SidebarMenuButton onClick={() => { router.push(CLIENT_ROUTES.urlRegister) }} className="hover:text-secondary-foreground/80 hover:bg-transparent">
                                                             <ArrowDown /> <span>Registrar</span>
                                                         </SidebarMenuButton>
                                                     </SidebarMenuItem>

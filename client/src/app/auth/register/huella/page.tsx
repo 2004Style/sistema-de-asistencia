@@ -27,7 +27,6 @@ export default function RegisterHuellaPage() {
 
         socket.emit("huella-register", registrarHuella);
         socket.on("respuesta", (data) => {
-            console.log(data);
             setrespuesta(data);
         });
 

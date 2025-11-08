@@ -11,6 +11,7 @@ import { useJustificacionesApi } from "@/hooks/useJustificacionesApi.hook";
 import { useSession } from "next-auth/react";
 import { BACKEND_ROUTES } from "@/routes/backend.routes";
 import { JustificacionList } from "@/interfaces";
+import { ensureArray, getErrorMessage } from "@/utils";
 import { TableActionsMenu } from "@/components/ui/table-actions-menu";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 import { ActionsDialog } from "./actions-dialog";
@@ -21,26 +22,6 @@ import {
     XCircle,
     Loader2,
 } from "lucide-react";
-import Link from "next/link";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
 
 // Columnas para la tabla de justificaciones (basadas en JustificacionList)
 const createColumns = (
@@ -333,7 +314,7 @@ export default function JustificacionesPage() {
     const columns = createColumnsWithActions();
 
     return (
-        <div className="container mx-auto py-6 px-4 md:py-10">
+        <div className="container mx-auto p-4 md:py-10">
             <div className="mb-6 flex items-center w-full justify-between gap-3">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Justificaciones</h1>

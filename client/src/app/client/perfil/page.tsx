@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, CheckCircle, AlertCircle, LogOut } from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle, LogOut, User, Lock, Shield, Mail, Calendar, Badge } from "lucide-react";
 
 function ProfilePageContent() {
     const router = useRouter();
@@ -148,207 +148,337 @@ function ProfilePageContent() {
     }
 
     return (
-        <div className="container max-w-2xl mx-auto py-6 px-4 md:py-10">
-            {/* Header */}
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold tracking-tight">Mi Perfil</h1>
-                <p className="text-muted-foreground mt-2">
-                    Gestiona tu información personal y seguridad
-                </p>
-            </div>
-
-            {/* Alerts */}
-            {error && (
-                <Alert variant="destructive" className="mb-6">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                </Alert>
-            )}
-
-            {success && (
-                <Alert className="mb-6 border-green-200 bg-green-50">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="text-green-800">{success}</AlertDescription>
-                </Alert>
-            )}
-
-            {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="info">Información</TabsTrigger>
-                    <TabsTrigger value="password">Contraseña</TabsTrigger>
-                    <TabsTrigger value="cuenta">Cuenta</TabsTrigger>
-                </TabsList>
-
-                {/* Información Personal */}
-                <TabsContent value="info" className="mt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Información Personal</CardTitle>
-                            <CardDescription>
-                                Actualiza tu nombre y email
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <form onSubmit={handleUpdateInfo} className="space-y-6">
-                                {/* Nombre */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="nombre">Nombre Completo</Label>
-                                    <Input
-                                        id="nombre"
-                                        value={nombre}
-                                        onChange={(e) => setNombre(e.target.value)}
-                                        disabled={updating}
-                                        placeholder="Tu nombre"
-                                    />
-                                </div>
-
-                                {/* Email */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="email">Email</Label>
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        disabled={updating}
-                                        placeholder="tu@email.com"
-                                    />
-                                </div>
-
-                                {/* Botón */}
-                                <Button
-                                    type="submit"
-                                    disabled={updating || state.loading}
-                                    className="w-full"
-                                >
-                                    {(updating || state.loading) && (
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    )}
-                                    Guardar Cambios
-                                </Button>
-                            </form>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                {/* Cambiar Contraseña */}
-                <TabsContent value="password" className="mt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Cambiar Contraseña</CardTitle>
-                            <CardDescription>
-                                Actualiza tu contraseña para mantener tu cuenta segura
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <form onSubmit={handleChangePassword} className="space-y-6">
-                                {/* Contraseña Actual */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="current">Contraseña Actual</Label>
-                                    <Input
-                                        id="current"
-                                        type="password"
-                                        value={currentPassword}
-                                        onChange={(e) => setCurrentPassword(e.target.value)}
-                                        disabled={updating}
-                                        placeholder="Tu contraseña actual"
-                                    />
-                                </div>
-
-                                {/* Nueva Contraseña */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="new">Nueva Contraseña</Label>
-                                    <Input
-                                        id="new"
-                                        type="password"
-                                        value={newPassword}
-                                        onChange={(e) => setNewPassword(e.target.value)}
-                                        disabled={updating}
-                                        placeholder="Mínimo 8 caracteres"
-                                    />
-                                    <p className="text-xs text-muted-foreground">
-                                        Usa mayúsculas, minúsculas, números y símbolos para mayor seguridad
-                                    </p>
-                                </div>
-
-                                {/* Confirmar Contraseña */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="confirm">Confirmar Nueva Contraseña</Label>
-                                    <Input
-                                        id="confirm"
-                                        type="password"
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                        disabled={updating}
-                                        placeholder="Repite tu nueva contraseña"
-                                    />
-                                </div>
-
-                                {/* Botón */}
-                                <Button
-                                    type="submit"
-                                    disabled={updating || state.loading}
-                                    className="w-full"
-                                >
-                                    {(updating || state.loading) && (
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    )}
-                                    Cambiar Contraseña
-                                </Button>
-                            </form>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                {/* Cuenta */}
-                <TabsContent value="cuenta" className="mt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Información de Cuenta</CardTitle>
-                            <CardDescription>
-                                Detalles sobre tu cuenta en el sistema
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-muted p-4 rounded-lg">
-                                    <p className="text-sm text-muted-foreground">Nombre de Usuario</p>
-                                    <p className="font-semibold mt-1">{session?.user?.name}</p>
-                                </div>
-                                <div className="bg-muted p-4 rounded-lg">
-                                    <p className="text-sm text-muted-foreground">Email</p>
-                                    <p className="font-semibold mt-1">{session?.user?.email}</p>
-                                </div>
-                            </div>
-
-                            <div className="bg-muted p-4 rounded-lg">
-                                <p className="text-sm text-muted-foreground mb-2">Sesión Activa</p>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <div className="h-2 w-2 bg-green-500 rounded-full" />
-                                        <span className="text-sm font-medium">Conectado</span>
+        <div className="min-h-screen py-6 px-4 md:py-10">
+            <div className="container max-w-4xl mx-auto">
+                {/* Header Premium */}
+                <div className="mb-8">
+                    <div className="relative">
+                        {/* Background Banner */}
+                        <div className="relative">
+                            <div className="flex items-start justify-between gap-6">
+                                {/* Avatar y Info */}
+                                <div className="flex items-center gap-4">
+                                    <div className="h-20 w-20 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-lg">
+                                        <User className="h-10 w-10" />
                                     </div>
-                                    <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        onClick={handleLogout}
-                                    >
-                                        <LogOut className="mr-2 h-4 w-4" />
-                                        Cerrar Sesión
-                                    </Button>
+                                    <div>
+                                        <h1 className="text-4xl font-bold ">
+                                            {nombre || session?.user?.name || "Mi Perfil"}
+                                        </h1>
+                                        <p className="text-muted-foreground mt-1 flex items-center gap-2">
+                                            <Mail className="h-4 w-4" />
+                                            {email || session?.user?.email}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Status Badge */}
+                                <div className="bg-secondary rounded-xl p-4 shadow-sm border border-secondary">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="h-3 w-3 bg-green-500 rounded-full animate-pulse" />
+                                        <span className="text-sm font-medium text-secondary-foreground">Cuenta Activa</span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Conectado ahora</p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
-                            <div className="pt-4 border-t">
-                                <p className="text-xs text-muted-foreground">
-                                    Nota: Tu rol no se puede cambiar desde esta pantalla. Contacta a un administrador si necesitas cambios en tus permisos.
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-            </Tabs>
+                {/* Alerts */}
+                {error && (
+                    <Alert variant="destructive" className="mb-6 shadow-md">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                )}
+
+                {success && (
+                    <Alert className="mb-6 border-green-200 bg-green-50 shadow-md">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <AlertDescription className="text-green-800">{success}</AlertDescription>
+                    </Alert>
+                )}
+
+                {/* Tabs */}
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-3 mb-8 bg-secondary text-secondary-foreground shadow-sm border-none">
+                        <TabsTrigger value="info" className="flex items-center gap-2 text-secondary-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground  dark:text-secondary-foreground dark:data-[state=active]:bg-primary dark:data-[state=active]:text-primary-foreground">
+                            <User className="h-4 w-4" />
+                            <span className="hidden sm:inline">Información</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="password" className="flex items-center gap-2 text-secondary-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground  dark:text-secondary-foreground dark:data-[state=active]:bg-primary dark:data-[state=active]:text-primary-foreground">
+                            <Lock className="h-4 w-4" />
+                            <span className="hidden sm:inline">Contraseña</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="cuenta" className="flex items-center gap-2 text-secondary-foreground data-[state=active]:bg-primary  data-[state=active]:text-primary-foreground  dark:text-secondary-foreground dark:data-[state=active]:bg-primary dark:data-[state=active]:text-primary-foreground">
+                            <Shield className="h-4 w-4" />
+                            <span className="hidden sm:inline">Cuenta</span>
+                        </TabsTrigger>
+                    </TabsList>
+
+                    {/* Información Personal */}
+                    <TabsContent value="info" className="mt-0">
+                        <Card className="shadow-lg border-0 bg-primary text-primary-foreground">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <User className="h-5 w-5 text-purple-600" />
+                                    Información Personal
+                                </CardTitle>
+                                <CardDescription className="text-primary-foreground/60">
+                                    Actualiza tu nombre y email asociado a tu cuenta
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent >
+                                <form onSubmit={handleUpdateInfo} className="space-y-6">
+                                    {/* Nombre */}
+                                    <div className="space-y-3">
+                                        <Label htmlFor="nombre" className="text-sm font-semibold">Nombre Completo</Label>
+                                        <Input
+                                            id="nombre"
+                                            value={nombre}
+                                            onChange={(e) => setNombre(e.target.value)}
+                                            disabled={updating || state.loading}
+                                            placeholder="Ingresa tu nombre completo"
+                                            className="h-11 border-slate-200 focus:border-purple-500"
+                                        />
+                                    </div>
+
+                                    {/* Email */}
+                                    <div className="space-y-3">
+                                        <Label htmlFor="email" className="text-sm font-semibold">Email</Label>
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            disabled={updating || state.loading}
+                                            placeholder="tu@email.com"
+                                            className="h-11 border-slate-200 focus:border-purple-500"
+                                        />
+                                    </div>
+
+                                    {/* Botón */}
+                                    <Button
+                                        type="submit"
+                                        disabled={updating || state.loading}
+                                        className="w-full h-11 bg-gradient-to-r from-purple-600 to-purple-600 hover:from-purple-700 hover:to-purple-700 text-white font-semibold rounded-lg"
+                                    >
+                                        {(updating || state.loading) && (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        )}
+                                        {updating ? "Guardando..." : "Guardar Cambios"}
+                                    </Button>
+                                </form>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* Cambiar Contraseña */}
+                    <TabsContent value="password" className="mt-0">
+                        <Card className="shadow-lg border-0 bg-primary text-primary-foreground">
+                            <CardHeader >
+                                <CardTitle className="flex items-center gap-2">
+                                    <Lock className="h-5 w-5 text-purple-600" />
+                                    Cambiar Contraseña
+                                </CardTitle>
+                                <CardDescription className="text-primary-foreground/60">
+                                    Mantén tu cuenta segura actualizando tu contraseña regularmente
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent >
+                                <form onSubmit={handleChangePassword} className="space-y-6">
+                                    {/* Contraseña Actual */}
+                                    <div className="space-y-3">
+                                        <Label htmlFor="current" className="text-sm font-semibold">Contraseña Actual</Label>
+                                        <Input
+                                            id="current"
+                                            type="password"
+                                            value={currentPassword}
+                                            onChange={(e) => setCurrentPassword(e.target.value)}
+                                            disabled={updating || state.loading}
+                                            placeholder="Ingresa tu contraseña actual"
+                                            className="h-11 border-slate-200 focus:border-purple-500"
+                                        />
+                                    </div>
+
+                                    {/* Nueva Contraseña */}
+                                    <div className="space-y-3">
+                                        <Label htmlFor="new" className="text-sm font-semibold">Nueva Contraseña</Label>
+                                        <Input
+                                            id="new"
+                                            type="password"
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            disabled={updating || state.loading}
+                                            placeholder="Mínimo 8 caracteres"
+                                            className="h-11 border-slate-200 focus:border-purple-500"
+                                        />
+                                        <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-2">
+                                            <p className="text-xs text-purple-900 font-semibold mb-2">Requisitos de seguridad:</p>
+                                            <ul className="text-xs text-purple-800 space-y-1">
+                                                <li>✓ Mínimo 8 caracteres</li>
+                                                <li>✓ Mayúsculas y minúsculas</li>
+                                                <li>✓ Números y símbolos</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+
+                                    {/* Confirmar Contraseña */}
+                                    <div className="space-y-3">
+                                        <Label htmlFor="confirm" className="text-sm font-semibold">Confirmar Nueva Contraseña</Label>
+                                        <Input
+                                            id="confirm"
+                                            type="password"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            disabled={updating || state.loading}
+                                            placeholder="Repite tu nueva contraseña"
+                                            className="h-11 border-slate-200 focus:border-purple-500"
+                                        />
+                                    </div>
+
+                                    {/* Botón */}
+                                    <Button
+                                        type="submit"
+                                        disabled={updating || state.loading}
+                                        className="w-full h-11 bg-gradient-to-r from-purple-600 to-purple-600 hover:from-purple-700 hover:to-purple-700 text-white font-semibold rounded-lg"
+                                    >
+                                        {(updating || state.loading) && (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        )}
+                                        {updating ? "Cambiando..." : "Cambiar Contraseña"}
+                                    </Button>
+                                </form>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* Cuenta */}
+                    <TabsContent value="cuenta" className="mt-0">
+                        <div className="space-y-6">
+                            {/* Información General */}
+                            <Card className="shadow-lg border-0 bg-primary text-primary-foreground">
+                                <CardHeader >
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Shield className="h-5 w-5 text-green-600" />
+                                        Información de Cuenta
+                                    </CardTitle>
+                                    <CardDescription className="text-primary-foreground/60">
+                                        Detalles sobre tu cuenta en el sistema
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent >
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* Usuario */}
+                                        <div className="bg-secondary p-5 rounded-xl ">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <User className="h-4 w-4 text-secondary-foreground" />
+                                                <p className="text-sm text-secondary-foreground font-medium">Usuario</p>
+                                            </div>
+                                            <p className="font-semibold text-lg text-secondary-foreground truncate">
+                                                {session?.user?.name || "No definido"}
+                                            </p>
+                                        </div>
+
+                                        {/* Email */}
+                                        <div className="bg-secondary p-5 rounded-xl ">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Mail className="h-4 w-4 text-secondary-foreground" />
+                                                <p className="text-sm text-secondary-foreground font-medium">Email</p>
+                                            </div>
+                                            <p className="font-semibold text-lg text-secondary-foreground truncate">
+                                                {session?.user?.email || "No definido"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Sesión */}
+                            <Card className="shadow-lg border-0 bg-primary text-primary-foreground">
+                                <CardHeader >
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Badge className="h-5 w-5 text-purple-600" />
+                                        Estado de Sesión
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent >
+                                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
+                                        <div className="flex items-center justify-between gap-4 flex-wrap">
+                                            <div className="flex items-center gap-3">
+                                                <div className="relative">
+                                                    <div className="absolute inset-0 bg-green-500 rounded-full animate-pulse opacity-75" />
+                                                    <div className="relative h-3 w-3 bg-green-500 rounded-full" />
+                                                </div>
+                                                <div>
+                                                    <span className="text-sm font-bold text-green-900">Conectado</span>
+                                                    <p className="text-xs text-green-700">Tu sesión está activa y segura</p>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                variant="destructive"
+                                                size="lg"
+                                                onClick={handleLogout}
+                                                className="bg-red-600 hover:bg-red-700 text-white font-semibold"
+                                            >
+                                                <LogOut className="mr-2 h-4 w-4" />
+                                                Cerrar Sesión
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                                        <p className="text-xs text-amber-900 font-semibold mb-2">⚠️ Nota Importante</p>
+                                        <p className="text-xs text-amber-800">
+                                            Tu rol y permisos no se pueden cambiar desde esta pantalla. Si necesitas cambios en tus permisos o rol, contacta con un administrador del sistema.
+                                        </p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Acciones Rápidas */}
+                            <Card className="shadow-lg border-0 bg-primary text-primary-foreground">
+                                <CardHeader >
+                                    <CardTitle>Acciones Rápidas</CardTitle>
+                                </CardHeader>
+                                <CardContent >
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <Button
+                                            variant="outline"
+                                            className="h-12 rounded-lg border-none bg-purple-500 text-white hover:bg-purple-700 hover:text-white dark:bg-purple-500 dark:text-white dark:hover:bg-purple-700 dark:hover:text-white"
+                                            onClick={() => router.push("/client/asistencias")}
+                                        >
+                                            Mis Asistencias
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            className="h-12 rounded-lg border-none bg-purple-500 text-white hover:bg-purple-700 hover:text-white dark:bg-purple-500 dark:text-white dark:hover:bg-purple-700 dark:hover:text-white"
+                                            onClick={() => router.push("/client/horarios")}
+                                        >
+                                            Mis Horarios
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            className="h-12 rounded-lg border-none bg-purple-500 text-white hover:bg-purple-700 hover:text-white dark:bg-purple-500 dark:text-white dark:hover:bg-purple-700 dark:hover:text-white"
+                                            onClick={() => router.push("/client/justificaciones")}
+                                        >
+                                            Mis Justificaciones
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            className="h-12 rounded-lg border-none bg-purple-500 text-white hover:bg-purple-700 hover:text-white dark:bg-purple-500 dark:text-white dark:hover:bg-purple-700 dark:hover:text-white"
+                                            onClick={() => router.push("/client")}
+                                        >
+                                            Volver al Inicio
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </TabsContent>
+                </Tabs>
+            </div>
         </div>
     );
 }

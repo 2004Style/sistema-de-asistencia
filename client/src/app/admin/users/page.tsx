@@ -6,6 +6,7 @@ import { DataTable, SortableHeader } from "@/components/ui/data-table";
 import { useServerTable } from "@/hooks/use-server-table.hook";
 import { useTableActions } from "@/hooks/use-table-actions.hook";
 import { BACKEND_ROUTES } from "@/routes/backend.routes";
+import { ensureArray, getErrorMessage } from "@/utils";
 import { User } from "@/interfaces/user.interface";
 import { CheckCircle2, XCircle, Fingerprint, Plus } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -180,7 +181,6 @@ export default function UsersPage() {
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
     const handleHuellaSuccess = (data: any) => {
-        console.log("Huella verificada:", data);
         // cerrar modal y refrescar tabla
         setModalType(null);
         setSelectedUser(null);
@@ -188,7 +188,6 @@ export default function UsersPage() {
     };
 
     const handleHuellaError = (data: any) => {
-        console.error("Error en verificación de huella:", data);
         setModalType(null);
         setSelectedUser(null);
     };
@@ -199,7 +198,7 @@ export default function UsersPage() {
     });
 
     return (
-        <div className="container mx-auto py-6 px-4 md:py-10">
+        <div className="container mx-auto p-4 md:py-10">
             <div className="mb-6 flex items-center w-full justify-between gap-3">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Usuarios</h1>

@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useNotificacionesApi } from "@/hooks/useNotificacionesApi.hook";
-import { NotificacionDetails } from "@/interfaces";
+import { NotificacionDetails, NotificacionesUserList } from "@/interfaces";
+import { ensureArray, getErrorMessage, validatePaginatedResponse } from "@/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -45,11 +46,13 @@ export default function NotificacionesPage() {
 
     const [notificaciones, setNotificaciones] = useState<NotificacionDetails[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [page, setPage] = useState(1);
     const [pageSize] = useState(15);
     const [total, setTotal] = useState(0);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [isLimpiando, setIsLimpiando] = useState(false);
+    const [mensaje, setMensaje] = useState<{ tipo: "success" | "error"; texto: string } | null>(null);
 
     useEffect(() => {
         cargarNotificaciones();
@@ -57,35 +60,63 @@ export default function NotificacionesPage() {
 
     const cargarNotificaciones = async () => {
         setLoading(true);
-        const response = await listAdmin(page, pageSize);
+        setError(null);
+        try {
+            const response = await listAdmin(page, pageSize);
 
-        if (response.alert === "success" && response.data) {
-            const data = response.data as any;
-            setNotificaciones(data.data || data);
-            setTotal(data.total || data.length);
+            if (response.alert === "success" && response.data) {
+                // Validar estructura de NotificacionesUserList
+                const data = response.data as any;
+                const notifs = ensureArray<NotificacionDetails>(data?.notificaciones);
+                setNotificaciones(notifs);
+                setTotal(typeof data?.total === "number" ? data.total : 0);
+            } else {
+                setError(response.message || "Error al cargar notificaciones");
+                setNotificaciones([]);
+                setTotal(0);
+            }
+        } catch (err) {
+            const mensaje = getErrorMessage(err);
+            setError(mensaje);
+            setNotificaciones([]);
+            setTotal(0);
+        } finally {
+            setLoading(false);
         }
-
-        setLoading(false);
     };
 
     const handleMarcarTodasLeidas = async () => {
-        const response = await marcarTodasLeidas();
+        try {
+            const response = await marcarTodasLeidas();
 
-        if (response.alert === "success") {
-            cargarNotificaciones();
+            if (response.alert === "success") {
+                setMensaje({ tipo: "success", texto: "Todas marcadas como leídas" });
+                cargarNotificaciones();
+            } else {
+                setMensaje({ tipo: "error", texto: response.message || "Error al marcar como leídas" });
+            }
+        } catch (err) {
+            setMensaje({ tipo: "error", texto: getErrorMessage(err) });
         }
     };
 
     const handleLimpiar = async () => {
         setIsLimpiando(true);
-        const response = await limpiar();
+        try {
+            const response = await limpiar();
 
-        if (response.alert === "success") {
-            cargarNotificaciones();
-            setShowDeleteDialog(false);
+            if (response.alert === "success") {
+                setMensaje({ tipo: "success", texto: "Notificaciones eliminadas" });
+                cargarNotificaciones();
+                setShowDeleteDialog(false);
+            } else {
+                setMensaje({ tipo: "error", texto: response.message || "Error al eliminar" });
+            }
+        } catch (err) {
+            setMensaje({ tipo: "error", texto: getErrorMessage(err) });
+        } finally {
+            setIsLimpiando(false);
         }
-
-        setIsLimpiando(false);
     };
 
     const totalPages = Math.ceil(total / pageSize);

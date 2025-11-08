@@ -7,6 +7,7 @@ import { useServerTable } from "@/hooks/use-server-table.hook";
 import { useTableActions } from "@/hooks/use-table-actions.hook";
 import { BACKEND_ROUTES } from "@/routes/backend.routes";
 import { AsistenciaList } from "@/interfaces";
+import { ensureArray, getErrorMessage } from "@/utils";
 import { CheckCircle2, Clock, XCircle, FileText, Plus } from "lucide-react";
 import { TableActionsMenu } from "@/components/ui/table-actions-menu";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
@@ -356,7 +357,7 @@ export default function AsistenciasPage() {
     const columns = createColumns(tableActions);
 
     return (
-        <div className="container mx-auto py-6 px-4 md:py-10">
+        <div className="container mx-auto p-4 md:py-10">
             <div className="mb-6">
                 <h1 className="text-3xl font-bold tracking-tight">Asistencias</h1>
                 <p className="text-muted-foreground">

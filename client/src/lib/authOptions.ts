@@ -8,7 +8,6 @@ import { CLIENT_ROUTES } from "@/routes/client.routes";
 async function refreshToken(token: JWT): Promise<JWT> {
   try {
     if (!token.backendTokens?.refreshToken) {
-      console.error("❌ No hay refresh token disponible");
       // Retornar token con expiración para forzar logout
       return {
         ...token,
@@ -19,7 +18,6 @@ async function refreshToken(token: JWT): Promise<JWT> {
       };
     }
 
-    console.log("🔄 Intentando refrescar token...");
 
     const res = await fetch(BACKEND_ROUTES.urlRefreshToken, {
       method: "POST",
@@ -30,7 +28,6 @@ async function refreshToken(token: JWT): Promise<JWT> {
     });
 
     if (!res.ok) {
-      console.error(`❌ Error al refrescar token: ${res.status} ${res.statusText}`);
       // Retorna token con expiración 0 para forzar logout
       return {
         ...token,
@@ -44,7 +41,6 @@ async function refreshToken(token: JWT): Promise<JWT> {
     const response = await res.json();
 
     if (!response.data || !response.data.accessToken) {
-      console.error("❌ Respuesta de refresh inválida:", response);
       return {
         ...token,
         backendTokens: {
@@ -54,14 +50,12 @@ async function refreshToken(token: JWT): Promise<JWT> {
       };
     }
 
-    console.log("✅ Token refrescado exitosamente");
 
     return {
       ...token,
       backendTokens: response.data,
     };
   } catch (error) {
-    console.error("❌ Error en refreshToken:", error);
     // Retorna token con expiración 0 para forzar logout
     return {
       ...token,
@@ -105,7 +99,6 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       // Primera vez después del login
       if (user) {
-        console.log("👤 Usuario logueado, generando JWT...");
         const authResponse = user as unknown as AuthorizeResponse;
         return {
           ...token,
@@ -119,15 +112,8 @@ export const authOptions: NextAuthOptions = {
       const currentTime = Math.floor(new Date().getTime() / 1000);
       const tokenExpTime = token.backendTokens?.expiresIn;
 
-      console.log(`⏰ Verificando expiración del token:`, {
-        currentTime,
-        tokenExpTime,
-        isExpired: tokenExpTime ? currentTime >= tokenExpTime : "no hay expiración",
-      });
-
       // Si el token está expirado, intentar refrescar
       if (tokenExpTime && currentTime >= tokenExpTime) {
-        console.log("⚠️ Token expirado, intentando refrescar...");
         return await refreshToken(token);
       }
 
@@ -137,7 +123,6 @@ export const authOptions: NextAuthOptions = {
     async session({ token, session }) {
       // Si el token está expirado (expiresIn = 0), devolver sesión vacía para forzar logout
       if (token.backendTokens?.expiresIn === 0) {
-        console.log("🚪 Token expirado, forzando logout...");
         return {
           ...session,
           user: token.user,

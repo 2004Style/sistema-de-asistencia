@@ -105,14 +105,12 @@ export function useRegister() {
         return null;
       }
 
-      console.log("Usuario registrado exitosamente:", response.data);
 
       // NO limpiar formulario ni fotos aquí, dejar que el componente lo haga
       toast.success(response.message || "Usuario registrado exitosamente", { position: "bottom-right" });
 
       return response.data || null;
     } catch (error) {
-      console.error("Error en el registro:", error);
       toast.error("Error al registrar usuario", { position: "top-center" });
       return null;
     } finally {

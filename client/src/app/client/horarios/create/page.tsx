@@ -80,7 +80,6 @@ export default function ClientHorarioCreatePage() {
           setTurnos(response.data.records || []);
         }
       } catch (err) {
-        console.error("Error cargando turnos:", err);
       } finally {
         setTurnosLoading(false);
       }
@@ -164,9 +163,8 @@ export default function ClientHorarioCreatePage() {
       } else {
         setError(response.message || "Error al crear el horario");
       }
-    } catch (err) {
+    } catch  {
       setError("Error al crear el horario");
-      console.error(err);
     } finally {
       setSaving(false);
     }

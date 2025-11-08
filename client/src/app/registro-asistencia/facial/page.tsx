@@ -54,7 +54,6 @@ function ReconocimientoFacialContent() {
                 setMensaje("Posicione su rostro en el centro del cuadro");
             }
         } catch (err) {
-            console.error("Error al acceder a la cámara:", err);
             setError("No se pudo acceder a la cámara. Verifique los permisos.");
             setEstadoFacial("error");
         }
@@ -117,7 +116,6 @@ function ReconocimientoFacialContent() {
 
             const res = await post(`${BACKEND_ROUTES.urlAsistenciaFacial}?codigo=${encodeURIComponent(codigo)}`, formData, { contentType: "form-data" });
 
-            console.log("Respuesta del API:", res.message);
             if (res.alert === "success") {
                 setEstadoFacial("exitoso");
                 setMensaje("¡Rostro reconocido correctamente!");
@@ -129,7 +127,6 @@ function ReconocimientoFacialContent() {
                 setError(res.detail || res.message || "El rostro no coincide con el código proporcionado");
             }
         } catch (err) {
-            console.error("Error en reconocimiento facial:", err);
             setEstadoFacial("error");
             setError("Error al procesar el reconocimiento facial. Intente nuevamente.");
         }
@@ -147,7 +144,6 @@ function ReconocimientoFacialContent() {
                 router.push("/registro-asistencia");
             }, 3000);
         } catch (err) {
-            console.error("Error al procesar asistencia:", err);
             setError("Error al procesar la asistencia");
         }
     };

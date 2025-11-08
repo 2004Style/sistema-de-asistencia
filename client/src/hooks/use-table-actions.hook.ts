@@ -56,7 +56,6 @@ export function useTableActions<T extends { id: string | number }>({ resourceNam
       closeDeleteDialog();
       onDeleteSuccess?.();
     } catch (error) {
-      console.error(`Error al eliminar ${resourceName}:`, error);
       toast.error(`Error al eliminar ${resourceName}`, {
         description: error instanceof Error ? error.message : "Ocurrió un error inesperado",
       });
@@ -101,7 +100,6 @@ export function useTableActions<T extends { id: string | number }>({ resourceNam
       try {
         await action(item);
       } catch (error) {
-        console.error(`Error al ejecutar acción ${actionKey}:`, error);
         toast.error("Error al ejecutar acción", {
           description: error instanceof Error ? error.message : "Ocurrió un error inesperado",
         });

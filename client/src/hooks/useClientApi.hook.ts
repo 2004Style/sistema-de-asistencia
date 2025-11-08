@@ -135,7 +135,6 @@ const getSessionTokens = async (): Promise<BackendTokens | null> => {
 
     return null;
   } catch (error) {
-    console.error("Error obteniendo tokens de sesión:", error);
     return null;
   }
 };
@@ -144,32 +143,26 @@ const getSessionTokens = async (): Promise<BackendTokens | null> => {
  * Los tokens se manejan automáticamente con Next-Auth
  * Esta función se mantiene por compatibilidad
  */
-const saveTokens = (tokens: BackendTokens): void => {
-  console.log("Los tokens se manejan automáticamente con Next-Auth:", tokens);
-};
+const saveTokens = (tokens: BackendTokens): void => {};
 
 /**
  * Limpia la sesión (Next-Auth se encarga de esto)
  */
 const clearSession = (): void => {
   // Next-Auth maneja la limpieza de sesión automáticamente
-  console.log("Sesión limpiada por Next-Auth");
 };
 
 /**
  * Maneja el fallo del refresh forzando logout
  */
 const handleRefreshFailure = async <T = unknown>(baseURL: string): Promise<void> => {
-  console.log("🚪 Forzando logout debido a fallo de refresh...");
   clearSession();
 
   try {
     // Llamar a signout de Next-Auth para limpiar la sesión
     const { signOut } = await import("next-auth/react");
     await signOut({ redirect: false });
-    console.log("✅ Usuario deslogueado correctamente");
   } catch (error) {
-    console.error("❌ Error al desloguear:", error);
   }
 };
 
@@ -183,7 +176,6 @@ const refreshAuthToken = async (refreshToken: string, baseURL: string): Promise<
     const tokens = await getSessionTokens();
     return tokens?.accessToken || null;
   } catch (error) {
-    console.error("Error refrescando token:", error);
     return null;
   }
 };
@@ -387,7 +379,6 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
 
         if (requiresAuth) {
           const tokens = await getSessionTokens();
-          console.log("Using session tokens:", tokens);
           if (!tokens) {
             const errorResponse: ApiResponse<T> = {
               alert: "error",
@@ -431,7 +422,6 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
 
         // Manejar refresh de token si es 401
         if (response.status === 401 && requiresAuth && refreshToken && !url.includes("/auth/refresh")) {
-          console.log("⚠️ Token expirado (401), intentando refrescar...");
 
           if (isRefreshing) {
             // Esperar a que termine el refresh actual
@@ -441,11 +431,9 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
               });
 
               // Reintentar con nuevo token
-              console.log("✅ Token refrescado por otra petición, reintentando...");
               fetchOptions.headers = createHeaders(contentType, customHeaders, newToken);
               response = await fetch(fullUrl, fetchOptions);
             } catch (queueError) {
-              console.error("❌ Error al esperar refresh:", queueError);
               // Si falla el refresh en cola, hacer logout
               await handleRefreshFailure<T>(baseURL);
               return {
@@ -461,14 +449,12 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
               const newAccessToken = await refreshAuthToken(refreshToken, baseURL);
 
               if (newAccessToken) {
-                console.log("✅ Token refrescado exitosamente");
                 processQueue(null, newAccessToken);
 
                 // Reintentar con nuevo token
                 fetchOptions.headers = createHeaders(contentType, customHeaders, newAccessToken);
                 response = await fetch(fullUrl, fetchOptions);
               } else {
-                console.error("❌ No se pudo refrescar el token");
                 processQueue(new Error("No se pudo refrescar el token"), null);
 
                 // Hacer logout
@@ -490,7 +476,6 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
                 return errorResponse;
               }
             } catch (error) {
-              console.error("❌ Error refrescando token:", error);
               processQueue(error as Error, null);
 
               // Hacer logout
@@ -528,7 +513,6 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
             statusCode: 400,
           };
         } else if (response.status === 401) {
-          console.error("❌ Error 401: No autorizado");
           // Forzar logout
           await handleRefreshFailure<T>(baseURL);
           result = {

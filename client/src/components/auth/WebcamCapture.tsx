@@ -44,7 +44,6 @@ export function WebcamCapture({
                 setIsStreaming(true);
             }
         } catch (err) {
-            console.error('Error al acceder a la cámara:', err);
             alert('No se pudo acceder a la cámara. Por favor, verifica los permisos.');
         }
     }, []);

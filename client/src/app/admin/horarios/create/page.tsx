@@ -141,12 +141,10 @@ export default function HorarioCreatePage() {
                     const { data, alert } = await get<PaginatedResponse<TurnosList>>("/turnos")
                     if (alert === "success" && data) {
                         // resp.data puede ser { turnos: [...] } o un array según backend
-                        console.log(data)
                         setTurnos(data.records)
                     }
                 } catch (e) {
                     // no bloquear creación si falla
-                    console.error("Error cargando turnos:", e)
                 }
             })()
 

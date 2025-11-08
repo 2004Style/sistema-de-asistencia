@@ -65,7 +65,6 @@ export function RegistroManualModal({ open, onOpenChange, user, onSuccess }: Reg
                 setError(response.message || "Error al registrar la asistencia");
             }
         } catch (err) {
-            console.error("Error al registrar asistencia manual:", err);
             setError("Error al registrar la asistencia manual");
         } finally {
             setLoading(false);

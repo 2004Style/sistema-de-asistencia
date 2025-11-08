@@ -18,8 +18,7 @@ export function useVerifyUserCode() {
   const { get } = useClientApi(false);
 
   const verifyUserCode = async (body: VerifyUserCodeData) => {
-    const { data, alert, message } = await get<ResponseVerifyUserCode>(`${BACKEND_ROUTES.urlVerifyCode}/${body.codigo_user}`);
-    console.log({ alert, message });
+    const { data } = await get<ResponseVerifyUserCode>(`${BACKEND_ROUTES.urlVerifyCode}/${body.codigo_user}`);
     return { user: data };
   };
   return { verifyUserCode };

@@ -25,7 +25,6 @@ export default function CallbackClient() {
                     password: 'fake',
                 });
             } catch (err) {
-                console.error(err);
             }
         };
 

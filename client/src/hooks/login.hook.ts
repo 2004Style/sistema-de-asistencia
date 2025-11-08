@@ -19,7 +19,6 @@ export default function useLoginForm() {
   });
 
   const onSubmit = async (data: z.infer<typeof schema>) => {
-    //console.log("Datos enviados:", data);
 
     const result = await signIn("credentials", {
       redirect: false,

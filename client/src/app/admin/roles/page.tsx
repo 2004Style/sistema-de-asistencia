@@ -6,11 +6,14 @@ import { DataTable, SortableHeader } from "@/components/ui/data-table";
 import { useServerTable } from "@/hooks/use-server-table.hook";
 import { useTableActions } from "@/hooks/use-table-actions.hook";
 import { BACKEND_ROUTES } from "@/routes/backend.routes";
+import { ensureArray, getErrorMessage } from "@/utils";
 import { RoleList } from "@/interfaces";
 import { TableActionsMenu } from "@/components/ui/table-actions-menu";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import BtnLink from "@/components/btn-link";
+import { CLIENT_ROUTES } from "@/routes/client.routes";
 
 // Definición de columnas para la tabla de roles
 const createColumns = (tableActions: ReturnType<typeof useTableActions<RoleList>>): ColumnDef<RoleList>[] => [
@@ -144,7 +147,7 @@ export default function RolesPage() {
     const columns = createColumns(tableActions);
 
     return (
-        <div className="container mx-auto py-6 px-4 md:py-10">
+        <div className="container mx-auto p-4 md:py-10">
             <div className="mb-6 flex items-center w-full justify-between gap-3">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Roles</h1>
@@ -152,10 +155,12 @@ export default function RolesPage() {
                         Visualiza y gestiona los roles del sistema
                     </p>
                 </div>
-                <Link href="#" className="flex gap-3 bg-foreground text-background px-3 py-2 rounded-md">
-                    <Plus />
-                    <span>Crear Rol</span>
-                </Link>
+                <BtnLink
+                    data={{
+                        href: `${CLIENT_ROUTES.urlRoles}/create`,
+                        Icon: Plus,
+                        name: "Crear Rol"
+                    }} />
             </div>
 
             <DataTable

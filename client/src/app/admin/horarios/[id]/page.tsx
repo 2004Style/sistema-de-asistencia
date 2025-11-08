@@ -49,9 +49,8 @@ export default function AdminHorarioDetailPage() {
                 } else {
                     setError(response.message || "Error al cargar el horario");
                 }
-            } catch (err) {
+            } catch {
                 setError("Error al cargar el horario");
-                console.error(err);
             } finally {
                 setLoading(false);
             }
@@ -60,7 +59,7 @@ export default function AdminHorarioDetailPage() {
         if (horarioId) {
             fetchHorario();
         }
-    }, [horarioId, getDetail]);
+    }, [horarioId]);
 
     const handleDelete = async () => {
         try {
@@ -72,9 +71,8 @@ export default function AdminHorarioDetailPage() {
             } else {
                 setError(response.message || "Error al eliminar el horario");
             }
-        } catch (err) {
+        } catch {
             setError("Error al eliminar el horario");
-            console.error(err);
         } finally {
             setDeleting(false);
             setShowDeleteDialog(false);

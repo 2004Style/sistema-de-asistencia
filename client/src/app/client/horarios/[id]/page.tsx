@@ -35,7 +35,6 @@ export default function HorarioDetailPage() {
                 }
             } catch (err) {
                 setError("Error al cargar el horario");
-                console.error(err);
             } finally {
                 setLoading(false);
             }

@@ -166,7 +166,6 @@ export default function RegistroAsistenciaPage() {
                 userId={user?.id || 0}
                 huella={user?.huella}
                 onSuccess={handleHuellaSuccess}
-                onError={(data) => console.error("Error en verificación de huella:", data)}
                 showInternalSuccessModal={true}
             />
 

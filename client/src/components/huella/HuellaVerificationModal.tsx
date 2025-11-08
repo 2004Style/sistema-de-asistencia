@@ -79,7 +79,6 @@ export function HuellaVerificationModal({
 
     const iniciarVerificacion = useCallback(async () => {
         if (!socket) {
-            console.error("[HuellaVerificationModal] Socket no disponible");
             setEstado("error");
             setMensaje("Error: Socket no disponible");
             return;
@@ -108,7 +107,6 @@ export function HuellaVerificationModal({
         }
 
         timeoutRef.current = setTimeout(() => {
-            console.warn(`[HuellaVerificationModal] Timeout sin respuesta del servidor (${MAX_ESPERA_RESPUESTA}ms)`);
             actualizarDetalles(`⚠️ Timeout - No se recibió respuesta del servidor`);
             setEstado("error");
             setMensaje(`✗ Timeout: No se pudo comunicar con el sensor. Intente nuevamente.`);
@@ -118,18 +116,15 @@ export function HuellaVerificationModal({
 
         // Escuchar respuesta del servidor#00d9ff
         const handleHuellaResponse = (data: HuellaResponse) => {
-            console.log("[HuellaVerificationModal] Respuesta del servidor:", data);
 
             // ✅ Validar estructura de datos
             if (!data || typeof data !== "object") {
-                console.error("[HuellaVerificationModal] Datos inválidos recibidos:", data);
                 return;
             }
 
             // 🎯 Manejar mensajes de PROGRESO durante REGISTRO (sin terminar la operación)
             if (data.status === "progress" && data.step !== undefined) {
                 const mensaje = `📍 Paso ${data.step}: ${data.message}`;
-                console.log("[HuellaVerificationModal] Progreso:", mensaje);
                 actualizarDetalles(mensaje);
                 setCapturaActual(data.step);
                 return;
@@ -137,7 +132,6 @@ export function HuellaVerificationModal({
 
             // ✅ Manejar confirmación de cancelación desde ESP32
             if (data.tipo === "cancelacion_confirmada") {
-                console.log("[HuellaVerificationModal] ✓ Cancelación confirmada por ESP32");
                 actualizarDetalles("✓ Cancelación confirmada por sensor");
                 setEstado("cancelado");
                 return;
@@ -210,10 +204,6 @@ export function HuellaVerificationModal({
             client_sid: socket.id,  // ✅ Incluir client_sid para tracking
         };
 
-        console.log(
-            `[HuellaVerificationModal] Enviando solicitud de ${tipo}:`,
-            requestData
-        );
         actualizarDetalles(`Solicitud enviada al servidor`);
         setEstado("procesando");
         socket.emit("client-asistencia", requestData);
@@ -236,17 +226,11 @@ export function HuellaVerificationModal({
                 timestamp: new Date().toISOString(),
             };
 
-            console.log("[HuellaVerificationModal] ⏹️ CANCELACIÓN INMEDIATA");
-            console.log(`  Socket ID: ${socket.id}`);
-            console.log(`  Evento: sensor-cancel-request`);
-            console.log(`  Payload:`, cancelRequest);
             actualizarDetalles(`🛑 Cancelación enviada al sensor (${socket.id})`);
 
             // Enviar evento de cancelación al servidor (que lo reenviará al ESP32)
             socket.emit("sensor-cancel-request", cancelRequest);
-        } else {
-            console.error("[HuellaVerificationModal] Socket no disponible para cancelación");
-        }
+        } 
 
         setEstado("cancelado");
 

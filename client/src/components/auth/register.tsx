@@ -39,7 +39,6 @@ export function SignupForm({
 
     // Manejar éxito de la huella
     const handleHuellaSuccess = (data: any) => {
-        console.log("Huella registrada exitosamente:", data);
         // Limpiar formulario después del éxito
         form.reset();
         clearCapturedPhotos();
@@ -59,7 +58,6 @@ export function SignupForm({
                 setHuellaRegister(true);
             }
         } catch (error) {
-            console.error("Error en registro:", error);
         }
     });
 
@@ -211,7 +209,6 @@ export function SignupForm({
                 codigo={registeredUser?.codigo_user || ""}
                 userId={registeredUser?.id || 0}
                 onSuccess={handleHuellaSuccess}
-                onError={(data) => console.error("Error en verificación de huella:", data)}
                 showInternalSuccessModal={true}
             />
 

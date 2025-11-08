@@ -11,6 +11,8 @@ import { AlertCircle, Plus, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 import { JustificacionList } from "@/interfaces/justificaciones.interface";
+import BtnLink from "@/components/btn-link";
+import { CLIENT_ROUTES } from "@/routes/client.routes";
 
 export default function JustificacionesPage() {
     const { data: session } = useSession();
@@ -75,12 +77,12 @@ export default function JustificacionesPage() {
                         Gestiona tus solicitudes de justificación de ausencia o tardanza
                     </p>
                 </div>
-                <Link href="/client/justificaciones/create">
-                    <Button className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        Nueva Justificación
-                    </Button>
-                </Link>
+                <BtnLink
+                    data={{
+                        href: `${CLIENT_ROUTES.urlUserJustificaciones}/create`,
+                        Icon: Plus,
+                        name: "Crear Justificación"
+                    }} />
             </div>
 
             {/* Alerta de error */}

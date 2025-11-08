@@ -7,6 +7,7 @@ import {
     Send,
     ShieldUser,
     User,
+    View,
 } from "lucide-react"
 
 import { SubMenu } from "./sub-menu"
@@ -22,6 +23,8 @@ import {
 } from "@/components/ui/sidebar"
 import { CLIENT_ROUTES } from "@/routes/client.routes"
 import { useSession } from "next-auth/react"
+import { Thememode } from "./theme-mode"
+import { url } from "inspector"
 
 const data = {
     navSecondary: [
@@ -66,7 +69,7 @@ const clientRoutes = {
 const publicRoutes = {
     title: "Public",
     url: "#",
-    icon: User,
+    icon: View,
     isActive: false,
     items: [
         {
@@ -80,8 +83,12 @@ const adminRoutes = {
     title: "Adminitrador",
     url: "#",
     icon: ShieldUser,
-    isActive: true,
+    isActive: false,
     items: [
+        {
+            title: "Dashboard",
+            url: CLIENT_ROUTES.urlDashboardAdmin,
+        },
         {
             title: "Asistencias",
             url: CLIENT_ROUTES.urlAsistencias,
@@ -139,10 +146,10 @@ export function AppMenu({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
     return (
         <Sidebar
-            className="top-8 h-[calc(100svh-2rem)]"
+            className="top-8 h-[calc(100svh-2rem)] bg-sidebar-primary"
             {...props}
         >
-            <SidebarHeader>
+            <SidebarHeader className="bg-sidebar-primary">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
@@ -159,10 +166,11 @@ export function AppMenu({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
-            <SidebarContent>
+            <SidebarContent className="bg-sidebar-primary">
                 <SubMenu items={navItems} />
+                <Thememode />
             </SidebarContent>
-            <SidebarFooter>
+            <SidebarFooter className="bg-secondary  text-secondary-foreground">
                 <NavSecondary items={data.navSecondary} className="mt-auto" />
             </SidebarFooter>
         </Sidebar>
