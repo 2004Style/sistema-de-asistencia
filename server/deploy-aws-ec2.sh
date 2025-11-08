@@ -13,7 +13,7 @@ REPO_URL="git@github.com:2004Style/sistema-de-asistencia.git"
 CONTAINER_NAME="sistema-asistencia-api"
 IMAGE_NAME="sistema-asistencia:latest"
 API_PORT="8000"
-LOG_DIR="/var/log/deploy"
+LOG_DIR="${HOME}/.deploy/logs"
 LOG_FILE="$LOG_DIR/deploy_$(date +%Y%m%d_%H%M%S).log"
 
 # Crear directorio de logs
