@@ -28,6 +28,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: sistema-asistencia-api
+    hostname: api
     environment:
       # Base de datos
       DB_URL: postgresql://${DB_USER:-asistencia}:${DB_PASSWORD:-changeme}@postgres:5432/${DB_NAME:-sistema_asistencia}
@@ -76,6 +77,7 @@ services:
   nginx:
     image: nginx:alpine
     container_name: sistema-asistencia-nginx
+    hostname: nginx
     ports:
       - "80:80"
       - "443:443"
@@ -83,7 +85,8 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./certs:/etc/nginx/certs:ro
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     networks:
       - sistema-asistencia-network
     restart: unless-stopped
@@ -99,3 +102,6 @@ volumes:
 networks:
   sistema-asistencia-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

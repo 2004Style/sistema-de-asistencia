@@ -9,6 +9,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: sistema-asistencia-api
+    hostname: api
     environment:
       # Las variables se cargan automáticamente del .env
       # Solo sobrescribimos los valores que deben ser diferentes en producción
@@ -42,6 +43,7 @@ services:
   nginx:
     image: nginx:alpine
     container_name: sistema-asistencia-nginx
+    hostname: nginx
     
     # ACCESO AL SERVICIO
     ports:
@@ -53,7 +55,8 @@ services:
       - ./certs:/etc/nginx/certs:ro
     
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     
     networks:
       - sistema-asistencia-network
@@ -70,5 +73,8 @@ services:
 networks:
   sistema-asistencia-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
 
 # NOTA: Sin volumen postgres_data porque la BD está en otro servidor
