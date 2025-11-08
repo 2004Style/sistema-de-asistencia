@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ============================================
-# Script de Despliegue en AWS EC2
+# Script de Despliegue en AWS EC2 - MEJORADO
 # Sistema de Asistencia
 # ============================================
 
@@ -25,11 +25,15 @@ log() {
 }
 
 log_error() {
-    echo "[$(date +'%Y-%m-%d %H:%M:%S')] ERROR: $1" | tee -a "$LOG_FILE" >&2
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] ❌ ERROR: $1" | tee -a "$LOG_FILE" >&2
 }
 
 log_success() {
-    echo "[$(date +'%Y-%m-%d %H:%M:%S')] ✓ $1" | tee -a "$LOG_FILE"
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] ✅ $1" | tee -a "$LOG_FILE"
+}
+
+log_warning() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] ⚠️  ADVERTENCIA: $1" | tee -a "$LOG_FILE"
 }
 
 # ============================================
@@ -56,7 +60,7 @@ if [ ! -w "$APP_DIR" ] && [ -d "$APP_DIR" ]; then
     exit 1
 fi
 
-log_success "Requisitos verificados"
+log_success "Requisitos verificados ✓ Docker, Git, Permisos"
 
 # ============================================
 # 2. CLONAR O ACTUALIZAR REPOSITORIO
@@ -65,17 +69,54 @@ log_success "Requisitos verificados"
 log "📥 Actualizando código del repositorio..."
 
 if [ ! -d "$APP_DIR" ]; then
+    # Carpeta no existe, clonar
     log "Clonando repositorio..."
     mkdir -p "$(dirname "$APP_DIR")"
-    git clone "$REPO_URL" "$APP_DIR"
-    log_success "Repositorio clonado"
+    if git clone "$REPO_URL" "$APP_DIR" >> "$LOG_FILE" 2>&1; then
+        log_success "Repositorio clonado exitosamente"
+    else
+        log_error "Error al clonar el repositorio"
+        exit 1
+    fi
+
+elif [ ! -d "$APP_DIR/.git" ]; then
+    # Carpeta existe pero NO es repo git
+    log_warning "Carpeta existe pero NO es repositorio git válido"
+    log "Removiendo carpeta y clonando nuevamente..."
+    
+    if rm -rf "$APP_DIR" 2>/dev/null; then
+        mkdir -p "$(dirname "$APP_DIR")"
+        if git clone "$REPO_URL" "$APP_DIR" >> "$LOG_FILE" 2>&1; then
+            log_success "Repositorio clonado exitosamente"
+        else
+            log_error "Error al clonar el repositorio"
+            exit 1
+        fi
+    else
+        log_error "No se puede remover $APP_DIR"
+        exit 1
+    fi
+
 else
+    # Carpeta existe Y es repo git, actualizar
     log "Actualizando repositorio existente..."
-    cd "$APP_DIR"
-    git fetch origin main
-    git reset --hard origin/main
-    git pull origin main
-    log_success "Repositorio actualizado"
+    
+    cd "$APP_DIR" || { log_error "No se puede acceder a $APP_DIR"; exit 1; }
+    
+    # Verificar que git esté funcionando
+    if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        log_error "Repositorio git corrupto"
+        cd /
+        rm -rf "$APP_DIR"
+        git clone "$REPO_URL" "$APP_DIR" >> "$LOG_FILE" 2>&1
+        log_success "Repositorio clonado nuevamente"
+    else
+        # Git está bien, actualizar
+        git fetch origin main 2>/dev/null || git fetch origin
+        git reset --hard origin/main 2>/dev/null || git reset --hard origin/master
+        git pull origin main 2>/dev/null || git pull
+        log_success "Repositorio actualizado exitosamente"
+    fi
 fi
 
 # ============================================
@@ -96,9 +137,10 @@ log_success "Ubicado en: $(pwd)"
 log "⚙️ Cargando variables de entorno..."
 
 if [ ! -f .env ]; then
-    # Verificar si existe .env.example
     if [ -f .env.example ]; then
-        log_error ".env no existe, crear uno basado en .env.example"
+        log_error ".env no existe. Crear uno basado en .env.example:"
+        log "  cp .env.example .env"
+        log "  nano .env"
         exit 1
     else
         log_error ".env no existe y no hay .env.example"
@@ -106,8 +148,14 @@ if [ ! -f .env ]; then
     fi
 fi
 
+# Validar que .env no esté vacío
+if ! grep -q "DATABASE_URL" .env; then
+    log_error ".env no tiene DATABASE_URL configurado"
+    exit 1
+fi
+
 source .env
-log_success "Variables de entorno cargadas"
+log_success "Variables de entorno cargadas ✓"
 
 # ============================================
 # 5. VERIFICAR CONECTIVIDAD A BD
@@ -132,7 +180,7 @@ log "🔨 Construyendo imagen Docker..."
 if docker build -t "$IMAGE_NAME" . >> "$LOG_FILE" 2>&1; then
     log_success "Imagen Docker construida: $IMAGE_NAME"
 else
-    log_error "Error al construir la imagen Docker"
+    log_error "Error al construir la imagen Docker. Ver logs: $LOG_FILE"
     exit 1
 fi
 
@@ -146,7 +194,7 @@ if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
     log "Parando contenedor $CONTAINER_NAME..."
     docker stop "$CONTAINER_NAME" 2>/dev/null || true
     docker rm "$CONTAINER_NAME" 2>/dev/null || true
-    sleep 2  # Esperar a que se liberen recursos
+    sleep 2
     log_success "Contenedor anterior eliminado"
 else
     log "No hay contenedor previo"
@@ -159,31 +207,50 @@ fi
 log "🚀 Iniciando nuevo contenedor..."
 
 # Opción A: Usar Docker Compose (RECOMENDADO)
-if [ -f docker-compose.yml ]; then
-    log "Usando Docker Compose..."
-    if docker-compose up -d >> "$LOG_FILE" 2>&1; then
-        log_success "Servicios iniciados con Docker Compose"
+if [ -f docker-compose-production.yml ]; then
+    log "Usando docker-compose-production.yml..."
+    if docker-compose -f docker-compose-production.yml up -d >> "$LOG_FILE" 2>&1; then
+        log_success "Contenedor iniciado con docker-compose"
     else
-        log_error "Error al iniciar con Docker Compose"
-        exit 1
+        log_error "Error al iniciar docker-compose. Intentando docker run..."
+        
+        # Fallback: docker run manual
+        docker run -d \
+            --name "$CONTAINER_NAME" \
+            --env-file .env \
+            -p "$API_PORT:8000" \
+            -v "$(pwd)/public:/app/public" \
+            -v "$(pwd)/recognize/data:/app/recognize/data" \
+            "$IMAGE_NAME" >> "$LOG_FILE" 2>&1 || {
+            log_error "Error al iniciar contenedor"
+            exit 1
+        }
+        log_success "Contenedor iniciado con docker run"
     fi
+
+# Opción B: Docker Compose regular
+elif [ -f docker-compose.yml ]; then
+    log "Usando docker-compose.yml..."
+    docker-compose up -d >> "$LOG_FILE" 2>&1 || {
+        log_error "Error al iniciar docker-compose"
+        exit 1
+    }
+    log_success "Contenedor iniciado con docker-compose"
+
+# Opción C: Docker run manual
 else
-    # Opción B: Usar Docker run (si no hay docker-compose.yml)
-    log "Usando Docker run..."
-    
-    if docker run -d \
+    log "Usando docker run manual..."
+    docker run -d \
         --name "$CONTAINER_NAME" \
-        --restart unless-stopped \
-        -p "${API_PORT}:8000" \
         --env-file .env \
+        -p "$API_PORT:8000" \
         -v "$(pwd)/public:/app/public" \
         -v "$(pwd)/recognize/data:/app/recognize/data" \
-        "$IMAGE_NAME" >> "$LOG_FILE" 2>&1; then
-        log_success "Contenedor iniciado: $CONTAINER_NAME"
-    else
+        "$IMAGE_NAME" >> "$LOG_FILE" 2>&1 || {
         log_error "Error al iniciar contenedor"
         exit 1
-    fi
+    }
+    log_success "Contenedor iniciado con docker run"
 fi
 
 # ============================================
@@ -196,20 +263,21 @@ max_attempts=30
 attempt=0
 
 while [ $attempt -lt $max_attempts ]; do
-    if curl -s http://localhost:${API_PORT}/docs > /dev/null 2>&1; then
-        log_success "✓ Aplicación está lista en http://localhost:${API_PORT}/docs"
+    if curl -s http://localhost:$API_PORT/docs > /dev/null 2>&1; then
+        log_success "✓ API respondiendo en puerto $API_PORT"
         break
     fi
     
     attempt=$((attempt + 1))
-    log "Intento $attempt/$max_attempts..."
-    sleep 2
+    if [ $attempt -lt $max_attempts ]; then
+        log "Intento $attempt/$max_attempts..."
+        sleep 2
+    fi
 done
 
 if [ $attempt -eq $max_attempts ]; then
-    log_error "La aplicación no respondió a tiempo"
-    log "Logs del contenedor:"
-    docker logs "$CONTAINER_NAME" --tail=50
+    log_error "La API no respondió después de $(($max_attempts * 2))s"
+    log "Ver logs: docker logs -f $CONTAINER_NAME"
     exit 1
 fi
 
@@ -223,21 +291,24 @@ docker image prune -f --filter "until=24h" >> "$LOG_FILE" 2>&1 || true
 log_success "Limpieza completada"
 
 # ============================================
-# 11. RESUMEN
+# 11. RESUMEN FINAL
 # ============================================
 
-log "════════════════════════════════════════"
+echo ""
+echo "════════════════════════════════════════════════════════════════"
 log_success "✓ DESPLIEGUE COMPLETADO EXITOSAMENTE"
-log "════════════════════════════════════════"
+echo "════════════════════════════════════════════════════════════════"
 log "Contenedor: $CONTAINER_NAME"
 log "Imagen: $IMAGE_NAME"
 log "Puerto: $API_PORT"
 log "URL: http://localhost:${API_PORT}/docs"
 log "Logs: $LOG_FILE"
-log "════════════════════════════════════════"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
 
-# Mostrar logs del contenedor
-log "📋 Últimos logs del contenedor:"
-docker logs "$CONTAINER_NAME" --tail=20
+# Mostrar algunos logs del contenedor
+log "Últimos logs del contenedor:"
+docker logs --tail 20 "$CONTAINER_NAME" 2>/dev/null | head -20
 
-exit 0
+echo ""
+log_success "¡Despliegue completado! Accede a: http://localhost:${API_PORT}/docs"
