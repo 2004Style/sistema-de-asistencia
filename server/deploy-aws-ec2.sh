@@ -205,10 +205,10 @@ log_success "Variables de entorno cargadas ✓"
 
 log "🔗 Verificando conectividad..."
 
-# Esperar a que la BD esté disponible si usa docker-compose
-if command -v docker-compose &> /dev/null; then
+# Esperar a que la BD esté disponible si usa docker compose
+if command -v docker &> /dev/null; then
     log "Verificando servicios previos..."
-    docker-compose ps 2>/dev/null || true
+    docker compose ps 2>/dev/null || true
 fi
 
 log_success "Verificación completada"
@@ -251,10 +251,10 @@ log "🚀 Iniciando nuevo contenedor..."
 # Opción A: Usar Docker Compose (RECOMENDADO)
 if [ -f docker-compose-production.yml ]; then
     log "Usando docker-compose-production.yml..."
-    if docker-compose -f docker-compose-production.yml up -d >> "$LOG_FILE" 2>&1; then
-        log_success "Contenedor iniciado con docker-compose"
+    if docker compose -f docker-compose-production.yml up -d >> "$LOG_FILE" 2>&1; then
+        log_success "Contenedor iniciado con docker compose"
     else
-        log_error "Error al iniciar docker-compose. Intentando docker run..."
+        log_error "Error al iniciar docker compose. Intentando docker run..."
         
         # Fallback: docker run manual
         docker run -d \
@@ -273,11 +273,11 @@ if [ -f docker-compose-production.yml ]; then
 # Opción B: Docker Compose regular
 elif [ -f docker-compose.yml ]; then
     log "Usando docker-compose.yml..."
-    docker-compose up -d >> "$LOG_FILE" 2>&1 || {
-        log_error "Error al iniciar docker-compose"
+    docker compose up -d >> "$LOG_FILE" 2>&1 || {
+        log_error "Error al iniciar docker compose"
         exit 1
     }
-    log_success "Contenedor iniciado con docker-compose"
+    log_success "Contenedor iniciado con docker compose"
 
 # Opción C: Docker run manual
 else

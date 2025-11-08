@@ -83,7 +83,7 @@ check_env() {
 # Iniciar servicios
 up() {
     print_message "Iniciando servicios..."
-    docker-compose up -d
+    docker compose up -d
     print_success "Servicios iniciados"
     print_message "API disponible en: http://localhost:8000/docs"
 }
@@ -91,47 +91,47 @@ up() {
 # Detener servicios
 down() {
     print_message "Deteniendo servicios..."
-    docker-compose down
+    docker compose down
     print_success "Servicios detenidos"
 }
 
 # Ver logs
 logs() {
     print_message "Mostrando logs de API (Ctrl+C para salir)..."
-    docker-compose logs -f api
+    docker compose logs -f api
 }
 
 # Ver logs de DB
 logs_db() {
     print_message "Mostrando logs de PostgreSQL (Ctrl+C para salir)..."
-    docker-compose logs -f postgres
+    docker compose logs -f postgres
 }
 
 # Reiniciar servicios
 restart() {
     print_message "Reiniciando servicios..."
-    docker-compose restart
+    docker compose restart
     print_success "Servicios reiniciados"
 }
 
 # Reconstruir imágenes
 build() {
     print_message "Reconstruyendo imágenes..."
-    docker-compose build --no-cache
+    docker compose build --no-cache
     print_success "Imágenes reconstruidas"
 }
 
 # Entrar a la consola de DB
 db_shell() {
     print_message "Conectando a PostgreSQL..."
-    docker-compose exec postgres psql -U asistencia -d sistema_asistencia
+    docker compose exec postgres psql -U asistencia -d sistema_asistencia
 }
 
 # Backup de DB
 db_backup() {
     local filename="backup_$(date +%Y%m%d_%H%M%S).sql"
     print_message "Creando backup de base de datos..."
-    docker-compose exec postgres pg_dump -U asistencia sistema_asistencia > "$filename"
+    docker compose exec postgres pg_dump -U asistencia sistema_asistencia > "$filename"
     print_success "Backup creado: $filename"
 }
 
@@ -155,39 +155,39 @@ db_restore() {
     fi
     
     print_message "Restaurando base de datos desde: $1"
-    docker-compose exec -T postgres psql -U asistencia sistema_asistencia < "$1"
+    docker compose exec -T postgres psql -U asistencia sistema_asistencia < "$1"
     print_success "Base de datos restaurada"
 }
 
 # Entrar a bash del contenedor
 bash_shell() {
     print_message "Abriendo bash en contenedor API..."
-    docker-compose exec api bash
+    docker compose exec api bash
 }
 
 # Ejecutar tests
 run_tests() {
     print_message "Ejecutando tests..."
-    docker-compose exec api pytest tests/ -v
+    docker compose exec api pytest tests/ -v
 }
 
 # Ejecutar tests con cobertura
 run_tests_cov() {
     print_message "Ejecutando tests con cobertura..."
-    docker-compose exec api pytest tests/ --cov --cov-report=html
+    docker compose exec api pytest tests/ --cov --cov-report=html
     print_success "Reporte de cobertura en: htmlcov/index.html"
 }
 
 # Ver estado
 status() {
     print_message "Estado de los servicios:"
-    docker-compose ps
+    docker compose ps
 }
 
 # Ver variables de entorno
 show_env() {
     print_message "Variables de entorno del contenedor API:"
-    docker-compose exec api env | sort
+    docker compose exec api env | sort
 }
 
 # Limpiar
@@ -200,7 +200,7 @@ clean() {
     fi
     
     print_message "Limpiando..."
-    docker-compose down -v
+    docker compose down -v
     print_success "Limpieza completada"
 }
 
