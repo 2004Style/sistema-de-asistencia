@@ -18,7 +18,7 @@ ok "Admin ID: $ADMIN_ID"
 
 # 1) Crear notificaciones directamente en la base usando un pequeño script python (usa el entorno del proyecto)
 print "Crear notificaciones en DB via python"
-/home/ronald/Documentos/projects-multilenguajes/sistema-de-asistencia/servidor/venv/bin/python - <<PY
+/home/ronald/Documentos/projects-multilenguajes/sistema-de-asistencia/server/venv/bin/python - <<PY
 import asyncio
 from src.config.database import get_db
 from src.notificaciones.service import notificacion_service

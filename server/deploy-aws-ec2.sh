@@ -82,8 +82,12 @@ fi
 # 3. IR A LA CARPETA DEL SERVIDOR
 # ============================================
 
-cd "$APP_DIR/servidor" || {
-    log_error "No se encontró la carpeta 'servidor'"
+# ============================================
+# 3. IR A LA CARPETA DEL SERVIDOR
+# ============================================
+
+cd "$APP_DIR/server" || {
+    log_error "No se puede acceder a $APP_DIR/server"
     exit 1
 }
 

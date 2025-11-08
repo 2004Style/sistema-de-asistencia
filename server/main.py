@@ -155,7 +155,7 @@ if __name__ == "__main__":
     # To be robust we prefer to pass the ASGI app object directly when
     # possible. If DEBUG/reload is requested while running as a script,
     # the auto-reloader will spawn a subprocess that imports the module
-    # by name — which will still fail in the common "cd servidor && python main.py"
+    # by name — which will still fail in the common "cd server && python main.py"
     # case. So we disable reload in that scenario and print a helpful hint.
 
     # If running as a module from project root (python -m servidor.main) then
