@@ -41,120 +41,121 @@
 
 ---
 
-## 🚀 Instrucciones de Despliegue
+## 🚀 Instrucciones de Despliegue (¡Muy Fácil!)
 
-### Paso 1: Push a GitHub
+### ⚡ TODO AUTOMÁTICO - Solo 1 paso
 
-En tu máquina local:
+**En tu máquina local:**
 
 ```bash
 cd /home/ronald/Documentos/project-hibridos/sistema-de-asistencia
 
-# Verificar cambios
-git status
-
-# Agregar cambios
 git add -A
-
-# Commit con mensaje descriptivo
-git commit -m "🔧 Arreglar nginx networking y health checks para HTTPS"
-
-# Push a main
+git commit -m "🔧 Arreglar nginx DNS y health checks para HTTPS"
 git push origin main
 ```
 
-### Paso 2: Preparar EC2 (Manual - Una sola vez)
+**¡Eso es todo! ✅**
 
-Conéctate a tu servidor:
+---
+
+### 🤖 Qué Sucede Automáticamente
+
+Cuando haces push a `main`, GitHub Actions ejecuta:
+
+1. **🧪 Tests** - Valida el código
+2. **🔨 Build** - Construye la imagen Docker
+3. **🚀 Deploy** - Ejecuta el script `deploy-aws-ec2.sh` que:
+   - ✅ Genera certificados SSL (si no existen)
+   - ✅ Carga variables de entorno
+   - ✅ Construye imagen Docker
+   - ✅ Inicia contenedores
+   - ✅ Verifica salud de la API
+   - ✅ Limpia imágenes antiguas
+
+**Total: Todo funciona sin hacer nada manualmente en EC2 😎**
+
+---
+
+### 📱 Verificar después (Opcional)
+
+```bash
+# En tu navegador o terminal
+https://18.225.34.130/docs
+
+# Desde terminal con curl
+curl -k https://18.225.34.130/docs
+```
+
+---
+
+### 🔧 Si Necesitas Desplegar Manualmente
+
+En caso de que quieras desplegar sin esperar a GitHub Actions:
 
 ```bash
 ssh -i ~/.ssh/tu-clave.pem deploy@18.225.34.130
-```
 
-Luego:
-
-```bash
-# 1. Ir al directorio
 cd ~/app/sistema-de-asistencia/server
 
-# 2. Generar certificados SSL (si no existen)
-mkdir -p certs
+# Actualizar código
+git pull origin main
 
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout certs/key.pem \
-  -out certs/cert.pem \
-  -subj "/C=CO/ST=Bogota/L=Bogota/O=SistemaAsistencia/CN=18.225.34.130" \
-  -addext "subjectAltName=IP:18.225.34.130"
-
-# 3. Verificar
-ls -lah certs/
-```
-
-### Paso 3: Desplegar (Automático - Cada push a main)
-
-Cuando hagas push a `main`, GitHub Actions ejecutará automáticamente:
-
-1. 🧪 Tests unitarios
-2. 🔨 Build Docker
-3. 🚀 Deploy a EC2 (ejecuta `deploy-aws-ec2.sh`)
-
-**O manual si lo prefieres:**
-
-En tu EC2:
-
-```bash
-cd ~/app/sistema-de-asistencia/server
-
-# Opción A: Actualizar y reiniciar todo
-docker compose -f docker-compose-production.yml down
-docker compose -f docker-compose-production.yml up -d
-
-# Opción B: Solo reiniciar nginx
-docker compose -f docker-compose-production.yml restart nginx
-
-# Ver logs
-docker compose -f docker-compose-production.yml logs -f
+# Desplegar (el script hace todo)
+bash deploy-aws-ec2.sh
 ```
 
 ---
 
 ## ✅ Verificación Post-Despliegue
 
-### Desde tu máquina local
+### Esperar a que GitHub Actions Termine
+
+1. Ve a https://github.com/2004Style/sistema-de-asistencia/actions
+2. Espera a que el workflow termine (verás ✅ si es exitoso)
+3. Esto toma ~5-10 minutos normalmente
+
+### ¿Funcionó? Verifica
 
 ```bash
-# 1. Verificar HTTP
-curl -v http://18.225.34.130
+# Opción 1: En tu navegador
+https://18.225.34.130/docs
 
-# 2. Verificar HTTPS
-curl -k -v https://18.225.34.130/docs
+# Opción 2: Con curl
+curl -k https://18.225.34.130/docs
 
-# 3. En navegador
-# HTTP:  http://18.225.34.130
-# HTTPS: https://18.225.34.130/docs (aceptar advertencia de certificado)
+# Opción 3: Desde EC2
+ssh -i ~/.ssh/tu-clave.pem deploy@18.225.34.130
+docker compose -f ~/app/sistema-de-asistencia/server/docker-compose-production.yml ps
 ```
 
-### Desde EC2
+### Resultado Esperado
+
+```
+NAME                       IMAGE          STATUS
+sistema-asistencia-api     server-api     Up (healthy)
+sistema-asistencia-nginx   nginx:alpine   Up (healthy)
+```
+
+Si ves esto ✅ **¡LISTO! Todo está funcionando**
+
+---
+
+### Si Algo Falla
 
 ```bash
 ssh -i ~/.ssh/tu-clave.pem deploy@18.225.34.130
 
 cd ~/app/sistema-de-asistencia/server
 
-# 1. Ver estado de contenedores
-docker compose -f docker-compose-production.yml ps
-
-# 2. Ver logs completos
+# Ver logs completos
 docker compose -f docker-compose-production.yml logs --tail 100
 
-# 3. Probar conectividad interna
+# Ver logs de nginx específicamente
+docker compose -f docker-compose-production.yml logs nginx --tail 50
+
+# Probar conectividad desde nginx a API
 docker exec sistema-asistencia-nginx curl -s http://api:8000/
-
-# 4. Probar DNS desde nginx
-docker exec sistema-asistencia-nginx nslookup api
-
-# 5. Ver red de docker
-docker network inspect server_sistema-asistencia-network
 ```
 
 ---
