@@ -73,14 +73,19 @@ def get_db() -> Generator[Session, None, None]:
 
 def init_db():
     """Initialize database tables"""
-    # Importar modelos para crear tablas
-    from src.roles.model import Role
-    from src.turnos.model import Turno
-    from src.notificaciones.model import Notificacion, TipoNotificacion, PrioridadNotificacion
-    from src.users.model import User
-    from src.horarios.model import Horario, DiaSemana
-    from src.asistencias.model import Asistencia, TipoRegistro, EstadoAsistencia, MetodoRegistro
-    from src.justificaciones.model import Justificacion, TipoJustificacion, EstadoJustificacion
-    
-    engine = get_engine()
-    Base.metadata.create_all(bind=engine)
+    try:
+        # Importar modelos para crear tablas
+        from src.roles.model import Role
+        from src.turnos.model import Turno
+        from src.notificaciones.model import Notificacion, TipoNotificacion, PrioridadNotificacion
+        from src.users.model import User
+        from src.horarios.model import Horario, DiaSemana
+        from src.asistencias.model import Asistencia, TipoRegistro, EstadoAsistencia, MetodoRegistro
+        from src.justificaciones.model import Justificacion, TipoJustificacion, EstadoJustificacion
+        
+        engine = get_engine()
+        Base.metadata.create_all(bind=engine)
+        logging.getLogger(__name__).info("✓ Database tables initialized successfully")
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"⚠ Could not initialize database: {e}")
+        logging.getLogger(__name__).warning("⚠ Database will be initialized on first use")
