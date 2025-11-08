@@ -39,3 +39,4 @@ public
 
 src/recognize/database/*
 src/recognize/logs/*
+certs/*

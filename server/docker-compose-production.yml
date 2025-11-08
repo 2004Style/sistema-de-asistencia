@@ -10,41 +10,10 @@ services:
       dockerfile: Dockerfile
     container_name: sistema-asistencia-api
     environment:
-      # ⭐ BASE DE DATOS EXTERNA (en otro servidor)
-      DATABASE_URL: ${DATABASE_URL:-postgresql://rdev:rdev@localhost:5432/asistencia}
-      
-      # Configuración de la API
-      HOST: ${HOST:-0.0.0.0}
-      PORT: ${PORT:-8000}
-      TIMEZONE: ${TIMEZONE:-America/Lima}
-      
-      # Auto-migrate (comentar si prefieres control manual)
-      AUTO_MIGRATE: ${AUTO_MIGRATE:-false}
-      
-      # JWT y seguridad
-      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
-      
-      # Mail API Configuration (external service)
-      MAIL_API_URL: ${MAIL_API_URL:-https://api.mail-service.com}
-      MAIL_API_CLIENT_ID: ${MAIL_API_CLIENT_ID:-}
-      MAIL_API_SECRET: ${MAIL_API_SECRET:-}
-      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
-      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Sistema de Asistencia}
-      
-      # Ambiente
-      DEBUG: ${DEBUG:-false}
-      
-      # File & Directory Configuration
-      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
-      UPLOAD_DIR: ${UPLOAD_DIR:-recognize/data}
-      REPORTS_DIR: ${REPORTS_DIR:-public/reports}
-      TEMP_DIR: ${TEMP_DIR:-public/temp}
-      PASSWORD_MIN_LENGTH: ${PASSWORD_MIN_LENGTH:-8}
-      
-      # Alerts & Thresholds
-      TARDANZAS_MAX_ALERTA: ${TARDANZAS_MAX_ALERTA:-3}
-      FALTAS_MAX_ALERTA: ${FALTAS_MAX_ALERTA:-2}
-      MINUTOS_TARDANZA: ${MINUTOS_TARDANZA:-15}
+      # Las variables se cargan automáticamente del .env
+      # Solo sobrescribimos los valores que deben ser diferentes en producción
+      AUTO_MIGRATE: "false"
+      DEBUG: "false"
     
     ports:
       # IMPORTANTE: API solo se expone en puerto 8000 (para desarrollo)
