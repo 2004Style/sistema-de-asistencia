@@ -13,22 +13,50 @@ logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
 logging.getLogger('sqlalchemy.pool').setLevel(logging.WARNING)
 logging.getLogger('sqlalchemy').setLevel(logging.WARNING)
 
-settings = get_settings()
-
-# Create engine
-engine = create_engine(
-    settings.DATABASE_URL,
-    echo=settings.DEBUG,
-    pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20
-)
-
-# Session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Lazy initialization of engine and SessionLocal
+_engine = None
+_SessionLocal = None
 
 # Base class for models
 Base = declarative_base()
+
+
+def get_engine():
+    """Get or create the SQLAlchemy engine (lazy initialization)"""
+    global _engine
+    if _engine is None:
+        settings = get_settings()
+        _engine = create_engine(
+            settings.DATABASE_URL,
+            echo=settings.DEBUG,
+            pool_pre_ping=True,
+            pool_size=10,
+            max_overflow=20
+        )
+    return _engine
+
+
+def get_session_local():
+    """Get or create the SessionLocal factory (lazy initialization)"""
+    global _SessionLocal
+    if _SessionLocal is None:
+        engine = get_engine()
+        _SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    return _SessionLocal
+
+
+# For backwards compatibility with existing code that imports SessionLocal directly
+def _get_session_local_for_import():
+    """Get SessionLocal lazily for backwards compatibility"""
+    return get_session_local()
+
+# Create a property-like behavior for backwards compatibility
+class _SessionLocalProxy:
+    """Lazy proxy for SessionLocal to maintain backwards compatibility"""
+    def __call__(self, *args, **kwargs):
+        return get_session_local()(*args, **kwargs)
+
+SessionLocal = _SessionLocalProxy()
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -53,4 +81,6 @@ def init_db():
     from src.horarios.model import Horario, DiaSemana
     from src.asistencias.model import Asistencia, TipoRegistro, EstadoAsistencia, MetodoRegistro
     from src.justificaciones.model import Justificacion, TipoJustificacion, EstadoJustificacion
+    
+    engine = get_engine()
     Base.metadata.create_all(bind=engine)
