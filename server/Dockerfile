@@ -37,6 +37,9 @@ ENV PATH=/root/.local/bin:$PATH \
 # Copiar el código de la aplicación
 COPY . .
 
+# Copiar archivos de configuración de entorno (.env y .env.production)
+COPY .env* ./
+
 # IMPORTANTE: Hacer ejecutable el script run.sh
 RUN chmod +x run.sh
 

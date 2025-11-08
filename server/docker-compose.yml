@@ -29,6 +29,9 @@ services:
       dockerfile: Dockerfile
     container_name: sistema-asistencia-api
     hostname: api
+    # Cargar archivo .env (desarrollo)
+    env_file:
+      - .env
     environment:
       # Base de datos
       DB_URL: postgresql://${DB_USER:-asistencia}:${DB_PASSWORD:-changeme}@postgres:5432/${DB_NAME:-sistema_asistencia}

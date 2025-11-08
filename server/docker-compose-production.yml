@@ -10,8 +10,11 @@ services:
       dockerfile: Dockerfile
     container_name: sistema-asistencia-api
     hostname: api
+    # Cargar archivo .env.production
+    env_file:
+      - .env.production
     environment:
-      # Las variables se cargan automáticamente del .env
+      # Las variables se cargan automáticamente del .env.production
       # Solo sobrescribimos los valores que deben ser diferentes en producción
       AUTO_MIGRATE: "false"
       DEBUG: "false"
