@@ -131,6 +131,48 @@ cd "$APP_DIR/server" || {
 log_success "Ubicado en: $(pwd)"
 
 # ============================================
+# 3.5. GENERAR/VERIFICAR CERTIFICADOS SSL
+# ============================================
+
+log "🔐 Verificando certificados SSL..."
+
+CERTS_DIR="$(pwd)/certs"
+CERT_FILE="$CERTS_DIR/cert.pem"
+KEY_FILE="$CERTS_DIR/key.pem"
+
+# Crear directorio de certificados si no existe
+mkdir -p "$CERTS_DIR"
+
+# Verificar si los certificados existen y son válidos
+if [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ]; then
+    # Certificados existen, verificar validez
+    cert_expiry=$(openssl x509 -enddate -noout -in "$CERT_FILE" 2>/dev/null | cut -d= -f2)
+    log "Certificados encontrados. Validez: $cert_expiry"
+else
+    # Generar nuevos certificados auto-firmados
+    log_warning "Certificados no encontrados. Generando nuevos..."
+    
+    # Obtener el IP o hostname
+    SERVER_IP="${EC2_PUBLIC_IP:-$(hostname -I | awk '{print $1}')}"
+    SERVER_IP="${SERVER_IP:-18.225.34.130}"
+    
+    if openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+        -keyout "$KEY_FILE" \
+        -out "$CERT_FILE" \
+        -subj "/C=CO/ST=Bogota/L=Bogota/O=SistemaAsistencia/CN=$SERVER_IP" \
+        -addext "subjectAltName=IP:$SERVER_IP" >> "$LOG_FILE" 2>&1; then
+        log_success "Certificados SSL generados: $CERT_FILE, $KEY_FILE"
+        chmod 600 "$KEY_FILE"
+        chmod 644 "$CERT_FILE"
+    else
+        log_error "Error al generar certificados SSL"
+        exit 1
+    fi
+fi
+
+log_success "Certificados SSL verificados ✓"
+
+# ============================================
 # 4. CARGAR VARIABLES DE ENTORNO
 # ============================================
 
@@ -172,7 +214,7 @@ fi
 log_success "Verificación completada"
 
 # ============================================
-# 6. CONSTRUIR IMAGEN DOCKER
+# 7. CONSTRUIR IMAGEN DOCKER
 # ============================================
 
 log "🔨 Construyendo imagen Docker..."
@@ -185,7 +227,7 @@ else
 fi
 
 # ============================================
-# 7. DETENER CONTENEDOR ANTERIOR
+# 8. DETENER CONTENEDOR ANTERIOR
 # ============================================
 
 log "🛑 Deteniendo contenedor anterior..."
@@ -201,7 +243,7 @@ else
 fi
 
 # ============================================
-# 8. INICIAR NUEVO CONTENEDOR
+# 9. INICIAR NUEVO CONTENEDOR
 # ============================================
 
 log "🚀 Iniciando nuevo contenedor..."
@@ -254,7 +296,7 @@ else
 fi
 
 # ============================================
-# 9. VERIFICAR SALUD DEL CONTENEDOR
+# 10. VERIFICAR SALUD DEL CONTENEDOR
 # ============================================
 
 log "💚 Esperando a que la aplicación esté lista..."
@@ -282,7 +324,7 @@ if [ $attempt -eq $max_attempts ]; then
 fi
 
 # ============================================
-# 10. LIMPIAR IMÁGENES ANTIGUAS
+# 11. LIMPIAR IMÁGENES ANTIGUAS
 # ============================================
 
 log "🧹 Limpiando imágenes antiguas..."
@@ -291,7 +333,7 @@ docker image prune -f --filter "until=24h" >> "$LOG_FILE" 2>&1 || true
 log_success "Limpieza completada"
 
 # ============================================
-# 11. RESUMEN FINAL
+# 12. RESUMEN FINAL
 # ============================================
 
 echo ""
