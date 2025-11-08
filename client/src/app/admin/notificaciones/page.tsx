@@ -66,7 +66,7 @@ export default function NotificacionesPage() {
 
             if (response.alert === "success" && response.data) {
                 // Validar estructura de NotificacionesUserList
-                const data = response.data as any;
+                const data = response.data as unknown as Record<string, unknown>;
                 const notifs = ensureArray<NotificacionDetails>(data?.notificaciones);
                 setNotificaciones(notifs);
                 setTotal(typeof data?.total === "number" ? data.total : 0);
@@ -213,7 +213,7 @@ export default function NotificacionesPage() {
                                                 <h4 className="font-semibold truncate">{notif.titulo}</h4>
                                                 <Badge
                                                     variant={
-                                                        tipoBadgeVariant[notif.tipo] as any || "outline"
+                                                        (tipoBadgeVariant[notif.tipo] as "default" | "secondary" | "outline" | "destructive") || "outline"
                                                     }
                                                     className="ml-auto"
                                                 >
@@ -221,7 +221,7 @@ export default function NotificacionesPage() {
                                                 </Badge>
                                                 <Badge
                                                     variant={
-                                                        prioridadBadgeVariant[notif.prioridad] as any || "outline"
+                                                        (prioridadBadgeVariant[notif.prioridad] as "default" | "secondary" | "outline" | "destructive") || "outline"
                                                     }
                                                 >
                                                     {notif.prioridad}

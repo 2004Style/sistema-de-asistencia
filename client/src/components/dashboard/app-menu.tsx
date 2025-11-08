@@ -135,7 +135,7 @@ export function AppMenu({ ...props }: React.ComponentProps<typeof Sidebar>) {
             return [publicRoutes];
         }
 
-        if ((session.user as any).isAdmin) {
+        if ((session.user as Record<string, unknown>).isAdmin) {
             // Si es admin, mostrar admin, client Y public
             return [adminRoutes, clientRoutes, publicRoutes];
         }

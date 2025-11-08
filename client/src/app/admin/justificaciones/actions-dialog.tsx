@@ -75,8 +75,9 @@ export function ActionsDialog({
             } else {
                 setError(response.message || "Error en la operación");
             }
-        } catch (err: any) {
-            setError(err.message || "Error inesperado");
+        } catch (err: unknown) {
+            const error = err as Record<string, unknown>;
+            setError((error.message as string) || "Error inesperado");
         } finally {
             setLoading(false);
         }

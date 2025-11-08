@@ -7,6 +7,7 @@ import {
     useReactTable,
     SortingState,
     VisibilityState,
+    Column,
 } from "@tanstack/react-table";
 import { ArrowUpDown, ChevronDown, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -303,12 +304,12 @@ export function DataTable<TData, TValue>({
 /**
  * Componente helper para crear columnas ordenables
  */
-interface SortableHeaderProps {
-    column: any;
+interface SortableHeaderProps<T = unknown> {
+    column: Column<T>;
     title: string;
 }
 
-export function SortableHeader({ column, title }: SortableHeaderProps) {
+export function SortableHeader<T = unknown>({ column, title }: SortableHeaderProps<T>) {
     return (
         <Button
             variant="ghost"

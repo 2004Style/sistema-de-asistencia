@@ -17,7 +17,7 @@ export interface TableQueryParams {
   search?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
 }
 
 /**

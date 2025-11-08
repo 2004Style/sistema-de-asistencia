@@ -36,7 +36,19 @@ import {
 
 interface EstadisticasData {
     success: boolean;
-    data?: any;
+    data?: {
+        periodo?: { fecha_inicio: string; fecha_fin: string };
+        resumen?: {
+            asistencias_presentes: number;
+            porcentaje_asistencia: number;
+            asistencias_ausentes: number;
+            total_asistencias: number;
+            asistencias_tardias: number;
+            usuarios_con_asistencia: number;
+            usuarios_totales: number;
+        };
+        [key: string]: unknown;
+    };
     error?: string;
 }
 
@@ -82,11 +94,11 @@ export default function DashboardPage() {
 
             if (response?.alert === "success" && response?.data) {
                 // Validar estructura de datos
-                const dataObj = response.data as any;
+                const dataObj = response.data as Record<string, unknown>;
                 if (dataObj?.resumen && Array.isArray(dataObj.por_rol) && Array.isArray(dataObj.por_turno) && Array.isArray(dataObj.tendencia_diaria)) {
                     setEstadisticas({
                         success: true,
-                        data: response.data,
+                        data: dataObj as EstadisticasData["data"],
                     });
                 } else {
                     throw new Error("Estructura de datos inválida");
@@ -187,10 +199,10 @@ export default function DashboardPage() {
         );
     }
 
-    const resumen = data.resumen || {};
-    const porRol = ensureArray(data.por_rol);
-    const porTurno = ensureArray(data.por_turno);
-    const tendenciaDiaria = ensureArray(data.tendencia_diaria);
+    const resumen = (data?.resumen || {}) as Record<string, number>;
+    const porRol = ensureArray(data?.por_rol);
+    const porTurno = ensureArray(data?.por_turno);
+    const tendenciaDiaria = ensureArray(data?.tendencia_diaria);
 
     // Colores para gráficos
     const COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#06b6d4", "#6366f1"];

@@ -7,7 +7,7 @@
  * Valida que un valor sea un array y lo retorna
  * Si no es array, retorna array vacío
  */
-export function ensureArray<T>(value: any): T[] {
+export function ensureArray<T>(value: unknown): T[] {
   if (Array.isArray(value)) return value;
   return [];
 }
@@ -15,30 +15,36 @@ export function ensureArray<T>(value: any): T[] {
 /**
  * Valida respuesta paginada y retorna estructura consistente
  */
-export function validatePaginatedResponse<T>(response: any): { records: T[]; total: number } {
+export function validatePaginatedResponse<T>(response: unknown): { records: T[]; total: number } {
+  const obj = response as Record<string, unknown>;
   return {
-    records: ensureArray<T>(response?.records ?? response?.data ?? response),
-    total: typeof response?.total === "number" ? response.total : 0,
+    records: ensureArray<T>(obj?.records ?? obj?.data ?? response),
+    total: typeof obj?.total === "number" ? obj.total : 0,
   };
 }
 
 /**
  * Valida que un objeto tenga las propiedades requeridas
  */
-export function validateObject<T extends Record<string, any>>(obj: any, requiredKeys: (keyof T)[]): obj is T {
+export function validateObject<T extends Record<string, unknown>>(obj: unknown, requiredKeys: (keyof T)[]): obj is T {
   if (!obj || typeof obj !== "object") return false;
-  return requiredKeys.every((key) => key in obj);
+  return requiredKeys.every((key) => key in (obj as Record<string, unknown>));
 }
 
 /**
  * Maneja errores de API de forma consistente
  */
-export function getErrorMessage(error: any): string {
+export function getErrorMessage(error: unknown): string {
   if (typeof error === "string") return error;
-  if (error?.message) return error.message;
-  if (error?.response?.data?.detail) return error.response.data.detail;
-  if (error?.response?.data?.error) return error.response.data.error;
-  if (error?.response?.statusText) return error.response.statusText;
+  const err = error as Record<string, unknown>;
+  if (err?.message) return String(err.message);
+  const response = err?.response as Record<string, unknown>;
+  if (response?.data) {
+    const data = response.data as Record<string, unknown>;
+    if (data?.detail) return String(data.detail);
+    if (data?.error) return String(data.error);
+  }
+  if (response?.statusText) return String(response.statusText);
   return "Error desconocido. Por favor, intente de nuevo.";
 }
 
@@ -55,16 +61,19 @@ export function validateDateRange(startDate: string | Date, endDate: string | Da
  * Realiza retry automático en caso de error temporal
  */
 export async function withRetry<T>(fn: () => Promise<T>, maxAttempts: number = 3, delayMs: number = 1000): Promise<T> {
-  let lastError: any;
+  let lastError: unknown;
 
   for (let i = 0; i < maxAttempts; i++) {
     try {
       return await fn();
-    } catch (error: any) {
+    } catch (error: unknown) {
       lastError = error;
 
+      const err = error as Record<string, unknown>;
+      const status = (err?.response as Record<string, unknown>)?.status as number;
+
       // No reintentar si es error 4xx (cliente)
-      if (error?.response?.status >= 400 && error?.response?.status < 500) {
+      if (typeof status === "number" && status >= 400 && status < 500) {
         throw error;
       }
 
@@ -81,16 +90,17 @@ export async function withRetry<T>(fn: () => Promise<T>, maxAttempts: number = 3
 /**
  * Normaliza respuesta de API
  */
-export function normalizeApiResponse<T>(response: any): T | null {
+export function normalizeApiResponse<T>(response: unknown): T | null {
   if (!response) return null;
-  if (response.data) return response.data as T;
+  const obj = response as Record<string, unknown>;
+  if (obj.data) return obj.data as T;
   return response as T;
 }
 
 /**
  * Valida que array no esté vacío antes de acceder
  */
-export function safeArrayAccess<T>(array: any[], index: number, defaultValue?: T): T | undefined {
+export function safeArrayAccess<T>(array: unknown[], index: number, defaultValue?: T): T | undefined {
   if (!Array.isArray(array)) return defaultValue;
   if (index < 0 || index >= array.length) return defaultValue;
   return array[index] as T;

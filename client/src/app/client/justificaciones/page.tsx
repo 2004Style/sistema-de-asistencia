@@ -44,12 +44,13 @@ export default function JustificacionesPage() {
     };
 
     const getEstadoBadge = (estado: string) => {
-        const variants: Record<string, { label: string; variant: any }> = {
+        type BadgeConfig = { label: string; variant: "default" | "secondary" | "destructive" | "outline" };
+        const variants: Record<string, BadgeConfig> = {
             pendiente: { label: "Pendiente", variant: "secondary" },
             aprobada: { label: "Aprobada", variant: "default" },
             rechazada: { label: "Rechazada", variant: "destructive" },
         };
-        const config = variants[estado] || { label: estado, variant: "outline" };
+        const config = variants[estado] || { label: estado, variant: "outline" as const };
         return <Badge variant={config.variant}>{config.label}</Badge>;
     };
 

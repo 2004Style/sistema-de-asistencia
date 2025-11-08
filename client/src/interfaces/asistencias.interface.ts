@@ -35,7 +35,7 @@ export interface RegistrarAsistenciaManual {
 
 export interface RegistrarAsistenciaFacial {
   codigo: string;
-  image: any;
+  image: Blob;
 }
 
 export interface AsistenciaUpdate {

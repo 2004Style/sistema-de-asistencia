@@ -146,7 +146,12 @@ const createColumns = (
             cell: ({ row }) => {
                 const status = row.getValue("estado") as AsistenciaList['estado'] | string;
 
-                const statusConfig: Record<string, { label: string; variant: any; icon: any }> = {
+                type StatusConfig = {
+                    label: string;
+                    variant: "default" | "secondary" | "destructive" | "outline";
+                    icon: React.ComponentType<{ className?: string }>
+                };
+                const statusConfig: Record<string, StatusConfig> = {
                     presente: { label: "Presente", variant: "default", icon: CheckCircle2 },
                     tarde: { label: "Tarde", variant: "secondary", icon: Clock },
                     ausente: { label: "Ausente", variant: "destructive", icon: XCircle },
@@ -154,7 +159,7 @@ const createColumns = (
                     permiso: { label: "Permiso", variant: "secondary", icon: CheckCircle2 },
                 };
 
-                const defaultConfig = { label: String(status ?? "-"), variant: "outline", icon: FileText };
+                const defaultConfig: StatusConfig = { label: String(status ?? "-"), variant: "outline", icon: FileText };
                 const config = statusConfig[String(status)] ?? defaultConfig;
                 const Icon = config.icon ?? FileText;
 

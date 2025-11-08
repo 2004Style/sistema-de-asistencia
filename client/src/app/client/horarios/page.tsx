@@ -75,7 +75,7 @@ export default function HorariosPage() {
                     if (Array.isArray(response.data)) {
                         data = response.data;
                     } else if (response.data && typeof response.data === 'object' && 'records' in response.data) {
-                        data = (response.data as any).records || [];
+                        data = ((response.data as unknown as Record<string, unknown>).records as HorariosList[]) || [];
                     }
 
                     setHorarios(data);

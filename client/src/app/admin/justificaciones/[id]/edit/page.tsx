@@ -123,7 +123,7 @@ export default function EditJustificacionPage({
 
         try {
             const response = await update(parseInt(id), {
-                tipo: formData.tipo as any,
+                tipo: formData.tipo as "medica" | "personal" | "familiar" | "academica" | "permiso_autorizado" | "vacaciones" | "licencia" | "otro",
                 fecha_inicio: formData.fecha_inicio,
                 fecha_fin: formData.fecha_fin,
                 motivo: formData.motivo,
@@ -138,8 +138,9 @@ export default function EditJustificacionPage({
             } else {
                 setError(response.message || "Error al actualizar");
             }
-        } catch (err: any) {
-            setError(err.message || "Error inesperado");
+        } catch (err: unknown) {
+            const error = err as Record<string, unknown>;
+            setError((error.message as string) || "Error inesperado");
         } finally {
             setSaving(false);
         }

@@ -16,7 +16,7 @@ export function useProtectedRoute(requiredRole?: "admin" | "user") {
 
   useEffect(() => {
     if (status === "loading") {
-      setIsAuthorized(null);
+      // No actualizar estado mientras está cargando
       return;
     }
 

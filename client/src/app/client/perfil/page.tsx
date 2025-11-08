@@ -44,9 +44,9 @@ function ProfilePageContent() {
         const response = await getProfile();
 
         if (response.alert === "success" && response.data) {
-            const user = response.data as any;
-            setNombre(user.nombre || session?.user?.name || "");
-            setEmail(user.email || session?.user?.email || "");
+            const user = response.data as unknown as Record<string, unknown>;
+            setNombre((user.nombre as string) || session?.user?.name || "");
+            setEmail((user.email as string) || session?.user?.email || "");
         } else {
             setError("Error al cargar el perfil");
         }

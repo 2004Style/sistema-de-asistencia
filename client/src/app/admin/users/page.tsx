@@ -140,7 +140,7 @@ const createColumns = (
                                     if (onRegisterFingerprint) return onRegisterFingerprint(u);
                                     return tableActions.createNavigateAction(
                                         (x: User) => `/admin/users/${x.id}/register-fingerprint`
-                                    )(u as any);
+                                    )(u);
                                 },
                                 show: (v: User) => !v.huella, // Solo mostrar si no tiene huella
                                 separator: false,
@@ -180,14 +180,14 @@ export default function UsersPage() {
     const [modalType, setModalType] = useState<MetodoVerificacion | null>(null);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-    const handleHuellaSuccess = (data: any) => {
+    const handleHuellaSuccess = (_data: unknown) => {
         // cerrar modal y refrescar tabla
         setModalType(null);
         setSelectedUser(null);
         refresh();
     };
 
-    const handleHuellaError = (data: any) => {
+    const handleHuellaError = (_data: unknown) => {
         setModalType(null);
         setSelectedUser(null);
     };

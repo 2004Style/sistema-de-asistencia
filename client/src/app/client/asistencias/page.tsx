@@ -48,7 +48,7 @@ export default function AsistenciasPage() {
 
     const cargarAsistencias = async () => {
         setLoading(true);
-        const filters: any = {};
+        const filters: Record<string, unknown> = {};
 
         if (fechaInicio) filters.fecha_inicio = fechaInicio;
         if (fechaFin) filters.fecha_fin = fechaFin;

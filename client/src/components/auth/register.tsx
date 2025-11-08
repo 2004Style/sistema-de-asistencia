@@ -35,10 +35,19 @@ export function SignupForm({
     } = form;
 
     const [huellaRegister, setHuellaRegister] = useState<boolean>(false);
-    const [registeredUser, setRegisteredUser] = useState<any>(null);
+    const [registeredUser, setRegisteredUser] = useState<{
+        codigo_user: string;
+        created_at: string;
+        email: string;
+        huella: null;
+        id: number;
+        is_active: boolean;
+        name: string;
+        updated_at: null;
+    } | null>(null);
 
     // Manejar éxito de la huella
-    const handleHuellaSuccess = (data: any) => {
+    const handleHuellaSuccess = (_data: unknown) => {
         // Limpiar formulario después del éxito
         form.reset();
         clearCapturedPhotos();

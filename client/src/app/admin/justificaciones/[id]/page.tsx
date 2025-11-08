@@ -59,7 +59,8 @@ export default function JustificacionDetailPage({
     };
 
     const getEstadoLabel = (estado: string) => {
-        const labels: Record<string, { text: string; variant: any }> = {
+        type VariantType = "secondary" | "default" | "destructive" | "outline";
+        const labels: Record<string, { text: string; variant: VariantType }> = {
             pendiente: { text: "Pendiente de revisión", variant: "secondary" },
             aprobada: { text: "Aprobada", variant: "default" },
             rechazada: { text: "Rechazada", variant: "destructive" },
@@ -350,7 +351,7 @@ export default function JustificacionDetailPage({
             {/* Dialog para aprobar/rechazar */}
             {justificacion && (
                 <ActionsDialog
-                    justificacion={justificacion as any}
+                    justificacion={justificacion as JustificacionDetails}
                     action={actionType}
                     isOpen={isDialogOpen}
                     onOpenChange={setIsDialogOpen}

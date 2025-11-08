@@ -98,7 +98,7 @@ export default function CreateJustificacionPage() {
         try {
             const response = await create({
                 user_id: session.user.id || 0,
-                tipo: formData.tipo as any,
+                tipo: formData.tipo as "medica" | "personal" | "familiar" | "academica" | "permiso_autorizado" | "vacaciones" | "licencia" | "otro",
                 fecha_inicio: formData.fecha_inicio,
                 fecha_fin: formData.fecha_fin,
                 motivo: formData.motivo,
@@ -113,8 +113,9 @@ export default function CreateJustificacionPage() {
             } else {
                 setError(response.message || "Error al crear justificación");
             }
-        } catch (err: any) {
-            setError(err.message || "Error inesperado");
+        } catch (err: unknown) {
+            const error = err as Record<string, unknown>;
+            setError((error.message as string) || "Error inesperado");
         } finally {
             setLoading(false);
         }

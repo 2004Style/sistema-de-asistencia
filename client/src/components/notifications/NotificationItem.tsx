@@ -31,7 +31,7 @@ export const NotificationItem: React.FC<Props> = ({ item }) => {
         <Card className={`p-3 ${item.leida ? "opacity-60 border-gray-200 dark:border-gray-700" : "ring-1 ring-primary/10"}`}>
             <CardContent className="flex gap-4 items-start">
                 <div className="flex-shrink-0">
-                    <Badge variant={pv.variant as any} className="w-10 h-10 flex items-center justify-center rounded-full text-sm">{pv.label[0]}</Badge>
+                    <Badge variant={pv.variant as "default" | "secondary" | "outline" | "destructive"} className="w-10 h-10 flex items-center justify-center rounded-full text-sm">{pv.label[0]}</Badge>
                 </div>
 
                 <div className="flex-1">

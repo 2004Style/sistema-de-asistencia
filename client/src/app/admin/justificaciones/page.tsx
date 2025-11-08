@@ -117,12 +117,13 @@ const createColumns = (
             header: "Estado",
             cell: ({ row }) => {
                 const estado = row.getValue("estado") as string | undefined;
-                const map: Record<string, { label: string; variant: any; icon: any }> = {
+                type StateConfig = { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ComponentType<{ className?: string }> };
+                const map: Record<string, StateConfig> = {
                     pendiente: { label: "Pendiente", variant: "secondary", icon: FileText },
                     aprobada: { label: "Aprobada", variant: "default", icon: CheckCircle2 },
                     rechazada: { label: "Rechazada", variant: "destructive", icon: XCircle },
                 };
-                const cfg = estado ? (map[estado] ?? { label: estado, variant: "outline", icon: FileText }) : null;
+                const cfg = estado ? (map[estado] ?? { label: estado, variant: "outline" as const, icon: FileText }) : null;
                 if (!cfg) return <span className="text-xs text-muted-foreground">-</span>;
                 const Icon = cfg.icon ?? FileText;
                 return (
@@ -351,7 +352,7 @@ export default function JustificacionesPage() {
 
             {/* Dialog para aprobar/rechazar */}
             <ActionsDialog
-                justificacion={selectedJustificacion}
+                justificacion={selectedJustificacion as JustificacionList | null}
                 action={actionType}
                 isOpen={isDialogOpen}
                 onOpenChange={setIsDialogOpen}

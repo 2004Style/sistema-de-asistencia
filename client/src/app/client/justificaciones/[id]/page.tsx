@@ -50,12 +50,13 @@ export default function JustificacionDetail({ params }: { params: Promise<{ id: 
     };
 
     const getEstadoLabel = (estado: string) => {
-        const labels: Record<string, { text: string; variant: any }> = {
+        type EstadoConfig = { text: string; variant: "default" | "secondary" | "destructive" | "outline" };
+        const labels: Record<string, EstadoConfig> = {
             pendiente: { text: "Pendiente de revisión", variant: "secondary" },
             aprobada: { text: "Aprobada", variant: "default" },
             rechazada: { text: "Rechazada", variant: "destructive" },
         };
-        return labels[estado] || { text: estado, variant: "outline" };
+        return labels[estado] || { text: estado, variant: "outline" as const };
     };
 
     const getTipoLabel = (tipo: string) => {
