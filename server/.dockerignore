@@ -1,0 +1,44 @@
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Entorno
+.venv
+venv/
+env/
+.env
+.env.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Testing
+.tox
+.hypothesis
+
+# Documentación
+*.md
+docs/
+
+# Otros
+.DS_Store
+*.log
+node_modules/
+package-lock.json
+pnpm-lock.yaml

@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # API FastAPI - SIN PostgreSQL local
+  # ============================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sistema-asistencia-api
+    environment:
+      # ⭐ BASE DE DATOS EXTERNA (en otro servidor)
+      DATABASE_URL: ${DATABASE_URL:-postgresql://rdev:rdev@localhost:5432/asistencia}
+      
+      # Configuración de la API
+      HOST: ${HOST:-0.0.0.0}
+      PORT: ${PORT:-8000}
+      TIMEZONE: ${TIMEZONE:-America/Lima}
+      
+      # Auto-migrate (comentar si prefieres control manual)
+      AUTO_MIGRATE: ${AUTO_MIGRATE:-false}
+      
+      # JWT y seguridad
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
+      
+      # Mail API Configuration (external service)
+      MAIL_API_URL: ${MAIL_API_URL:-https://api.mail-service.com}
+      MAIL_API_CLIENT_ID: ${MAIL_API_CLIENT_ID:-}
+      MAIL_API_SECRET: ${MAIL_API_SECRET:-}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Sistema de Asistencia}
+      
+      # Ambiente
+      DEBUG: ${DEBUG:-false}
+      
+      # File & Directory Configuration
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
+      UPLOAD_DIR: ${UPLOAD_DIR:-recognize/data}
+      REPORTS_DIR: ${REPORTS_DIR:-public/reports}
+      TEMP_DIR: ${TEMP_DIR:-public/temp}
+      PASSWORD_MIN_LENGTH: ${PASSWORD_MIN_LENGTH:-8}
+      
+      # Alerts & Thresholds
+      TARDANZAS_MAX_ALERTA: ${TARDANZAS_MAX_ALERTA:-3}
+      FALTAS_MAX_ALERTA: ${FALTAS_MAX_ALERTA:-2}
+      MINUTOS_TARDANZA: ${MINUTOS_TARDANZA:-15}
+    
+    ports:
+      # IMPORTANTE: API solo se expone en puerto 8000 (para desarrollo)
+      # En producción, Nginx es el único accesible en puerto 80/443
+      - "8000:8000"
+    
+    volumes:
+      - ./public:/app/public
+      - ./recognize/data:/app/recognize/data
+    
+    networks:
+      - sistema-asistencia-network
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ============================================
+  # Nginx - Reverse Proxy (ÚNICO acceso público)
+  # ============================================
+  nginx:
+    image: nginx:alpine
+    container_name: sistema-asistencia-nginx
+    
+    # ACCESO AL SERVICIO
+    ports:
+      - "${NGINX_PORT:-80}:80"                    # HTTP
+      - "${NGINX_SSL_PORT:-443}:443"              # HTTPS (si configuras SSL)
+    
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # Para SSL (descomentar cuando tengas certificados)
+      # - ./certs:/etc/nginx/certs:ro
+    
+    depends_on:
+      - api
+    
+    networks:
+      - sistema-asistencia-network
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+networks:
+  sistema-asistencia-network:
+    driver: bridge
+
+# NOTA: Sin volumen postgres_data porque la BD está en otro servidor
