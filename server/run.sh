@@ -95,32 +95,9 @@ PYTHON_VERSION=$(python --version 2>&1)
 print_info "Versión: ${WHITE}$PYTHON_VERSION${RESET}"
 
 # ============================================================================
-# Verificar dependencias
+# Ejecutar seeds PRIMERO (ANTES de iniciar el servidor)
 # ============================================================================
 
-print_section "${PACKAGE} Verificando Dependencias"
-
-if ! pip show fastapi > /dev/null 2>&1; then
-    print_warning "Dependencias no encontradas"
-    print_info "Instalando dependencias desde requirements.txt..."
-    
-    if pip install -r requirements.txt; then
-        print_success "Dependencias instaladas correctamente"
-    else
-        print_error "Error al instalar dependencias"
-        exit 1
-    fi
-else
-    print_success "Todas las dependencias están instaladas"
-fi
-
-
-
-# ============================================================================
-# Iniciar servidor
-# ============================================================================
-
-# Ejecutar seeds ANTES de iniciar el servidor
 print_section "${SPARKLES} Ejecutando seeds (datos iniciales)"
 
 if [ -f "seed_roles.py" ]; then
@@ -156,8 +133,29 @@ else
     print_info "seed_users.py no encontrado (opcional)"
 fi
 
-# Iniciar servidor con uvicorn en primer plano
-print_section "${FIRE} Iniciando Servidor"
+# ============================================================================
+# Verificar dependencias
+# ============================================================================
+
+print_section "${PACKAGE} Verificando Dependencias"
+
+if ! pip show fastapi > /dev/null 2>&1; then
+    print_warning "Dependencias no encontradas"
+    print_info "Instalando dependencias desde requirements.txt..."
+    
+    if pip install -r requirements.txt; then
+        print_success "Dependencias instaladas correctamente"
+    else
+        print_error "Error al instalar dependencias"
+        exit 1
+    fi
+else
+    print_success "Todas las dependencias están instaladas"
+fi
+
+# ============================================================================
+# Iniciar servidor
+# ============================================================================
 echo -e "${GREEN}${BOLD}"
 echo "╔════════════════════════════════════════════════════════════════╗"
 echo "║  API disponible en http://0.0.0.0:8000/docs                  ║"

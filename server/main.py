@@ -17,12 +17,10 @@ from src.justificaciones import router as justificacion_router
 from src.reportes import router as reportes_router
 from src.jobs.scheduler import start_scheduler, shutdown_scheduler
 
-#hacemos la importacion para arrancar los servicion del sistema de reconocimiento
+# Sistema de reconocimiento - SOLO se importa, NO se inicializa aquí
+# La inicialización ocurre en el lifespan de la aplicación
 from src.recognize.reconocimiento import initialize_recognizer
 from src.recognize.registro import get_registration
-
-initialize_recognizer()
-get_registration()
 
 settings = get_settings()
 
@@ -54,6 +52,17 @@ async def lifespan(app: FastAPI):
         # Fallback: use SQLAlchemy's create_all (creates tables without migrations)
         init_db()
         print("✓ Database initialized (create_all mode)")
+    
+    # Inicializar el sistema de reconocimiento facial AQUI (UNA SOLA VEZ)
+    # Esto evita el doble-loading que causa memory leaks
+    try:
+        print("Initializing facial recognition system...")
+        initialize_recognizer()
+        get_registration()
+        print("✓ Facial recognition system initialized")
+    except Exception as e:
+        print(f"⚠ Warning: Facial recognition initialization failed: {e}")
+        print("⚠ Application will continue without facial recognition")
     
     # Start scheduler
     start_scheduler()

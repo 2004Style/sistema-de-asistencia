@@ -491,13 +491,34 @@ def initialize_recognizer() -> FaceRecognizer:
     Returns:
         Instancia del reconocedor
     """
+    # Inicializar optimizaciones de memoria ANTES de cargar los modelos
+    try:
+        from .memory_cleanup import initialize_memory_optimization, cleanup_tensorflow
+        initialize_memory_optimization()
+    except Exception as e:
+        logger.warning(f"Memory optimization setup failed: {e}")
+    
     # Pre-cargar detector facial
     logger.info("📸 Pre-cargando detector facial...")
     initialize_detector()
     
+    # Limpiar memoria después de cargar el detector
+    try:
+        from .memory_cleanup import cleanup_tensorflow
+        cleanup_tensorflow()
+    except Exception:
+        pass
+    
     # Pre-cargar reconocedor (que usa el detector singleton)
     logger.info("🧠 Pre-cargando reconocedor facial...")
     recognizer = get_recognizer()
+    
+    # Limpiar memoria después de cargar el reconocedor
+    try:
+        from .memory_cleanup import full_cleanup
+        full_cleanup()
+    except Exception:
+        pass
     
     logger.info("✅ Sistema completamente inicializado y listo")
     return recognizer
