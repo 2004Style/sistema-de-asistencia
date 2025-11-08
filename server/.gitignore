@@ -13,6 +13,9 @@ dist/
 
 # Environment
 .env
+.env.production
+.env.test
+.env.local
 
 # IDE
 .vscode/
