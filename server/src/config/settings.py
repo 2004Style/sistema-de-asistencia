@@ -7,6 +7,10 @@ import os
 from pathlib import Path
 
 
+# Check if running tests
+def _is_testing():
+    """Check if pytest is running"""
+    return "pytest" in os.environ.get("_", "") or "PYTEST_CURRENT_TEST" in os.environ
 
 
 class Settings(BaseSettings):
@@ -56,7 +60,8 @@ class Settings(BaseSettings):
     MINUTOS_TARDANZA: int  # Debe venir del .env
     
     class Config:
-        env_file = ".env"
+        # Use .env.test when running tests, .env otherwise
+        env_file = ".env.test" if _is_testing() else ".env"
         case_sensitive = True
 
 
@@ -65,6 +70,7 @@ def get_settings() -> Settings:
     """
     Singleton pattern for settings.
     Returns cached settings instance.
+    Automatically loads .env.test when running pytest.
     """
     return Settings()
 
