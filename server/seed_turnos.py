@@ -25,44 +25,23 @@ def seed_turnos():
                 "nombre": "Turno Mañana",
                 "descripcion": "Turno de trabajo en horario de mañana",
                 "hora_inicio": time(8, 0),  # 08:00
-                "hora_fin": time(16, 0),    # 16:00
+                "hora_fin": time(12, 0),    # 12:00
                 "activo": True
             },
             {
                 "nombre": "Turno Tarde",
                 "descripcion": "Turno de trabajo en horario de tarde",
-                "hora_inicio": time(14, 0),  # 14:00
-                "hora_fin": time(22, 0),     # 22:00
+                "hora_inicio": time(15, 0),  # 15:00
+                "hora_fin": time(18, 0),     # 18:00
                 "activo": True
             },
             {
                 "nombre": "Turno Noche",
                 "descripcion": "Turno de trabajo en horario nocturno",
-                "hora_inicio": time(22, 0),  # 22:00
-                "hora_fin": time(6, 0),      # 06:00 (siguiente día)
+                "hora_inicio": time(18, 0),  # 18:00
+                "hora_fin": time(22, 40),      # 22:40
                 "activo": True
             },
-            {
-                "nombre": "Jornada Completa",
-                "descripcion": "Jornada laboral completa de 8 horas",
-                "hora_inicio": time(9, 0),   # 09:00
-                "hora_fin": time(17, 0),     # 17:00
-                "activo": True
-            },
-            {
-                "nombre": "Media Jornada Mañana",
-                "descripcion": "Media jornada en horario de mañana",
-                "hora_inicio": time(8, 0),   # 08:00
-                "hora_fin": time(12, 0),     # 12:00
-                "activo": True
-            },
-            {
-                "nombre": "Media Jornada Tarde",
-                "descripcion": "Media jornada en horario de tarde",
-                "hora_inicio": time(14, 0),  # 14:00
-                "hora_fin": time(18, 0),     # 18:00
-                "activo": True
-            }
         ]
         
         print("🔄 Creando turnos básicos...")

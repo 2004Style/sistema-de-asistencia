@@ -36,3 +36,6 @@ logs/
 Thumbs.db
 
 public
+
+src/recognize/database/*
+src/recognize/logs/*

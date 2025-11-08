@@ -5,11 +5,7 @@ Ejecutar una sola vez después de crear las tablas
 from sqlalchemy.orm import Session
 from src.config.database import SessionLocal
 from src.roles.model import Role
-# Importar el modelo User para asegurarnos de que su mapper esté
-# registrado en SQLAlchemy antes de inicializar relaciones en Role.
 from src.users.model import User  # noqa: F401
-# Importar otros modelos relacionados para que sus mappers queden registrados
-# y SQLAlchemy pueda resolver relaciones cuando se configuren los mapeadores.
 from src.horarios import model as horarios_model  # noqa: F401
 from src.asistencias import model as asistencias_model  # noqa: F401
 from src.justificaciones import model as justificaciones_model  # noqa: F401
