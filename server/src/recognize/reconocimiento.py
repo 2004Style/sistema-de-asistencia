@@ -491,37 +491,54 @@ def initialize_recognizer() -> FaceRecognizer:
     Returns:
         Instancia del reconocedor
     """
+    import sys
+    
+    # SAFETY: Verificar si ya está inicializado para evitar doble carga
+    global _global_recognizer
+    if _global_recognizer is not None:
+        logger.info("ℹ️ Reconocedor ya estaba inicializado, reutilizando instancia")
+        return _global_recognizer
+    
     # Inicializar optimizaciones de memoria ANTES de cargar los modelos
     try:
-        from .memory_cleanup import initialize_memory_optimization, cleanup_tensorflow
+        from .memory_cleanup import initialize_memory_optimization, cleanup_tensorflow, full_cleanup
         initialize_memory_optimization()
     except Exception as e:
         logger.warning(f"Memory optimization setup failed: {e}")
+        cleanup_tensorflow = None
+        full_cleanup = None
     
-    # Pre-cargar detector facial
-    logger.info("📸 Pre-cargando detector facial...")
-    initialize_detector()
-    
-    # Limpiar memoria después de cargar el detector
     try:
-        from .memory_cleanup import cleanup_tensorflow
-        cleanup_tensorflow()
-    except Exception:
-        pass
-    
-    # Pre-cargar reconocedor (que usa el detector singleton)
-    logger.info("🧠 Pre-cargando reconocedor facial...")
-    recognizer = get_recognizer()
-    
-    # Limpiar memoria después de cargar el reconocedor
-    try:
-        from .memory_cleanup import full_cleanup
-        full_cleanup()
-    except Exception:
-        pass
-    
-    logger.info("✅ Sistema completamente inicializado y listo")
-    return recognizer
+        # Pre-cargar detector facial
+        logger.info("📸 Pre-cargando detector facial...")
+        initialize_detector()
+        
+        # Limpiar memoria después de cargar el detector
+        try:
+            if cleanup_tensorflow:
+                cleanup_tensorflow()
+        except Exception as e:
+            logger.warning(f"TensorFlow cleanup failed: {e}")
+        
+        # Pre-cargar reconocedor (que usa el detector singleton)
+        logger.info("🧠 Pre-cargando reconocedor facial...")
+        recognizer = get_recognizer()
+        
+        # Limpiar memoria después de cargar el reconocedor
+        try:
+            if full_cleanup:
+                full_cleanup()
+        except Exception as e:
+            logger.warning(f"Full cleanup failed: {e}")
+        
+        logger.info("✅ Sistema completamente inicializado y listo")
+        return recognizer
+        
+    except Exception as e:
+        logger.error(f"❌ Error durante inicialización: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise
 
 
 def reset_recognizer():

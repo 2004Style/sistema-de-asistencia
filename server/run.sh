@@ -95,43 +95,15 @@ PYTHON_VERSION=$(python --version 2>&1)
 print_info "Versión: ${WHITE}$PYTHON_VERSION${RESET}"
 
 # ============================================================================
-# Ejecutar seeds PRIMERO (ANTES de iniciar el servidor)
+# ⚠️ IMPORTANTE: NO ejecutar seeds aquí si usan modelos pesados de ML
+# Ahora que tenemos reconocimiento facial, los seeds se ejecutarán
+# DESPUÉS de que FastAPI inicie en el lifespan
+# Esto evita: double-loading de modelos, memory leaks, corrupted pointers
 # ============================================================================
 
-print_section "${SPARKLES} Ejecutando seeds (datos iniciales)"
-
-if [ -f "seed_roles.py" ]; then
-    print_info "Ejecutando seed_roles.py..."
-    if python seed_roles.py 2>/dev/null; then
-        print_success "seed_roles.py ejecutado"
-    else
-        print_warning "seed_roles.py: datos ya pueden existir"
-    fi
-else
-    print_info "seed_roles.py no encontrado (opcional)"
-fi
-
-if [ -f "seed_turnos.py" ]; then
-    print_info "Ejecutando seed_turnos.py..."
-    if python seed_turnos.py 2>/dev/null; then
-        print_success "seed_turnos.py ejecutado"
-    else
-        print_warning "seed_turnos.py: datos ya pueden existir"
-    fi
-else
-    print_info "seed_turnos.py no encontrado (opcional)"
-fi
-
-if [ -f "seed_users.py" ]; then
-    print_info "Ejecutando seed_users.py..."
-    if python seed_users.py 2>/dev/null; then
-        print_success "seed_users.py ejecutado"
-    else
-        print_warning "seed_users.py: datos ya pueden existir"
-    fi
-else
-    print_info "seed_users.py no encontrado (opcional)"
-fi
+print_section "${SPARKLES} Inicialización de datos (dehabilitado en run.sh)"
+print_info "✓ Los seeds se ejecutarán automáticamente en el lifespan de FastAPI"
+print_info "✓ Esto evita conflictos de memoria durante inicialización de modelos de ML"
 
 # ============================================================================
 # Verificar dependencias

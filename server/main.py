@@ -1,6 +1,20 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+import os
+import sys
+
+# ============================================================================
+# CONFIGURACIÓN DE ENTORNO CRÍTICA
+# ============================================================================
+# Establecer TERM para evitar problemas con componentes que lo requieren
+if 'TERM' not in os.environ:
+    os.environ['TERM'] = 'xterm-256color'
+
+# Configuración de TensorFlow/DeepFace ANTES de importar
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 from src.config.settings import get_settings, ensure_directories
 from src.config.database import init_db
@@ -25,6 +39,57 @@ from src.recognize.registro import get_registration
 settings = get_settings()
 
 
+def _execute_seeds():
+    """Ejecuta los seeds de inicialización de datos."""
+    print("\n" + "=" * 60)
+    print("🌱 Ejecutando seeds (datos iniciales)...")
+    print("=" * 60)
+    
+    seed_errors = []
+    
+    # Seed de roles
+    try:
+        print("📋 Ejecutando seed_roles.py...")
+        from seed_roles import seed_roles
+        seed_roles()
+        print("✅ seed_roles completado")
+    except Exception as e:
+        error_msg = f"seed_roles error: {e}"
+        print(f"⚠️  {error_msg}")
+        seed_errors.append(error_msg)
+    
+    # Seed de turnos
+    try:
+        print("🔄 Ejecutando seed_turnos.py...")
+        from seed_turnos import seed_turnos
+        seed_turnos()
+        print("✅ seed_turnos completado")
+    except Exception as e:
+        error_msg = f"seed_turnos error: {e}"
+        print(f"⚠️  {error_msg}")
+        seed_errors.append(error_msg)
+    
+    # Seed de usuarios
+    try:
+        print("👥 Ejecutando seed_users.py...")
+        from seed_users import seed_users
+        seed_users()
+        print("✅ seed_users completado")
+    except Exception as e:
+        error_msg = f"seed_users error: {e}"
+        print(f"⚠️  {error_msg}")
+        seed_errors.append(error_msg)
+    
+    print("=" * 60)
+    if seed_errors:
+        print("⚠️  Algunos seeds tuvieron errores (la aplicación continúa):")
+        for error in seed_errors:
+            print(f"  - {error}")
+    else:
+        print("✅ Todos los seeds ejecutados exitosamente")
+    print("=" * 60 + "\n")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -32,8 +97,9 @@ async def lifespan(app: FastAPI):
     Handles startup and shutdown events.
     """
     # Startup
-    print("=" * 50)
+    print("=" * 60)
     print("🚀 Starting application...")
+    print("=" * 60)
     
     # Ensure directories exist
     ensure_directories()
@@ -44,43 +110,65 @@ async def lifespan(app: FastAPI):
     if settings.AUTO_MIGRATE:
         try:
             run_migrations_upgrade_head()
+            print("✓ Database migrations applied")
         except Exception as e:
-            print(f"⚠ Migration error: {e}")
-            print("⚠ Attempting to initialize database with create_all...")
+            print(f"⚠️  Migration error: {e}")
+            print("⚠️  Attempting to initialize database with create_all...")
             init_db()
     else:
         # Fallback: use SQLAlchemy's create_all (creates tables without migrations)
         init_db()
         print("✓ Database initialized (create_all mode)")
     
-    # Inicializar el sistema de reconocimiento facial AQUI (UNA SOLA VEZ)
-    # Esto evita el doble-loading que causa memory leaks
+    # ============================================================================
+    # INICIALIZAR SISTEMA DE RECONOCIMIENTO FACIAL PRIMERO
+    # ============================================================================
+    # Esto DEBE hacerse ANTES de los seeds para evitar:
+    # 1. Double-loading de modelos
+    # 2. Conflictos de memoria
+    # 3. Corruption de pointers
     try:
-        print("Initializing facial recognition system...")
+        print("\n" + "=" * 60)
+        print("🔍 Initializing facial recognition system...")
+        print("=" * 60)
         initialize_recognizer()
         get_registration()
-        print("✓ Facial recognition system initialized")
+        print("✅ Facial recognition system initialized successfully")
+        print("=" * 60 + "\n")
     except Exception as e:
-        print(f"⚠ Warning: Facial recognition initialization failed: {e}")
-        print("⚠ Application will continue without facial recognition")
+        print(f"⚠️  Warning: Facial recognition initialization failed: {e}")
+        print("⚠️  Application will continue without facial recognition")
+        import traceback
+        print(traceback.format_exc())
+    
+    # ============================================================================
+    # EJECUTAR SEEDS DESPUÉS de cargar modelos de ML
+    # ============================================================================
+    try:
+        _execute_seeds()
+    except Exception as e:
+        print(f"⚠️  Error executing seeds: {e}")
+        import traceback
+        print(traceback.format_exc())
     
     # Start scheduler
     start_scheduler()
+    print("✓ Scheduler started")
     
-    print("=" * 50)
+    print("=" * 60)
     print(f"🌐 Server running on http://{settings.HOST}:{settings.PORT}")
     print(f"📚 API Documentation: http://{settings.HOST}:{settings.PORT}/docs")
     print(f"🔌 WebSocket endpoint: ws://{settings.HOST}:{settings.PORT}/ws/{{channel}}")
-    print("=" * 50)
+    print("=" * 60)
     
     yield
     
     # Shutdown
-    print("\n" + "=" * 50)
+    print("\n" + "=" * 60)
     print("🛑 Shutting down application...")
     shutdown_scheduler()
     print("✓ Application stopped")
-    print("=" * 50)
+    print("=" * 60)
 
 
 # Create FastAPI application

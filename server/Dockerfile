@@ -32,7 +32,11 @@ COPY --from=builder /root/.local /root/.local
 # Establecer variables de entorno
 ENV PATH=/root/.local/bin:$PATH \
     PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    TERM=xterm-256color \
+    TF_CPP_MIN_LOG_LEVEL=3 \
+    TF_ENABLE_ONEDNN_OPTS=0 \
+    KMP_DUPLICATE_LIB_OK=True
 
 # Copiar el código de la aplicación
 COPY . .
@@ -47,14 +51,13 @@ RUN chmod +x run.sh
 EXPOSE 8000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs').read()" || exit 1
 
 # Ejecutar run.sh en lugar de uvicorn directamente
 # El script run.sh se encarga de:
 # 1. Verificar entorno virtual
 # 2. Verificar dependencias
-# 3. Ejecutar migraciones (si AUTO_MIGRATE=true)
-# 4. Iniciar uvicorn
-# 5. Ejecutar seeds (roles y turnos)
+# 3. Iniciar uvicorn
+# 4. FastAPI ejecutará automáticamente migraciones y seeds en el lifespan
 CMD ["./run.sh"]

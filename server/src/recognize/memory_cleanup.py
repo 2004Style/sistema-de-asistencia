@@ -4,6 +4,7 @@ Ayuda a evitar memory leaks durante la inicialización de modelos pesados.
 """
 import gc
 import warnings
+import os
 from typing import Optional
 
 try:
@@ -38,9 +39,10 @@ def cleanup_tensorflow() -> None:
         except Exception:
             pass
         
-        # Garbage collection agresivo
-        gc.collect()
-        logger.debug("✓ Garbage collection completed")
+        # Garbage collection agresivo (múltiples pasadas)
+        for _ in range(3):
+            gc.collect()
+        logger.debug("✓ Garbage collection completed (3 passes)")
         
     except Exception as e:
         logger.warning(f"Could not cleanup TensorFlow: {e}")
@@ -68,12 +70,13 @@ def suppress_warnings() -> None:
     # Suprimir advertencias de TensorFlow
     warnings.filterwarnings('ignore', category=DeprecationWarning)
     warnings.filterwarnings('ignore', category=FutureWarning)
+    warnings.filterwarnings('ignore', category=UserWarning)
     
     # Suprimir logs verbosos
-    import os
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Solo mostrar errores (level 3)
     os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  # Evitar advertencias de oneDNN
     os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'  # Evitar conflictos de bibliotecas
+    os.environ['MALLOC_TRIM_THRESHOLD_'] = '65536'  # Agregar trim agresivo de malloc
     
     logger.debug("✓ Warnings suppressed")
 
@@ -85,8 +88,12 @@ def full_cleanup() -> None:
     """
     cleanup_tensorflow()
     cleanup_torch()
-    gc.collect()
-    logger.debug("✓ Full memory cleanup completed")
+    
+    # Múltiples pasadas de garbage collection
+    for _ in range(5):
+        gc.collect()
+    
+    logger.debug("✓ Full memory cleanup completed (5 GC passes)")
 
 
 def initialize_memory_optimization() -> None:
