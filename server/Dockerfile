@@ -50,9 +50,9 @@ RUN chmod +x run.sh
 # Exponer el puerto (ajusta según tu configuración)
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs').read()" || exit 1
+# Health check - usar python en lugar de curl (curl no está instalado)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=45s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()" || exit 1
 
 # Ejecutar run.sh en lugar de uvicorn directamente
 # El script run.sh se encarga de:
