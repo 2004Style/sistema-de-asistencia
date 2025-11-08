@@ -121,7 +121,7 @@ jobs:
       - name: 🚀 Ejecutar script de despliegue
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
-            'cd /home/deploy && ./deploy-aws-ec2.sh'
+            'bash /home/deploy/app/sistema-de-asistencia/server/deploy-aws-ec2.sh'
 
       - name: ✅ Notificar éxito
         if: success()

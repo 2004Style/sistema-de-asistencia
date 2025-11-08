@@ -8,7 +8,7 @@
 set -e  # Salir si hay un error
 
 # Configuración
-APP_DIR="/home/deploy/app"
+APP_DIR="/home/deploy/app/sistema-de-asistencia"
 REPO_URL="git@github.com:2004Style/sistema-de-asistencia.git"
 CONTAINER_NAME="sistema-asistencia-api"
 IMAGE_NAME="sistema-asistencia:latest"
@@ -77,10 +77,6 @@ else
     git pull origin main
     log_success "Repositorio actualizado"
 fi
-
-# ============================================
-# 3. IR A LA CARPETA DEL SERVIDOR
-# ============================================
 
 # ============================================
 # 3. IR A LA CARPETA DEL SERVIDOR
