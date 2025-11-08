@@ -147,6 +147,7 @@ for _ in range(5):
 - [x] Protección contra double-loading
 - [x] Seeds ejecutados DESPUÉS del ML
 - [x] Mejor manejo de errores
+- [x] Base de datos en servidor externo (solo cadena de conexión)
 
 ---
 

@@ -65,9 +65,14 @@ run.sh → uvicorn → FastAPI lifespan → carga ML → seeds
 **Cambios:**
 
 - Agregadas variables de entorno (TERM, TF_CPP_MIN_LOG_LEVEL, etc.)
-- Aumentado `start-period` del healthcheck de 10s a 30s
+- Aumentado `start-period` del healthcheck de 10s a 45s
+- **Cambio importante:** Healthcheck ahora usa `python` en lugar de `curl` (curl no está disponible en slim Python image)
 
-**Por qué:** Tiempo suficiente para que DeepFace descargue y cargue modelos (~20-25s)
+**Por qué:**
+
+- Tiempo suficiente para que DeepFace descargue y cargue modelos (~20-25s)
+- Python es garantizado en la imagen, curl no
+- Se usa `urllib.request` (stdlib) que está siempre disponible
 
 ## 🚀 Cómo Desplegar
 

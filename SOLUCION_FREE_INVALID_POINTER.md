@@ -91,7 +91,20 @@ ENV TERM=xterm-256color \
     KMP_DUPLICATE_LIB_OK=True
 ```
 
-Agregadas variable de TERM
+- Agregada variable de TERM
+
+### 6. ✅ Healthcheck Mejorado
+
+**Archivo modificado: `Dockerfile`**
+
+```dockerfile
+HEALTHCHECK --interval=30s --timeout=10s --start-period=45s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()" || exit 1
+```
+
+- Aumentado `start-period` de 10s a **45s** (tiempo para cargar modelos)
+- Cambio de `curl` a `python` (curl no disponible en imagen slim)
+- Se usa `urllib.request` del stdlib (garantizado disponible)
 
 ### 6. ✅ Healthcheck Mejorado
 

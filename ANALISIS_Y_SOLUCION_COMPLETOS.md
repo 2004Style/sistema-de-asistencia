@@ -146,10 +146,11 @@ ENV TERM=xterm-256color \
     TF_ENABLE_ONEDNN_OPTS=0 \
     KMP_DUPLICATE_LIB_OK=True
 
-# Aumentar healthcheck timeout
-HEALTHCHECK --start-period=30s --retries=3
-# ANTES: 10s (insuficiente)
-# DESPUÉS: 30s (tiempo para descargar modelos)
+# Aumentar healthcheck timeout Y cambiar a python (curl no disponible)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=45s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()" || exit 1
+# ANTES: 10s con curl (falla porque no está instalado)
+# DESPUÉS: 45s con python urllib (garantizado disponible)
 ```
 
 **Impacto:** 🟢 Resuelve timeout y variables
