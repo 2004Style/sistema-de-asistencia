@@ -10,6 +10,9 @@ from src.turnos.model import Turno
 
 def seed_turnos():
     """Create basic turnos if they don't exist"""
+    # Inicializar base de datos primero
+    init_db()
+    
     db: Session = SessionLocal()
     
     try:

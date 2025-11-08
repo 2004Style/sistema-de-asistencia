@@ -145,17 +145,29 @@ else
     print_info "seed_turnos.py no encontrado (opcional)"
 fi
 
+if [ -f "seed_users.py" ]; then
+    print_info "Ejecutando seed_users.py..."
+    if python seed_users.py 2>/dev/null; then
+        print_success "seed_users.py ejecutado"
+    else
+        print_warning "seed_users.py: datos ya pueden existir"
+    fi
+else
+    print_info "seed_users.py no encontrado (opcional)"
+fi
+
 # Iniciar servidor con uvicorn en primer plano
 print_section "${FIRE} Iniciando Servidor"
 echo -e "${GREEN}${BOLD}"
 echo "╔════════════════════════════════════════════════════════════════╗"
 echo "║  API disponible en http://0.0.0.0:8000/docs                  ║"
+echo "║  Socket.IO disponible en ws://0.0.0.0:8000/socket.io/         ║"
 echo "║  Presiona Ctrl+C para detener                                 ║"
 echo "╚════════════════════════════════════════════════════════════════╝"
 echo -e "${RESET}\n"
 
-# Ejecutar uvicorn en primer plano (Docker necesita esto)
-exec uvicorn main:app --host 0.0.0.0 --port 8000
+# Ejecutar uvicorn en primer plano con asgi_app (incluye Socket.IO)
+exec uvicorn main:asgi_app --host 0.0.0.0 --port 8000
 
 # Si el servidor se detiene
 END_TIME=$(date +%s)

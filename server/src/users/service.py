@@ -8,6 +8,11 @@ Contiene toda la lógica de negocio para:
 - Paginación y búsqueda
 - Integración con sistema de reconocimiento facial
 
+Gestión de archivos:
+- Imágenes se guardan temporalmente en /uploads/username/
+- Después del registro exitoso, la carpeta se ELIMINA (no son necesarias)
+- Solo los embeddings se guardan permanentemente en database/embeddings.pkl
+
 Hereda de BaseService para CRUD genérico:
 - get_by_id() - Obtener usuario por ID
 - field_exists() - Verificar unicidad
@@ -165,6 +170,11 @@ class UserService(BaseService):
                     detail=f"Error al registrar en el sistema de reconocimiento: {str(e)}"
                 )
             
+            # ✅ REGISTRO EXITOSO - Eliminar carpeta de imágenes temporales
+            # Los embeddings ya están guardados en database/embeddings.pkl
+            # Las imágenes originales ya no son necesarias
+            delete_user_folder(user.name)
+            
             return user
             
         except HTTPException:
@@ -272,13 +282,23 @@ class UserService(BaseService):
     
     def delete_user(self, db: Session, user_id: int) -> dict:
         """
-        Elimina un usuario y sus datos asociados.
+        Elimina un usuario y sus datos asociados del sistema.
         
         Elimina:
-        - Usuario de la base de datos (usando delete_with_transaction del BaseService)
-        - Carpeta de imágenes
-        - Registro del sistema de reconocimiento
+        1. Embeddings faciales del sistema de reconocimiento (database/embeddings.pkl)
+        2. Usuario de la base de datos
         
+        NOTA: La carpeta de imágenes (/uploads/username/) ya fue eliminada
+        después del registro exitoso en create_user(), por lo que NO se vuelve
+        a eliminar aquí.
+        
+        Args:
+            db: Sesión de base de datos
+            user_id: ID del usuario a eliminar
+            
+        Returns:
+            Dict con mensaje de confirmación
+            
         Raises:
             HTTPException: Si el usuario no existe o falla la eliminación
         """
@@ -287,20 +307,27 @@ class UserService(BaseService):
         user_name = user.name
         
         try:
-            # Eliminar de base de datos usando transacción segura del BaseService
+            # 1️⃣ Eliminar embeddings del sistema de reconocimiento facial
+            # Los embeddings se guardan en database/embeddings.pkl
+            try:
+                quick_remove(user_name)
+            except Exception as e:
+                # Registrar advertencia pero continuar con la eliminación
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"No se pudo eliminar embeddings de {user_name}: {str(e)}")
+            
+            # 2️⃣ Eliminar usuario de la base de datos usando transacción segura
             self.delete_with_transaction(db, user, "Error al eliminar usuario")
             
-            # Eliminar del sistema de reconocimiento
-            quick_remove(user_name)
+            # ✅ La carpeta /uploads/username/ ya fue eliminada en create_user()
+            # No es necesario intentar eliminarla aquí
             
-            # Eliminar carpeta de imágenes
-            try:
-                delete_user_folder(user_name)
-            except Exception as e:
-                # Usuario ya eliminado de BD, solo registrar advertencia
-                print(f"Advertencia: No se pudo eliminar carpeta de usuario {user_name}: {str(e)}")
-            
-            return {"message": f"Usuario {user_name} y datos asociados eliminados exitosamente"}
+            return {
+                "success": True,
+                "message": f"Usuario '{user_name}' y todos sus datos asociados eliminados exitosamente",
+                "user_id": user_id
+            }
             
         except HTTPException:
             raise

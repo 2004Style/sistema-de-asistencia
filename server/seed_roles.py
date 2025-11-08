@@ -3,7 +3,7 @@ Seed script para crear roles iniciales del sistema
 Ejecutar una sola vez después de crear las tablas
 """
 from sqlalchemy.orm import Session
-from src.config.database import SessionLocal
+from src.config.database import SessionLocal, init_db
 from src.roles.model import Role
 from src.users.model import User  # noqa: F401
 from src.horarios import model as horarios_model  # noqa: F401
@@ -14,6 +14,9 @@ from src.notificaciones import model as notificaciones_model  # noqa: F401
 
 def seed_roles():
     """Crear roles iniciales del sistema"""
+    # Inicializar base de datos primero
+    init_db()
+    
     db: Session = SessionLocal()
     
     try:
