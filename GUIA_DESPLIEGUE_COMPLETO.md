@@ -81,10 +81,10 @@ Cuando haces push a `main`, GitHub Actions ejecuta:
 
 ```bash
 # En tu navegador o terminal
-https://18.225.34.130/docs
+https://3.141.24.38/docs
 
 # Desde terminal con curl
-curl -k https://18.225.34.130/docs
+curl -k https://3.141.24.38/docs
 ```
 
 ---
@@ -94,7 +94,7 @@ curl -k https://18.225.34.130/docs
 En caso de que quieras desplegar sin esperar a GitHub Actions:
 
 ```bash
-ssh -i ~/.ssh/tu-clave.pem deploy@18.225.34.130
+ssh -i ~/.ssh/tu-clave.pem deploy@3.141.24.38
 
 cd ~/app/sistema-de-asistencia/server
 
@@ -119,13 +119,13 @@ bash deploy-aws-ec2.sh
 
 ```bash
 # Opción 1: En tu navegador
-https://18.225.34.130/docs
+https://3.141.24.38/docs
 
 # Opción 2: Con curl
-curl -k https://18.225.34.130/docs
+curl -k https://3.141.24.38/docs
 
 # Opción 3: Desde EC2
-ssh -i ~/.ssh/tu-clave.pem deploy@18.225.34.130
+ssh -i ~/.ssh/tu-clave.pem deploy@3.141.24.38
 docker compose -f ~/app/sistema-de-asistencia/server/docker-compose-production.yml ps
 ```
 
@@ -144,7 +144,7 @@ Si ves esto ✅ **¡LISTO! Todo está funcionando**
 ### Si Algo Falla
 
 ```bash
-ssh -i ~/.ssh/tu-clave.pem deploy@18.225.34.130
+ssh -i ~/.ssh/tu-clave.pem deploy@3.141.24.38
 
 cd ~/app/sistema-de-asistencia/server
 
@@ -162,14 +162,14 @@ docker exec sistema-asistencia-nginx curl -s http://api:8000/
 
 ## 🌐 URLs Disponibles (Post-Despliegue)
 
-| URL                          | Status | Descripción             |
-| ---------------------------- | ------ | ----------------------- |
-| `http://18.225.34.130`       | ✅     | API por HTTP            |
-| `https://18.225.34.130`      | ✅     | API por HTTPS           |
-| `http://18.225.34.130/docs`  | ✅     | Swagger UI (HTTP)       |
-| `https://18.225.34.130/docs` | ✅     | Swagger UI (HTTPS)      |
-| `http://18.225.34.130:8000`  | ✅     | API directa (sin Nginx) |
-| `https://18.225.34.130:8000` | ❌     | No disponible (sin SSL) |
+| URL                        | Status | Descripción             |
+| -------------------------- | ------ | ----------------------- |
+| `http://3.141.24.38`       | ✅     | API por HTTP            |
+| `https://3.141.24.38`      | ✅     | API por HTTPS           |
+| `http://3.141.24.38/docs`  | ✅     | Swagger UI (HTTP)       |
+| `https://3.141.24.38/docs` | ✅     | Swagger UI (HTTPS)      |
+| `http://3.141.24.38:8000`  | ✅     | API directa (sin Nginx) |
+| `https://3.141.24.38:8000` | ❌     | No disponible (sin SSL) |
 
 ---
 
@@ -188,8 +188,8 @@ docker exec sistema-asistencia-nginx curl -s http://api:8000/
 - **Tipo**: Self-Signed
 - **Validez**: 365 días
 - **Algoritmo**: RSA 2048-bit
-- **CN**: 18.225.34.130
-- **SANs**: IP:18.225.34.130
+- **CN**: 3.141.24.38
+- **SANs**: IP:3.141.24.38
 
 ### Renovación Manual
 
@@ -199,8 +199,8 @@ cd ~/app/sistema-de-asistencia/server
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout certs/key.pem \
   -out certs/cert.pem \
-  -subj "/C=CO/ST=Bogota/L=Bogota/O=SistemaAsistencia/CN=18.225.34.130" \
-  -addext "subjectAltName=IP:18.225.34.130"
+  -subj "/C=CO/ST=Bogota/L=Bogota/O=SistemaAsistencia/CN=3.141.24.38" \
+  -addext "subjectAltName=IP:3.141.24.38"
 
 # Reiniciar nginx
 docker compose -f docker-compose-production.yml restart nginx
@@ -316,7 +316,7 @@ docker exec sistema-asistencia-api curl -f http://localhost:8000/docs
 ```
                     Cliente HTTPS
                          ↓
-                    18.225.34.130:443
+                    3.141.24.38:443
                          ↓
                   Nginx (SSL/TLS 1.2, 1.3)
                   sistema-asistencia-nginx

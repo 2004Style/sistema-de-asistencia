@@ -61,8 +61,8 @@
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout /home/deploy/app/sistema-de-asistencia/server/certs/key.pem \
   -out /home/deploy/app/sistema-de-asistencia/server/certs/cert.pem \
-  -subj "/C=CO/ST=Bogota/L=Bogota/O=SistemaAsistencia/CN=18.225.34.130" \
-  -addext "subjectAltName=IP:18.225.34.130"
+  -subj "/C=CO/ST=Bogota/L=Bogota/O=SistemaAsistencia/CN=3.141.24.38" \
+  -addext "subjectAltName=IP:3.141.24.38"
 ```
 
 ### Características
@@ -122,7 +122,7 @@ curl -k https://localhost/docs  # Ignorar advertencia de certificado
 
 ```bash
 # Conectar a EC2
-ssh -i tu-clave.pem deploy@18.225.34.130
+ssh -i tu-clave.pem deploy@3.141.24.38
 
 # Ir al directorio
 cd /home/deploy/app/sistema-de-asistencia/server
@@ -144,20 +144,20 @@ curl -k -v https://localhost/docs
 
 ## 🌐 URLs Disponibles
 
-| URL                          | Acceso | Nota                |
-| ---------------------------- | ------ | ------------------- |
-| `http://18.225.34.130`       | ✅     | HTTP plano          |
-| `https://18.225.34.130`      | ✅     | **HTTPS con Nginx** |
-| `http://18.225.34.130:8000`  | ✅     | API directa         |
-| `https://18.225.34.130:8000` | ❌     | API sin SSL         |
-| `http://18.225.34.130/docs`  | ✅     | Swagger (HTTP)      |
-| `https://18.225.34.130/docs` | ✅     | Swagger (HTTPS)     |
+| URL                        | Acceso | Nota                |
+| -------------------------- | ------ | ------------------- |
+| `http://3.141.24.38`       | ✅     | HTTP plano          |
+| `https://3.141.24.38`      | ✅     | **HTTPS con Nginx** |
+| `http://3.141.24.38:8000`  | ✅     | API directa         |
+| `https://3.141.24.38:8000` | ❌     | API sin SSL         |
+| `http://3.141.24.38/docs`  | ✅     | Swagger (HTTP)      |
+| `https://3.141.24.38/docs` | ✅     | Swagger (HTTPS)     |
 
 ---
 
 ## ⚠️ Advertencia del Navegador
 
-Al acceder a `https://18.225.34.130`, verás:
+Al acceder a `https://3.141.24.38`, verás:
 
 ```
 🔓 Esta conexión no es segura

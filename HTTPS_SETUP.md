@@ -14,8 +14,8 @@
 
 Actualmente tu servidor tiene:
 
-- ✅ HTTP funciona: `http://18.225.34.130:8000`
-- ❌ HTTPS NO funciona: `https://18.225.34.130:8000`
+- ✅ HTTP funciona: `http://3.141.24.38:8000`
+- ❌ HTTPS NO funciona: `https://3.141.24.38:8000`
 
 **Razón**: No hay certificado SSL configurado para servir HTTPS.
 
@@ -28,7 +28,7 @@ Usaremos **Nginx (ya está en tu docker-compose) + Certificado Self-Signed**.
 ```
 Cliente HTTPS
     ↓
-https://18.225.34.130:443 (Nginx con SSL)
+https://3.141.24.38:443 (Nginx con SSL)
     ↓
 http://localhost:8000 (API FastAPI)
 ```
@@ -42,7 +42,7 @@ http://localhost:8000 (API FastAPI)
 Conéctate a tu EC2 por SSH:
 
 ```bash
-ssh -i tu-clave-privada.pem ec2-user@18.225.34.130
+ssh -i tu-clave-privada.pem ec2-user@3.141.24.38
 ```
 
 Luego ejecuta:
@@ -55,7 +55,7 @@ mkdir -p /home/deploy/app/sistema-de-asistencia/server/certs
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout /home/deploy/app/sistema-de-asistencia/server/certs/key.pem \
   -out /home/deploy/app/sistema-de-asistencia/server/certs/cert.pem \
-  -subj "/C=CO/ST=Bogota/L=Bogota/O=SistemaAsistencia/CN=18.225.34.130"
+  -subj "/C=CO/ST=Bogota/L=Bogota/O=SistemaAsistencia/CN=3.141.24.38"
 
 # 3. Verificar que se crearon correctamente
 ls -lah /home/deploy/app/sistema-de-asistencia/server/certs/
@@ -153,7 +153,7 @@ git push origin main
 Regresa a tu EC2 y ejecuta:
 
 ```bash
-ssh -i tu-clave-privada.pem ec2-user@18.225.34.130
+ssh -i tu-clave-privada.pem ec2-user@3.141.24.38
 
 # Ir al directorio
 cd /home/deploy/app/sistema-de-asistencia
@@ -198,19 +198,19 @@ En AWS Console:
 
 ```bash
 # Probar HTTP (debe redirigir o funcionar)
-curl -v http://18.225.34.130
+curl -v http://3.141.24.38
 
 # Probar HTTPS (ignorar certificado self-signed)
-curl -k -v https://18.225.34.130
+curl -k -v https://3.141.24.38
 
-# En navegador: https://18.225.34.130
+# En navegador: https://3.141.24.38
 # Verás advertencia ⚠️ (normal con self-signed)
 ```
 
 ### Opción 2: Desde EC2
 
 ```bash
-ssh -i tu-clave-privada.pem ec2-user@18.225.34.130
+ssh -i tu-clave-privada.pem ec2-user@3.141.24.38
 
 # Verificar logs de Nginx
 docker logs sistema-asistencia-nginx
@@ -236,12 +236,12 @@ Content-Type: application/json
 
 Después de completar, tendrás:
 
-| URL                          | Estado | Nota                                  |
-| ---------------------------- | ------ | ------------------------------------- |
-| `http://18.225.34.130`       | ✅     | HTTP plano (puedes redirigir a HTTPS) |
-| `https://18.225.34.130`      | ✅     | **HTTPS seguro**                      |
-| `http://18.225.34.130:8000`  | ✅     | API directa (sin Nginx)               |
-| `https://18.225.34.130:8000` | ❌     | No funciona (API no tiene SSL)        |
+| URL                        | Estado | Nota                                  |
+| -------------------------- | ------ | ------------------------------------- |
+| `http://3.141.24.38`       | ✅     | HTTP plano (puedes redirigir a HTTPS) |
+| `https://3.141.24.38`      | ✅     | **HTTPS seguro**                      |
+| `http://3.141.24.38:8000`  | ✅     | API directa (sin Nginx)               |
+| `https://3.141.24.38:8000` | ❌     | No funciona (API no tiene SSL)        |
 
 ---
 
@@ -275,7 +275,7 @@ Advertencia: certificado autofirmado
 Instala **Certbot** en EC2 para obtener certificados gratis de Let's Encrypt:
 
 ```bash
-ssh -i tu-clave-privada.pem ec2-user@18.225.34.130
+ssh -i tu-clave-privada.pem ec2-user@3.141.24.38
 
 # Instalar Certbot
 sudo apt update
@@ -376,14 +376,14 @@ mkdir -p /home/deploy/app/sistema-de-asistencia/server/certs
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout /home/deploy/app/sistema-de-asistencia/server/certs/key.pem \
   -out /home/deploy/app/sistema-de-asistencia/server/certs/cert.pem \
-  -subj "/C=CO/ST=Bogota/L=Bogota/O=SistemaAsistencia/CN=18.225.34.130"
+  -subj "/C=CO/ST=Bogota/L=Bogota/O=SistemaAsistencia/CN=3.141.24.38"
 
 cd /home/deploy/app/sistema-de-asistencia/server
 docker-compose -f docker-compose-production.yml down
 docker-compose -f docker-compose-production.yml up -d
 
 # Verificar
-curl -k https://18.225.34.130
+curl -k https://3.141.24.38
 ```
 
 ---

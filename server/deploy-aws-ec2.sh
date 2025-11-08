@@ -17,23 +17,24 @@ LOG_DIR="${HOME}/.deploy/logs"
 LOG_FILE="$LOG_DIR/deploy_$(date +%Y%m%d_%H%M%S).log"
 
 # Crear directorio de logs
-mkdir -p "$LOG_DIR"
+mkdir -p "$LOG_DIR" 2>/dev/null || LOG_DIR="/tmp/deploy-logs-$$" && mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/deploy_$(date +%Y%m%d_%H%M%S).log"
 
 # Función para loguear
 log() {
-    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE" 2>/dev/null || echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
 }
 
 log_error() {
-    echo "[$(date +'%Y-%m-%d %H:%M:%S')] ❌ ERROR: $1" | tee -a "$LOG_FILE" >&2
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] ❌ ERROR: $1" | tee -a "$LOG_FILE" 2>/dev/null >&2 || echo "[$(date +'%Y-%m-%d %H:%M:%S')] ❌ ERROR: $1" >&2
 }
 
 log_success() {
-    echo "[$(date +'%Y-%m-%d %H:%M:%S')] ✅ $1" | tee -a "$LOG_FILE"
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] ✅ $1" | tee -a "$LOG_FILE" 2>/dev/null || echo "[$(date +'%Y-%m-%d %H:%M:%S')] ✅ $1"
 }
 
 log_warning() {
-    echo "[$(date +'%Y-%m-%d %H:%M:%S')] ⚠️  ADVERTENCIA: $1" | tee -a "$LOG_FILE"
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] ⚠️  ADVERTENCIA: $1" | tee -a "$LOG_FILE" 2>/dev/null || echo "[$(date +'%Y-%m-%d %H:%M:%S')] ⚠️  ADVERTENCIA: $1"
 }
 
 # ============================================
@@ -154,7 +155,7 @@ else
     
     # Obtener el IP o hostname
     SERVER_IP="${EC2_PUBLIC_IP:-$(hostname -I | awk '{print $1}')}"
-    SERVER_IP="${SERVER_IP:-18.225.34.130}"
+    SERVER_IP="${SERVER_IP:-3.141.24.38}"
     
     if openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
         -keyout "$KEY_FILE" \

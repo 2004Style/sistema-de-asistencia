@@ -29,7 +29,7 @@ En AWS Console:
 
 1. Ve a **EC2 → Instances**
 2. Selecciona tu instancia
-3. Busca **Elastic IPs** o **Public IPv4 address** (debe ser `18.225.34.130`)
+3. Busca **Elastic IPs** o **Public IPv4 address** (debe ser `3.141.24.38`)
 
 ### 1b. Apunta tu dominio a esta IP
 
@@ -40,7 +40,7 @@ En el panel de tu proveedor de dominio (GoDaddy, Namecheap, etc.):
 
    - **Host**: `@` (raíz del dominio)
    - **Type**: `A`
-   - **Value**: `18.225.34.130`
+   - **Value**: `3.141.24.38`
    - **TTL**: `3600` (1 hora)
 
 3. Agrega un registro **CNAME** (opcional, para www):
@@ -55,7 +55,7 @@ En el panel de tu proveedor de dominio (GoDaddy, Namecheap, etc.):
 
 ```bash
 nslookup tudominio.com
-# Debe mostrar: 18.225.34.130
+# Debe mostrar: 3.141.24.38
 
 # O desde EC2
 curl http://tudominio.com
@@ -69,7 +69,7 @@ curl http://tudominio.com
 Conecta a tu EC2:
 
 ```bash
-ssh -i tu-clave-privada.pem ec2-user@18.225.34.130
+ssh -i tu-clave-privada.pem ec2-user@3.141.24.38
 ```
 
 ### 2a. Instalar Certbot (Let's Encrypt)
@@ -301,7 +301,7 @@ git push origin main
 En tu EC2:
 
 ```bash
-ssh -i tu-clave-privada.pem ec2-user@18.225.34.130
+ssh -i tu-clave-privada.pem ec2-user@3.141.24.38
 
 # Ir al directorio
 cd /home/deploy/app/sistema-de-asistencia
@@ -354,7 +354,7 @@ curl -i https://tudominio.com/docs
 ### Opción 2: Desde EC2
 
 ```bash
-ssh -i tu-clave-privada.pem ec2-user@18.225.34.130
+ssh -i tu-clave-privada.pem ec2-user@3.141.24.38
 
 # Prueba local
 curl -v https://localhost
@@ -369,7 +369,7 @@ docker logs sistema-asistencia-nginx
 ### Resultado esperado
 
 ```
-* Connected to tudominio.com (18.225.34.130) port 443 (#0)
+* Connected to tudominio.com (3.141.24.38) port 443 (#0)
 * SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384
 * subject: CN=tudominio.com
 * Issuer: C=US, O=Let's Encrypt, CN=R3
@@ -435,8 +435,8 @@ Después de completar:
 | `http://tudominio.com`      | ✅     | Redirige a HTTPS     |
 | `https://tudominio.com`     | ✅     | **HTTPS Seguro** 🔒  |
 | `https://www.tudominio.com` | ✅     | Con www              |
-| `http://18.225.34.130`      | ✅     | Por IP (sin dominio) |
-| `https://18.225.34.130`     | ❌     | No funcionará        |
+| `http://3.141.24.38`        | ✅     | Por IP (sin dominio) |
+| `https://3.141.24.38`       | ❌     | No funcionará        |
 
 ---
 
@@ -466,7 +466,7 @@ https://tudominio.com
 # Verificar que DNS se propagó
 nslookup tudominio.com
 
-# Debe mostrar: 18.225.34.130
+# Debe mostrar: 3.141.24.38
 
 # Si no, espera más tiempo o verifica tu proveedor de dominio
 ```

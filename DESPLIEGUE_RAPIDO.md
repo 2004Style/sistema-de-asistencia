@@ -35,7 +35,7 @@ git push origin main
 ### Opción 1: En tu navegador
 
 ```
-https://18.225.34.130/docs
+https://3.141.24.38/docs
 ```
 
 (Aceptar advertencia de certificado auto-firmado)
@@ -43,7 +43,7 @@ https://18.225.34.130/docs
 ### Opción 2: Con curl
 
 ```bash
-curl -k https://18.225.34.130/docs
+curl -k https://3.141.24.38/docs
 ```
 
 ### Opción 3: Ver GitHub Actions
@@ -54,7 +54,7 @@ https://github.com/2004Style/sistema-de-asistencia/actions
 
 ## 🎉 ¡Listo!
 
-Si ves la UI de Swagger en `https://18.225.34.130/docs` significa que:
+Si ves la UI de Swagger en `https://3.141.24.38/docs` significa que:
 
 - ✅ Nginx está corriendo
 - ✅ Certificados SSL están activos
@@ -67,7 +67,7 @@ Si ves la UI de Swagger en `https://18.225.34.130/docs` significa que:
 
 ```bash
 # Conectar a EC2
-ssh -i ~/.ssh/tu-clave.pem deploy@18.225.34.130
+ssh -i ~/.ssh/tu-clave.pem deploy@3.141.24.38
 
 # Ver logs del último deployment
 cat /var/log/deploy/deploy_*.log | tail -100

@@ -176,7 +176,7 @@ bash /home/deploy/app/sistema-de-asistencia/server/deploy-aws-ec2.sh
 
 1. Clic en **"New repository secret"**
 2. **Name:** `EC2_HOST`
-3. **Value:** Tu IP pública o dominio (ej: `18.225.34.130` o `api.ejemplo.com`)
+3. **Value:** Tu IP pública o dominio (ej: `3.141.24.38` o `api.ejemplo.com`)
 4. Clic en **"Add secret"**
 
 **Verificar tus secrets:**
