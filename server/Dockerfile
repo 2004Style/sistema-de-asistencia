@@ -10,8 +10,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copiar requirements y instalar dependencias de Python
-COPY requirements.txt .
-RUN pip install --user --no-cache-dir -r requirements.txt
+COPY requirements.txt* ./
+RUN if [ -f requirements.txt ]; then pip install --user --no-cache-dir -r requirements.txt; fi
 
 # Stage 2: Runtime
 FROM python:3.12-slim
