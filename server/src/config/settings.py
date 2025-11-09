@@ -2,9 +2,11 @@
 Application settings and configuration
 """
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 from functools import lru_cache
 import os
 from pathlib import Path
+from typing import List
 
 
 # Check if running tests
@@ -26,6 +28,10 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     TIMEZONE: str = "America/Lima"
+    
+    # ===== CORS CONFIGURATION =====
+    # Orígenes permitidos para CORS (separados por comas en .env)
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001"  # Parsear a lista en method
     
     # ===== UPLOAD & FILE HANDLING =====
     UPLOAD_DIR: str  # Debe venir del .env
@@ -63,6 +69,26 @@ class Settings(BaseSettings):
         # Use .env.test when running tests, .env otherwise
         env_file = ".env.test" if _is_testing() else ".env"
         case_sensitive = True
+    
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v: str) -> str:
+        """
+        ✅ Valida y parsea CORS_ORIGINS
+        Acepta: "http://localhost:3000,http://localhost:3001"
+        Retorna: Lista limpiada
+        """
+        if isinstance(v, str):
+            # Limpiar espacios y retornar como lista
+            return ",".join([origin.strip() for origin in v.split(",") if origin.strip()])
+        return v
+    
+    def get_cors_origins_list(self) -> List[str]:
+        """
+        ✅ Método para obtener CORS_ORIGINS como lista
+        Uso: settings.get_cors_origins_list()
+        """
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
 
 @lru_cache()

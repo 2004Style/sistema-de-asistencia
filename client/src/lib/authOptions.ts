@@ -18,7 +18,6 @@ async function refreshToken(token: JWT): Promise<JWT> {
       };
     }
 
-
     const res = await fetch(BACKEND_ROUTES.urlRefreshToken, {
       method: "POST",
       headers: {
@@ -50,7 +49,6 @@ async function refreshToken(token: JWT): Promise<JWT> {
       };
     }
 
-
     return {
       ...token,
       backendTokens: response.data,
@@ -68,6 +66,7 @@ async function refreshToken(token: JWT): Promise<JWT> {
 }
 
 export const authOptions: NextAuthOptions = {
+  debug: process.env.NODE_ENV === "development", // ✅ Agregar logs en desarrollo
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -78,15 +77,34 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const res = await fetch(BACKEND_ROUTES.urlLogin, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(credentials),
-        });
+        try {
+          const res = await fetch(BACKEND_ROUTES.urlLogin, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password,
+            }),
+          });
 
-        if (!res.ok) return null;
+          if (!res.ok) {
+            console.error("Login failed:", res.status);
+            return null;
+          }
 
-        return await res.json();
+          const loginResponse = await res.json();
+
+          // ✅ Retornar estructura que NextAuth espera en el JWT callback
+          // El servidor retorna: { user: {...}, backendTokens: {...} }
+          // NextAuth espera que authorize() retorne el usuario + data extra
+          return {
+            ...loginResponse.user,
+            backendTokens: loginResponse.backendTokens,
+          };
+        } catch (error) {
+          console.error("Authorization error:", error);
+          return null;
+        }
       },
     }),
   ],

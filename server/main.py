@@ -180,13 +180,16 @@ app = FastAPI(
 )
 
 # CORS middleware
+# ✅ EN PRODUCCIÓN: especificar origen explícito, no usar ["*"] con allow_credentials=True
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=settings.get_cors_origins_list(),  # ✅ Obtener lista desde settings
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
 )
+
+print(f"\n🌐 CORS Origins configurados: {settings.get_cors_origins_list()}\n")
 
 # Include routers
 app.include_router(role_router, prefix="/api")
