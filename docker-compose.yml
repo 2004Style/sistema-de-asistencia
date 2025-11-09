@@ -82,9 +82,10 @@ services:
     container_name: sistema-asistencia-client
     hostname: client
     
-    # Cargar variables del cliente
+    # Cargar variables desde .env raíz (mismo que API)
+    # Todas las variables NEXT_PUBLIC_* se cargan aquí al build
     env_file:
-      - client/.env
+      - .env
     
     environment:
       - NODE_ENV=production
