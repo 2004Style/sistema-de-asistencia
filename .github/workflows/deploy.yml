@@ -1,68 +1,71 @@
-name: 🚀 Desplegar a AWS EC2
+name: 🚀 Desplegar a AWS EC2 (Docker Compose)
 
 on:
   push:
     branches:
       - main
     paths:
+      - 'client/**'
       - 'server/**'
+      - 'docker-compose.yml'
+      - 'nginx.conf'
       - '.github/workflows/deploy.yml'
 
 env:
   REGISTRY: ghcr.io
 
 jobs:
-  # test:
-  #   name: 🧪 Tests
-  #   runs-on: ubuntu-latest
-  #   
-  #   services:
-  #     postgres:
-  #       image: postgres:15-alpine
-  #       env:
-  #         POSTGRES_USER: test
-  #         POSTGRES_PASSWORD: test
-  #         POSTGRES_DB: test_db
-  #       options: >-
-  #         --health-cmd pg_isready
-  #         --health-interval 10s
-  #         --health-timeout 5s
-  #         --health-retries 5
-  #       ports:
-  #         - 5432:5432
-  #
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #
-  #     - name: 📦 Configurar Python
-  #       uses: actions/setup-python@v4
-  #       with:
-  #         python-version: '3.11'
-  #         cache: 'pip'
-  #
-  #     - name: 📥 Instalar dependencias
-  #       working-directory: server
-  #       run: |
-  #         python -m pip install --upgrade pip
-  #         pip install -r requirements.txt
-  #
-  #     - name: 🧪 Ejecutar tests
-  #       working-directory: server
-  #       run: |
-  #         pytest tests/ -v --cov=src --cov-report=xml
-  #       env:
-  #         DATABASE_URL: postgresql://test:test@localhost:5432/test_db
-  #
-  #     - name: 📊 Reportar cobertura
-  #       uses: codecov/codecov-action@v3
-  #       with:
-  #         file: ./server/coverage.xml
-  #         flags: unittests
-
-  build:
-    name: 🔨 Build Docker
+  # ============================================
+  # DETECTAR CAMBIOS
+  # ============================================
+  detect_changes:
+    name: 🔍 Detectar cambios
     runs-on: ubuntu-latest
-    # needs: test  # Deshabilitado: los tests se ejecutan en desarrollo, no en CI/CD
+    outputs:
+      client_changed: ${{ steps.changes.outputs.client_changed }}
+      server_changed: ${{ steps.changes.outputs.server_changed }}
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Detectar archivos modificados
+        id: changes
+        run: |
+          # Obtener lista de archivos cambiados entre main y HEAD
+          CHANGED_FILES=$(git diff --name-only origin/main HEAD)
+          
+          # Verificar si hay cambios en client
+          if echo "$CHANGED_FILES" | grep -q "^client/"; then
+            echo "client_changed=true" >> $GITHUB_OUTPUT
+            echo "✅ Cambios detectados en CLIENT"
+          else
+            echo "client_changed=false" >> $GITHUB_OUTPUT
+            echo "❌ Sin cambios en CLIENT"
+          fi
+          
+          # Verificar si hay cambios en server
+          if echo "$CHANGED_FILES" | grep -q "^server/"; then
+            echo "server_changed=true" >> $GITHUB_OUTPUT
+            echo "✅ Cambios detectados en SERVER"
+          else
+            echo "server_changed=false" >> $GITHUB_OUTPUT
+            echo "❌ Sin cambios en SERVER"
+          fi
+          
+          echo ""
+          echo "📝 Archivos modificados:"
+          echo "$CHANGED_FILES"
+
+  # ============================================
+  # BUILD CLIENT
+  # ============================================
+  build_client:
+    name: 🏗️ Build Client (Next.js)
+    runs-on: ubuntu-latest
+    needs: detect_changes
+    if: needs.detect_changes.outputs.client_changed == 'true'
     
     permissions:
       contents: read
@@ -81,32 +84,83 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 📝 Extract metadata
+      - name: 📝 Extract metadata (Client)
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/sistema-asistencia
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/sistema-asistencia-client
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix={{branch}}-
 
-      - name: 🏗️ Build and push Docker image
+      - name: 🏗️ Build and push Docker image (Client)
         uses: docker/build-push-action@v4
         with:
-          context: ./server
-          push: ${{ github.event_name != 'pull_request' }}
+          context: ./client
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  # ============================================
+  # BUILD SERVER
+  # ============================================
+  build_server:
+    name: 🏗️ Build Server (FastAPI)
+    runs-on: ubuntu-latest
+    needs: detect_changes
+    if: needs.detect_changes.outputs.server_changed == 'true'
+    
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: 🔐 Log in to Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📝 Extract metadata (Server)
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/sistema-asistencia-server
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+
+      - name: 🏗️ Build and push Docker image (Server)
+        uses: docker/build-push-action@v4
+        with:
+          context: ./server
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ============================================
+  # DEPLOY
+  # ============================================
   deploy:
     name: 🚀 Deploy a EC2
     runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [detect_changes, build_client, build_server]
+    if: always() && (needs.detect_changes.outputs.client_changed == 'true' || needs.detect_changes.outputs.server_changed == 'true')
+    # Nota: if: always() permite ejecutarse aunque algún build sea skipped
 
     steps:
       - uses: actions/checkout@v4
@@ -116,22 +170,42 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
           chmod 644 ~/.ssh/known_hosts
 
-      - name: 🚀 Ejecutar script de despliegue
+      - name: � Determinar qué actualizar
+        id: deploy_type
+        run: |
+          CLIENT_CHANGED=${{ needs.detect_changes.outputs.client_changed }}
+          SERVER_CHANGED=${{ needs.detect_changes.outputs.server_changed }}
+          
+          if [ "$CLIENT_CHANGED" = "true" ] && [ "$SERVER_CHANGED" = "true" ]; then
+            echo "deploy_type=both" >> $GITHUB_OUTPUT
+            echo "🔄 Se actualizarán: CLIENT + SERVER"
+          elif [ "$CLIENT_CHANGED" = "true" ]; then
+            echo "deploy_type=client" >> $GITHUB_OUTPUT
+            echo "🌐 Se actualizará: CLIENT"
+          else
+            echo "deploy_type=server" >> $GITHUB_OUTPUT
+            echo "⚙️ Se actualizará: SERVER"
+          fi
+
+      - name: �🚀 Ejecutar script de despliegue selectivo
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
-            'bash /home/deploy/app/sistema-de-asistencia/server/deploy-aws-ec2.sh'
+            'bash /home/deploy/app/sistema-de-asistencia/deploy-compose.sh ${{ steps.deploy_type.outputs.deploy_type }}'
 
       - name: ✅ Notificar éxito
         if: success()
         run: |
           echo "✅ Despliegue completado exitosamente"
-          echo "API disponible en: http://${{ secrets.EC2_HOST }}:8000/docs"
+          echo "🌐 Cliente disponible en: http://${{ secrets.EC2_HOST }}"
+          echo "⚙️ API disponible en: http://${{ secrets.EC2_HOST }}/api/docs"
+          echo "📡 WebSocket disponible en: ws://${{ secrets.EC2_HOST }}/api/socket.io"
 
       - name: ❌ Notificar error
         if: failure()
         run: |
           echo "❌ Error en el despliegue"
-          echo "Ver logs en GitHub Actions"
+          echo "📋 Tipo de deploy: ${{ steps.deploy_type.outputs.deploy_type }}"
+          echo "Ver logs en: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

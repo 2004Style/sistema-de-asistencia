@@ -1,0 +1,193 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # PostgreSQL Database (OPCIONAL)
+  # ============================================
+  # Descomenta esta sección para usar PostgreSQL localmente
+  # En producción, puedes usar un servidor PostgreSQL externo
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: sistema-asistencia-db
+  #   hostname: postgres
+  #   environment:
+  #     POSTGRES_DB: ${DB_NAME:-asistencia_db}
+  #     POSTGRES_USER: ${DB_USER:-asistencia}
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD:-asistencia123}
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "${DB_PORT:-5432}:5432"
+  #   networks:
+  #     - sistema-asistencia-network
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-asistencia}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  # ============================================
+  # API FastAPI (Backend)
+  # ============================================
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: sistema-asistencia-api
+    hostname: api
+    
+    # Cargar archivo .env
+    env_file:
+      - .env
+    
+    environment:
+      - DEBUG=false
+      - ENVIRONMENT=production
+      # DATABASE_URL se carga desde .env
+      # Si usas postgres local, descomenta la linea de arriba en postgres
+      # y usa: postgresql://asistencia:asistencia123@postgres:5432/asistencia_db
+    
+    ports:
+      # Puerto del API (solo internamente accesible desde nginx)
+      - "8000:8000"
+    
+    volumes:
+      # Volúmenes para datos persistentes
+      - api_public:/app/public
+      - api_recognize:/app/recognize/data
+    
+    networks:
+      - sistema-asistencia-network
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    
+    # Esperar a postgres si está habilitado
+    # depends_on:
+    #   postgres:
+    #     condition: service_healthy
+
+  # ============================================
+  # Next.js Client (Frontend)
+  # ============================================
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: sistema-asistencia-client
+    hostname: client
+    
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      # Variables de entorno para el cliente (si las necesita)
+      # NEXT_PUBLIC_API_URL se configura en nginx
+    
+    ports:
+      # Puerto del cliente (solo internamente accesible desde nginx)
+      - "3000:3000"
+    
+    networks:
+      - sistema-asistencia-network
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ============================================
+  # Nginx - Reverse Proxy (PUERTA DE ENTRADA)
+  # ============================================
+  nginx:
+    image: nginx:alpine
+    container_name: sistema-asistencia-nginx
+    hostname: nginx
+    
+    # ÚNICO acceso público al exterior
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
+    
+    volumes:
+      # Configuración de nginx
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # Certificados SSL (opcionales, pero recomendados)
+      - ./certs:/etc/nginx/certs:ro
+    
+    depends_on:
+      api:
+        condition: service_healthy
+      client:
+        condition: service_healthy
+    
+    networks:
+      - sistema-asistencia-network
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# ============================================
+# VOLUMES PERSISTENTES
+# ============================================
+volumes:
+  api_public:
+    driver: local
+  api_recognize:
+    driver: local
+  # postgres_data:  # Descomenta si usas postgres local
+  #   driver: local
+
+# ============================================
+# NETWORK INTERNA
+# ============================================
+networks:
+  sistema-asistencia-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# ============================================
+# NOTAS IMPORTANTES
+# ============================================
+# 1. PostgreSQL es OPCIONAL:
+#    - Para producción: usa servidor externo y configura DATABASE_URL en .env
+#    - Para desarrollo: descomenta la sección postgres
+#
+# 2. Nginx es el ÚNICO acceso público (puertos 80/443)
+#    - Cliente (Next.js) accesible en: http://localhost/
+#    - API accesible en: http://localhost/api/
+#    - WebSockets en: ws://localhost/api/socket.io/
+#
+# 3. Comunicación interna entre contenedores por hostname:
+#    - api:8000 (desde nginx)
+#    - client:3000 (desde nginx)
+#    - postgres:5432 (desde api, si está habilitado)
+#
+# 4. ESP32 se conecta externamente:
+#    - API en: ws://tudominio/api/socket.io/
+#    - Nginx expone puertos 80/443 públicamente
+#
+# 5. Variables de entorno (.env):
+#    - DATABASE_URL (si usas postgres externo o local)
+#    - JWT_SECRET
+#    - MAIL_USERNAME, MAIL_PASSWORD
+#    - AWS credentials (si usas reconocimiento facial)
+#    - etc.
