@@ -163,15 +163,22 @@ fi
 
 
 # ============================================
-# Crear entorno virtual
+# Crear entorno virtual si no existe
 # ============================================
 if [ ! -d "venv" ]; then
-    echo -e "${BLUE}→ Creando entorno virtual...${NC}"
-    python3 -m venv venv || python -m venv venv
-    echo -e "${GREEN}✓ Entorno virtual creado${NC}"
+    echo -e "${BLUE}→ Creando entorno virtual (con sudo)...${NC}"
+
+    if command -v python3 &> /dev/null; then
+        sudo python3 -m venv venv
+    else
+        sudo python -m venv venv
+    fi
+
+    echo -e "${GREEN}✓ Entorno virtual creado correctamente${NC}"
 else
     echo -e "${GREEN}✓ venv existente${NC}"
 fi
+
 
 
 # ============================================
