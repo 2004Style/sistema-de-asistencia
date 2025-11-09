@@ -84,6 +84,81 @@ install_cv2_dependencies
 # ============================================
 # INSTALAR Y CONFIGURAR NGINX AUTOMÁTICAMENTE
 # ============================================
+ 
+# Asegura que existan certificados TLS: usa Let's Encrypt si ya existen
+# o certbot está instalado y hay dominio; en caso contrario genera un
+# certificado auto-firmado y lo coloca en /etc/ssl/localcerts/
+ensure_tls_certificates() {
+    echo -e "${BLUE}→ Verificando certificados TLS...${NC}"
+
+    DOMAIN=""
+    EMAIL=""
+    if [ -f "$SERVER_DIR/.env" ]; then
+        DOMAIN=$(grep -E '^(DOMAIN|HOST|SERVER_NAME|DOMAIN_NAME)=' "$SERVER_DIR/.env" | head -n1 | cut -d'=' -f2- | tr -d '"' | tr -d "'" )
+        EMAIL=$(grep -E '^EMAIL=' "$SERVER_DIR/.env" | head -n1 | cut -d'=' -f2- | tr -d '"' | tr -d "'" )
+    fi
+
+    # Fallback al hostname si no hay valor en .env
+    if [ -z "$DOMAIN" ]; then
+        DOMAIN=$(hostname -f 2>/dev/null || hostname)
+    fi
+    if [ -z "$DOMAIN" ]; then
+        DOMAIN="localhost"
+    fi
+
+    echo -e "${BLUE}→ Dominio detectado para TLS: ${DOMAIN}${NC}"
+
+    LE_PATH="/etc/letsencrypt/live/$DOMAIN"
+    LOCAL_CERT="/etc/ssl/localcerts/sistema-asistencia.crt"
+    LOCAL_KEY="/etc/ssl/localcerts/sistema-asistencia.key"
+
+    # Si ya existen certs locales no hacemos nada
+    if [ -f "$LOCAL_CERT" ] && [ -f "$LOCAL_KEY" ]; then
+        echo -e "${GREEN}✓ Certificados locales ya presentes${NC}"
+        return
+    fi
+
+    # Si existen certificados de Let's Encrypt para el dominio, enlazarlos
+    if [ -d "$LE_PATH" ] && [ -f "$LE_PATH/fullchain.pem" ] && [ -f "$LE_PATH/privkey.pem" ]; then
+        echo -e "${BLUE}→ Encontrado Let's Encrypt para $DOMAIN — creando enlaces${NC}"
+        sudo ln -sf "$LE_PATH/fullchain.pem" "$LOCAL_CERT"
+        sudo ln -sf "$LE_PATH/privkey.pem" "$LOCAL_KEY"
+        sudo chmod 644 "$LOCAL_CERT" || true
+        sudo chmod 600 "$LOCAL_KEY" || true
+        echo -e "${GREEN}✓ Enlaces creados${NC}"
+        return
+    fi
+
+    # Intentar usar certbot si está instalado y el dominio parece válido (no localhost)
+    if command -v certbot >/dev/null 2>&1 && [ "$DOMAIN" != "localhost" ] && echo "$DOMAIN" | grep -q '\.'; then
+        echo -e "${BLUE}→ Intentando solicitar certificado con certbot para $DOMAIN${NC}"
+        CERT_EMAIL="${EMAIL:-admin@${DOMAIN}}"
+        # Preferimos el plugin --nginx (no detiene nginx). Si falla, seguiremos con auto-firmado.
+        if sudo certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$CERT_EMAIL"; then
+            if [ -f "$LE_PATH/fullchain.pem" ]; then
+                sudo ln -sf "$LE_PATH/fullchain.pem" "$LOCAL_CERT"
+                sudo ln -sf "$LE_PATH/privkey.pem" "$LOCAL_KEY"
+                sudo chmod 644 "$LOCAL_CERT" || true
+                sudo chmod 600 "$LOCAL_KEY" || true
+                echo -e "${GREEN}✓ Certificado Let's Encrypt instalado y enlazado${NC}"
+                return
+            fi
+        else
+            echo -e "${YELLOW}⚠️  certbot falló o no pudo obtener el cert — se generará auto-firmado${NC}"
+        fi
+    else
+        echo -e "${YELLOW}ℹ️  Certbot no disponible o dominio no apto para Let's Encrypt — generando certificado auto-firmado${NC}"
+    fi
+
+    # Generar certificado auto-firmado
+    echo -e "${BLUE}→ Generando certificado auto-firmado en $LOCAL_CERT${NC}"
+    sudo openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+        -keyout "$LOCAL_KEY" -out "$LOCAL_CERT" -subj "/CN=${DOMAIN}" >/dev/null 2>&1 || true
+    sudo chmod 644 "$LOCAL_CERT" || true
+    sudo chmod 600 "$LOCAL_KEY" || true
+    echo -e "${GREEN}✓ Certificado auto-firmado creado${NC}"
+}
+
 setup_nginx() {
     echo -e "${BLUE}→ Configurando NGINX...${NC}"
 
@@ -130,6 +205,13 @@ setup_nginx() {
 
     echo -e "${BLUE}→ Copiando configuración de NGINX...${NC}"
     sudo cp "$NGINX_CONF_SOURCE" "$NGINX_CONF_TARGET"
+
+        # Asegurar que exista carpeta para certificados locales
+        sudo mkdir -p /etc/ssl/localcerts
+        sudo chmod 755 /etc/ssl/localcerts
+
+        # Intentar proveer certificados: Let's Encrypt (si existe para el dominio) o generar auto-firmado
+        ensure_tls_certificates
 
     sudo mkdir -p /var/log/nginx
 
