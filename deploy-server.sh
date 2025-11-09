@@ -201,9 +201,16 @@ setup_nginx() {
     # Si existe el sitio por defecto de Debian/Ubuntu, deshabilitarlo para evitar conflicto
     if [ -e "/etc/nginx/sites-enabled/default" ]; then
         echo -e "${YELLOW}→ Sitio por defecto de NGINX detectado en /etc/nginx/sites-enabled/default - deshabilitando...${NC}"
-        # mover a copia de seguridad por si hace falta restaurarlo manualmente
-        sudo mv /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/default.disabled || sudo rm -f /etc/nginx/sites-enabled/default || true
-        echo -e "${GREEN}✓ default site deshabilitado${NC}"
+        # mover a sites-available para que deje de ser incluido desde sites-enabled
+        BACKUP_TARGET="/etc/nginx/sites-available/default.disabled.$(date +%s)"
+        sudo mkdir -p /etc/nginx/sites-available
+        if sudo mv /etc/nginx/sites-enabled/default "$BACKUP_TARGET" 2>/dev/null; then
+            echo -e "${GREEN}✓ default site movido a $BACKUP_TARGET${NC}"
+        else
+            # si no se pudo mover, intentar eliminar el enlace
+            sudo rm -f /etc/nginx/sites-enabled/default || true
+            echo -e "${GREEN}✓ default site eliminado${NC}"
+        fi
     fi
 
     if [ ! -f "$NGINX_CONF_SOURCE" ]; then
