@@ -9,12 +9,10 @@ build/
 .coverage
 htmlcov/
 
-# Entorno
+# Entorno virtual
 .venv
 venv/
 env/
-.env
-.env.local
 
 # IDE
 .vscode
@@ -45,3 +43,8 @@ pnpm-lock.yaml
 src/recognize/database/*
 src/recognize/logs/*
 certs/*
+
+# ⚠️ NO IGNORAR .env - necesario en build de Docker
+# .env
+# .env.local
+# .env.production

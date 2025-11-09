@@ -11,11 +11,13 @@ build/
 dist/
 *.egg-info/
 
-# Environment
+# Environment variables - NO subir al repo
+# Pero SÍ incluir en Docker build (ver .dockerignore)
 .env
 .env.production
 .env.test
 .env.local
+.env.*.local
 
 # IDE
 .vscode/
@@ -38,8 +40,12 @@ logs/
 .DS_Store
 Thumbs.db
 
+# Public files
 public
 
+# Recognition data
 src/recognize/database/*
 src/recognize/logs/*
+
+# Certificates
 certs/*

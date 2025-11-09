@@ -35,19 +35,19 @@ services:
     container_name: sistema-asistencia-api
     hostname: api
     
-    # Cargar archivo .env
+    # Cargar archivo .env del servidor
     env_file:
-      - .env
+      - ./server/.env
     
     environment:
       - DEBUG=false
       - ENVIRONMENT=production
-      # DATABASE_URL se carga desde .env
-      # Si usas postgres local, descomenta la linea de arriba en postgres
-      # y usa: postgresql://asistencia:asistencia123@postgres:5432/asistencia_db
+      # DATABASE_URL se carga desde server/.env
+      # Si usas postgres local, descomenta la sección postgres arriba
+      # y configura: DATABASE_URL=postgresql://asistencia:asistencia123@postgres:5432/asistencia_db
     
     ports:
-      # Puerto del API (solo internamente accesible desde nginx)
+      # Puerto del API (accesible desde nginx)
       - "8000:8000"
     
     volumes:
@@ -61,11 +61,11 @@ services:
     restart: unless-stopped
     
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 45s
+      retries: 5
+      start_period: 60s
     
     # Esperar a postgres si está habilitado
     # depends_on:
@@ -82,18 +82,18 @@ services:
     container_name: sistema-asistencia-client
     hostname: client
     
-    # Cargar variables desde .env raíz (mismo que API)
-    # Todas las variables NEXT_PUBLIC_* se cargan aquí al build
+    # Cargar variables desde .env del cliente
+    # Todas las variables NEXT_PUBLIC_* deben estar en client/.env
     env_file:
-      - .env
+      - ./client/.env
     
     environment:
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
-      # NEXT_PUBLIC_API_URL se configura en nginx via headers
+      # NEXT_PUBLIC_URL_BACKEND se carga desde client/.env
     
     ports:
-      # Puerto del cliente (solo internamente accesible desde nginx)
+      # Puerto del cliente (accesible desde nginx)
       - "3000:3000"
     
     networks:
@@ -102,11 +102,11 @@ services:
     restart: unless-stopped
     
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200 && r.statusCode !== 304) process.exit(1)}).on('error', () => process.exit(1))\""]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 5
+      start_period: 60s
 
   # ============================================
   # Nginx - Reverse Proxy (PUERTA DE ENTRADA)
@@ -118,8 +118,8 @@ services:
     
     # ÚNICO acceso público al exterior
     ports:
-      - "${NGINX_HTTP_PORT:-80}:80"
-      - "${NGINX_HTTPS_PORT:-443}:443"
+      - "80:80"
+      - "443:443"
     
     volumes:
       # Configuración de nginx
@@ -128,10 +128,8 @@ services:
       - ./certs:/etc/nginx/certs:ro
     
     depends_on:
-      api:
-        condition: service_healthy
-      client:
-        condition: service_healthy
+      - api
+      - client
     
     networks:
       - sistema-asistencia-network
@@ -139,11 +137,11 @@ services:
     restart: unless-stopped
     
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD-SHELL", "nc -z localhost 80 || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 10s
+      retries: 5
+      start_period: 20s
 
 # ============================================
 # VOLUMES PERSISTENTES

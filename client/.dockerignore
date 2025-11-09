@@ -2,8 +2,6 @@ node_modules
 npm-debug.log
 yarn-error.log
 .next
-.env.local
-.env.*.local
 .DS_Store
 .git
 .gitignore
@@ -17,3 +15,7 @@ package-lock.json
 .eslintrc.json
 .prettierrc
 .turbo
+
+# ⚠️ NO IGNORAR .env - necesario en build de Docker
+# .env.local
+# .env.*.local

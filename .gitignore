@@ -1,0 +1,52 @@
+# ============================================
+# GITIGNORE RAÍZ - Sistema de Asistencia
+# ============================================
+
+# Environment variables - IMPORTANTE: No subir al repositorio
+# Estos archivos contienen credenciales sensibles
+.env
+.env.production
+.env.local
+.env.*.local
+
+# Certificados SSL autogenerados
+certs/
+
+# Logs de despliegue
+deploy_*.log
+*.log
+
+# OS específico
+.DS_Store
+Thumbs.db
+*~
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node modules (si hay algo en raíz)
+node_modules/
+
+# Python cache (si hay algo en raíz)
+__pycache__/
+*.pyc
+
+# Backups
+*.backup
+*.bak
+
+# Temporales
+tmp/
+temp/
+*.tmp
+
+# ============================================
+# NOTAS IMPORTANTES
+# ============================================
+# - Los .env están en .gitignore para NO subirlos al repo
+# - Los .env NO están en .dockerignore para SÍ incluirlos en build
+# - En producción, crear los .env manualmente en el servidor
+# - Ver INSTRUCCIONES_DESPLIEGUE.md para más info
