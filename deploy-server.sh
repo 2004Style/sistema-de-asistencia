@@ -198,20 +198,21 @@ setup_nginx() {
     NGINX_CONF_SOURCE="$NGINX_DIR/nginx-server.conf"
     NGINX_CONF_TARGET="/etc/nginx/conf.d/sistema-asistencia.conf"
 
-    # Si existe el sitio por defecto de Debian/Ubuntu, deshabilitarlo para evitar conflicto
-    if [ -e "/etc/nginx/sites-enabled/default" ]; then
-        echo -e "${YELLOW}→ Sitio por defecto de NGINX detectado en /etc/nginx/sites-enabled/default - deshabilitando...${NC}"
-        # mover a sites-available para que deje de ser incluido desde sites-enabled
-        BACKUP_TARGET="/etc/nginx/sites-available/default.disabled.$(date +%s)"
-        sudo mkdir -p /etc/nginx/sites-available
-        if sudo mv /etc/nginx/sites-enabled/default "$BACKUP_TARGET" 2>/dev/null; then
-            echo -e "${GREEN}✓ default site movido a $BACKUP_TARGET${NC}"
-        else
-            # si no se pudo mover, intentar eliminar el enlace
-            sudo rm -f /etc/nginx/sites-enabled/default || true
-            echo -e "${GREEN}✓ default site eliminado${NC}"
+    # Buscar y mover/eliminar cualquier archivo relacionado con el 'default' en sites-enabled
+    sudo mkdir -p /etc/nginx/sites-available
+    for f in /etc/nginx/sites-enabled/default*; do
+        if [ -e "$f" ]; then
+            NAME=$(basename "$f")
+            BACKUP_TARGET="/etc/nginx/sites-available/${NAME}.disabled.$(date +%s)"
+            echo -e "${YELLOW}→ Detectado $f — moviendo a $BACKUP_TARGET para deshabilitarlo...${NC}"
+            if sudo mv "$f" "$BACKUP_TARGET" 2>/dev/null; then
+                echo -e "${GREEN}✓ Movido $f → $BACKUP_TARGET${NC}"
+            else
+                sudo rm -f "$f" || true
+                echo -e "${GREEN}✓ Eliminado $f${NC}"
+            fi
         fi
-    fi
+    done
 
     if [ ! -f "$NGINX_CONF_SOURCE" ]; then
         echo -e "${RED}❌ No se encontró nginx-server.conf${NC}"
