@@ -9,9 +9,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copiar requirements y instalar dependencias de Python
+# Copiar requirements e instalar dependencias de Python
 COPY requirements.txt* ./
-RUN if [ -f requirements.txt ]; then pip install --user --no-cache-dir -r requirements.txt; fi
+RUN if [ -f requirements.txt ]; then pip install --user --no-cache-dir -r requirements.txt; else echo "No requirements.txt found"; fi
 
 # Stage 2: Runtime
 FROM python:3.12-slim

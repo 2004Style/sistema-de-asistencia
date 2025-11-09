@@ -8,7 +8,7 @@ COPY package.json pnpm-lock.yaml* ./
 
 # Install dependencies using pnpm
 RUN npm install -g pnpm && \
-    pnpm install --frozen-lockfile
+    if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else pnpm install; fi
 
 # Copy application source
 COPY . .
@@ -28,7 +28,8 @@ RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml* ./
 
 # Install only production dependencies
-RUN pnpm install --frozen-lockfile --prod && \
+RUN npm install -g pnpm && \
+    if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile --prod; else pnpm install --prod; fi && \
     pnpm prune --prod
 
 # Copy built application from builder
