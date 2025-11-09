@@ -35,16 +35,14 @@ services:
     container_name: sistema-asistencia-api
     hostname: api
     
-    # Cargar archivo .env del servidor
+    # Cargar variables de entorno del servidor
+    # Todas las configuraciones están en server/.env
     env_file:
       - ./server/.env
     
     environment:
       - DEBUG=false
       - ENVIRONMENT=production
-      # DATABASE_URL se carga desde server/.env
-      # Si usas postgres local, descomenta la sección postgres arriba
-      # y configura: DATABASE_URL=postgresql://asistencia:asistencia123@postgres:5432/asistencia_db
     
     ports:
       # Puerto del API (accesible desde nginx)
@@ -82,15 +80,14 @@ services:
     container_name: sistema-asistencia-client
     hostname: client
     
-    # Cargar variables desde .env del cliente
-    # Todas las variables NEXT_PUBLIC_* deben estar en client/.env
+    # Cargar variables de entorno del cliente
+    # Todas las configuraciones están en client/.env
     env_file:
       - ./client/.env
     
     environment:
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
-      # NEXT_PUBLIC_URL_BACKEND se carga desde client/.env
     
     ports:
       # Puerto del cliente (accesible desde nginx)

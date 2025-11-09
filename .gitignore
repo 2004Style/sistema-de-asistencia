@@ -4,6 +4,7 @@
 
 # Environment variables - IMPORTANTE: No subir al repositorio
 # Estos archivos contienen credenciales sensibles
+# Nota: El .env raíz se mantiene ignorado aunque actualmente no se use
 .env
 .env.production
 .env.local
@@ -48,5 +49,8 @@ temp/
 # ============================================
 # - Los .env están en .gitignore para NO subirlos al repo
 # - Los .env NO están en .dockerignore para SÍ incluirlos en build
-# - En producción, crear los .env manualmente en el servidor
-# - Ver INSTRUCCIONES_DESPLIEGUE.md para más info
+# - Variables de entorno requeridas:
+#   * server/.env → Backend (DATABASE_URL, JWT_SECRET, etc.)
+#   * client/.env → Frontend (NEXT_PUBLIC_*, NEXTAUTH_SECRET, etc.)
+# - En producción, crear estos archivos manualmente en el servidor
+# - Ver GUIA_DESPLIEGUE_COMPLETA.md para más info

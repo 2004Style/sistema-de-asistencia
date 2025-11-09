@@ -50,7 +50,7 @@ def _execute_seeds():
     # Seed de roles
     try:
         print("📋 Ejecutando seed_roles.py...")
-        from seed_roles import seed_roles
+        from src.seed.seed_roles import seed_roles
         seed_roles()
         print("✅ seed_roles completado")
     except Exception as e:
@@ -61,7 +61,7 @@ def _execute_seeds():
     # Seed de turnos
     try:
         print("🔄 Ejecutando seed_turnos.py...")
-        from seed_turnos import seed_turnos
+        from src.seed.seed_turnos import seed_turnos
         seed_turnos()
         print("✅ seed_turnos completado")
     except Exception as e:
@@ -72,7 +72,7 @@ def _execute_seeds():
     # Seed de usuarios
     try:
         print("👥 Ejecutando seed_users.py...")
-        from seed_users import seed_users
+        from src.seed.seed_users import seed_users
         seed_users()
         print("✅ seed_users completado")
     except Exception as e:

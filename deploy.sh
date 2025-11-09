@@ -143,18 +143,6 @@ log_section "📋 Verificando Configuración"
 
 ERRORS=0
 
-# .env raíz (opcional)
-if [ ! -f ".env" ]; then
-    log_warning ".env raíz no encontrado. Creando archivo mínimo..."
-    cat > .env << 'EOF'
-# Configuración para docker-compose.yml
-# No necesita IP hardcodeada - Nginx acepta cualquier IP/dominio
-EOF
-    log_success ".env raíz creado"
-else
-    log_success ".env raíz encontrado"
-fi
-
 # server/.env (REQUERIDO)
 if [ ! -f "server/.env" ]; then
     log_error "server/.env NO EXISTE - REQUERIDO"
