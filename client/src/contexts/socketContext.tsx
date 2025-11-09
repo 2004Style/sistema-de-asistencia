@@ -24,9 +24,30 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         }
         const idUser = session?.user?.name === "" ? "invitado" : session?.user?.name;
 
-        // 🟢 Crear nueva conexión
+        // 🟢 Crear nueva conexión con opciones de producción
         const newSocket = io(BACKEND_ROUTES.urlSockets, {
             path: "/socket.io/",
+            // ============================================================================
+            // OPCIONES DE PRODUCCIÓN PARA WEBSOCKET
+            // ============================================================================
+            // ✅ Reconexión automática
+            reconnection: true,                    // Habilitar reconexión automática
+            reconnectionDelay: 1000,              // Esperar 1s antes de reconectar
+            reconnectionDelayMax: 5000,           // Máximo 5s entre intentos
+            reconnectionAttempts: Infinity,       // Reintentar indefinidamente
+
+            // ✅ Transporte (WebSocket primero, fallback a HTTP long-polling)
+            transports: ['websocket', 'polling'], // Intentar WebSocket primero
+
+            // ✅ Buffer y encoding
+            upgrade: true,                        // Permitir upgrade a mejor transporte
+
+            // ✅ Autenticación (opcional)
+            // auth: {
+            //     token: session?.user?.token
+            // },
+
+            // ✅ Query parameters (opcional)
             // query: { id: idUser }
         });
 

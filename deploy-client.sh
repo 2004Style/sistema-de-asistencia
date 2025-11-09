@@ -202,17 +202,32 @@ setup_nginx_client() {
 build_and_start_client() {
     cd "$CLIENT_DIR" || { echo -e "${RED}❌ No existe $CLIENT_DIR${NC}"; return 1; }
 
-    # Verificar si ya hay un cliente corriendo (puerto 3000)
-    if netstat -tuln 2>/dev/null | grep -q ":3000 " || lsof -i :3000 >/dev/null 2>&1; then
-        echo -e "${YELLOW}⚠️  Cliente ya está corriendo en puerto 3000${NC}"
-        echo -e "${BLUE}→ Opciones:${NC}"
-        CLIENT_LOG="$BASE_DIR/client-start.log"
-        echo -e "   1. Ver logs en tiempo real:     ${BLUE}tail -f $CLIENT_LOG${NC}"
-        echo -e "   2. Detener cliente:            ${BLUE}pkill -f 'pnpm start'${NC}"
-        echo -e "   3. Reiniciar cliente:          ${BLUE}pkill -f 'pnpm start' && sleep 2 && ./deploy-client.sh build-only${NC}"
-        echo -e "   4. Ver procesos:               ${BLUE}ps aux | grep pnpm${NC}"
-        echo ""
-        return 0
+    # ✅ DETENER proceso anterior si existe
+    echo -e "${BLUE}→ Deteniendo cliente anterior (si existe)...${NC}"
+    
+    # Matar procesos de pnpm/npm start
+    pkill -f 'pnpm start' 2>/dev/null || true
+    pkill -f 'npm start' 2>/dev/null || true
+    pkill -f 'next start' 2>/dev/null || true
+    
+    # Esperar a que se libere el puerto 3000
+    echo -e "${BLUE}→ Esperando a que se libere el puerto 3000...${NC}"
+    MAX_WAIT=30
+    WAITED=0
+    while [ $WAITED -lt $MAX_WAIT ]; do
+        if ! (netstat -tuln 2>/dev/null | grep -q ":3000 " || lsof -i :3000 >/dev/null 2>&1); then
+            echo -e "${GREEN}✓ Puerto 3000 liberado${NC}"
+            break
+        fi
+        echo -e "${YELLOW}  Esperando... ($((WAITED+1))/$MAX_WAIT)${NC}"
+        sleep 1
+        WAITED=$((WAITED + 1))
+    done
+    
+    if [ $WAITED -eq $MAX_WAIT ]; then
+        echo -e "${RED}⚠️  Timeout esperando puerto 3000. Forzando kill...${NC}"
+        sudo fuser -k 3000/tcp 2>/dev/null || true
+        sleep 2
     fi
 
     # Install deps if needed
@@ -229,11 +244,14 @@ build_and_start_client() {
         npm run build
     fi
 
-    echo -e "${GREEN}✓ Build del cliente completado${NC}"
+    echo -e "${GREEN}✓ Build del cliente completado${NC}\n"
 
-    # Start (simple) - user can replace with pm2/systemd
+    # ✅ START - Start (simple) - user can replace with pm2/systemd
     # Avoid permission issues writing to /var/log when not running as root.
     CLIENT_LOG="$BASE_DIR/client-start.log"
+    
+    echo -e "${BLUE}→ Iniciando cliente...${NC}"
+    
     if command -v pnpm &> /dev/null; then
         nohup pnpm start > "$CLIENT_LOG" 2>&1 &
         CLIENT_PID=$!
@@ -242,28 +260,51 @@ build_and_start_client() {
         CLIENT_PID=$!
     fi
     
-    echo -e "${GREEN}✓ Cliente iniciado (PID: $CLIENT_PID)${NC}"
+    echo -e "${BLUE}→ Cliente iniciado (PID: $CLIENT_PID)${NC}"
+    echo -e "${BLUE}→ Esperando a que escuche en puerto 3000...${NC}"
     
-    # Pausa para que inicie
-    sleep 3
+    # ✅ Esperar a que el cliente esté listo (con timeout)
+    MAX_RETRIES=30
+    RETRY=0
+    PORT_READY=0
     
-    # Verificar si el cliente está realmente escuchando en el puerto 3000
-    if netstat -tuln 2>/dev/null | grep -q ":3000 " || lsof -i :3000 >/dev/null 2>&1; then
-        echo -e "${GREEN}✓ Cliente escuchando en puerto 3000${NC}\n"
-    elif ps -p $CLIENT_PID > /dev/null 2>&1; then
-        echo -e "${YELLOW}⚠️  Proceso iniciado pero verificando puerto...${NC}\n"
-        sleep 2
+    while [ $RETRY -lt $MAX_RETRIES ]; do
+        sleep 1
+        
+        # Verificar si el puerto está escuchando
         if netstat -tuln 2>/dev/null | grep -q ":3000 " || lsof -i :3000 >/dev/null 2>&1; then
-            echo -e "${GREEN}✓ Cliente escuchando en puerto 3000${NC}\n"
-        else
-            echo -e "${YELLOW}⚠️  Proceso corriendo pero puerto no responde${NC}"
-            echo -e "${YELLOW}→ Verificando logs...${NC}\n"
-            tail -n 30 "$CLIENT_LOG" || true
+            PORT_READY=1
+            break
         fi
+        
+        # Verificar si el proceso aún está corriendo
+        if ! ps -p $CLIENT_PID > /dev/null 2>&1; then
+            # Proceso murió, mostrar logs
+            echo -e "${RED}❌ Proceso cliente murió (PID $CLIENT_PID no encontrado)${NC}"
+            echo -e "${RED}→ Últimas líneas del log:${NC}\n"
+            tail -n 50 "$CLIENT_LOG" || true
+            return 1
+        fi
+        
+        RETRY=$((RETRY + 1))
+        if [ $((RETRY % 5)) -eq 0 ]; then
+            echo -e "${YELLOW}  Esperando... ($RETRY/$MAX_RETRIES)${NC}"
+        fi
+    done
+    
+    if [ $PORT_READY -eq 1 ]; then
+        echo -e "${GREEN}✓ Cliente escuchando en puerto 3000${NC}\n"
     else
-        echo -e "${RED}❌ Proceso no inició correctamente${NC}"
-        echo -e "${RED}→ Verificando logs...${NC}\n"
-        tail -n 50 "$CLIENT_LOG" || true
+        echo -e "${RED}❌ Timeout: Cliente no respondió en puerto 3000 después de ${MAX_RETRIES}s${NC}"
+        echo -e "${RED}→ Verificando si el proceso sigue activo...${NC}"
+        if ps -p $CLIENT_PID > /dev/null 2>&1; then
+            echo -e "${YELLOW}→ Proceso activo pero puerto no responde${NC}"
+            echo -e "${YELLOW}→ Revisando logs...${NC}\n"
+            tail -n 50 "$CLIENT_LOG" || true
+        else
+            echo -e "${RED}→ Proceso no está corriendo${NC}\n"
+            tail -n 50 "$CLIENT_LOG" || true
+        fi
         return 1
     fi
     
