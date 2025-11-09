@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     # ===== APPLICATION CORE =====
     SECRET_KEY: str  # Debe venir del .env
     DEBUG: bool
+    ENVIRONMENT: str = "development"  # development, production, staging
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     TIMEZONE: str = "America/Lima"
@@ -32,6 +33,9 @@ class Settings(BaseSettings):
     # ===== CORS CONFIGURATION =====
     # Orígenes permitidos para CORS (separados por comas en .env)
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001"  # Parsear a lista en method
+    
+    # Orígenes permitidos para Socket.IO (separados por comas o usar *)
+    SOCKETIO_CORS_ORIGINS: str = "*"  # Permitir cualquier origen para WebSocket
     
     # ===== UPLOAD & FILE HANDLING =====
     UPLOAD_DIR: str  # Debe venir del .env
@@ -89,6 +93,16 @@ class Settings(BaseSettings):
         Uso: settings.get_cors_origins_list()
         """
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+    
+    def get_socketio_cors_origins(self) -> str | List[str]:
+        """
+        ✅ Método para obtener SOCKETIO_CORS_ORIGINS
+        Retorna: "*" (str) si es *, o lista de orígenes
+        Uso: settings.get_socketio_cors_origins()
+        """
+        if self.SOCKETIO_CORS_ORIGINS.strip() == "*":
+            return "*"
+        return [origin.strip() for origin in self.SOCKETIO_CORS_ORIGINS.split(",") if origin.strip()]
 
 
 @lru_cache()
