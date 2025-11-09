@@ -1428,6 +1428,239 @@ docker compose logs --tail=100 nginx
 docker exec sistema-asistencia-api python -c "import os; print(os.getenv('SECRET_KEY'))"
 ```
 
+---
+
+## 🐛 Troubleshooting - Errores Comunes
+
+### ❌ Advertencia: `DATABASE_URL no está configurada`
+
+**Causa:** El script utiliza validación robusta mediante `grep` para verificar que `DATABASE_URL` esté presente y no sea un placeholder.
+
+**Situaciones:**
+
+- ✅ **DATABASE_URL realmente está configurada** → Se muestra en los logs como `DATABASE_URL configurada ✓`
+- ⚠️ **DATABASE_URL es un placeholder** (ej: `your-database-url-here`) → Se muestra advertencia
+- ❌ **DATABASE_URL está vacía o falta** → Se muestra advertencia
+
+**Solución:**
+
+```bash
+# Verificar que .env tiene DATABASE_URL configurada:
+grep "^DATABASE_URL=" .env
+
+# Si sale vacío, agregar una URL válida
+# Ejemplo con Neon PostgreSQL:
+DATABASE_URL=postgresql://user:password@host.neon.tech/dbname?sslmode=require
+
+# Luego redeploy
+./deploy-compose.sh both
+```
+
+**IMPORTANTE:** La advertencia es **informativa**, el deploy continúa porque:
+
+- En desarrollo, puede ser `sqlite://`
+- En producción, debe ser una URL PostgreSQL válida
+- El API puede tener defaults internos
+
+**Causa:** `docker-compose.yml` tiene la línea `version: '3.8'` que ya no es necesaria.
+
+**Solución:**
+
+```bash
+# Ya está corregido en este proyecto
+# Si lo ves, simplemente elimina la línea version: del docker-compose.yml
+```
+
+### ❌ Error: `docker: command not found`
+
+**Causa:** Docker no está instalado en el servidor.
+
+**Solución:**
+
+```bash
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker deploy
+```
+
+### ❌ Error: `Cannot connect to Docker daemon`
+
+**Causa:** El usuario `deploy` no está en el grupo `docker`.
+
+**Solución:**
+
+```bash
+# En el servidor como root
+sudo usermod -aG docker deploy
+
+# O como usuario deploy
+newgrp docker
+```
+
+### ❌ Error: `database connection refused`
+
+**Causa:** DATABASE_URL no está configurada o es incorrecta en `.env`.
+
+**Solución:**
+
+```bash
+# Verificar .env
+cat .env | grep DATABASE_URL
+
+# Debe ser algo como:
+# DATABASE_URL=postgresql://user:pass@db-host:5432/dbname
+
+# Luego redeploy
+./deploy-compose.sh server
+```
+
+### ❌ Error: `SSL: CERTIFICATE_VERIFY_FAILED`
+
+**Causa:** Certificados SSL no existen o son inválidos.
+
+**Solución:**
+
+```bash
+# El script genera automáticamente certificados autofirmados
+# Para usar certificados válidos en producción:
+# 1. Obtener certificados de Let's Encrypt
+# 2. Copiar a ./certs/cert.pem y ./certs/key.pem
+# 3. Reiniciar nginx
+
+docker compose restart nginx
+```
+
+### ❌ Error: `Port 80 already in use`
+
+**Causa:** Otro proceso está usando el puerto 80.
+
+**Solución:**
+
+```bash
+# Verificar qué está usando el puerto 80
+sudo lsof -i :80
+
+# Detener el servicio conflictivo o cambiar puerto en docker-compose.yml
+# En docker-compose.yml, cambiar:
+#   ports:
+#     - "8080:80"  # Cambiar 80 por 8080 (o cualquier otro)
+```
+
+### ❌ Error: `Timeout esperando servicios`
+
+**Causa:** Servicios tardando más de 180 segundos en iniciarse (pueden ser recursos insuficientes o errores en healthchecks).
+
+**Solución:**
+
+```bash
+# Ver logs detallados
+docker compose logs -f
+
+# Verificar recursos disponibles
+free -h
+df -h
+
+# Si es insuficiente, aumentar especificaciones de EC2
+```
+
+### ⏱️ Error: `No space left on device`
+
+**Causa:** El disco está lleno.
+
+**Solución:**
+
+```bash
+# Limpiar imágenes y volúmenes Docker antiguos
+docker system prune -a --volumes
+
+# Ver uso de disco
+du -sh /var/lib/docker/*
+
+# Aumentar volumen de EBS en AWS
+```
+
+---
+
+## 🔒 Notas de Seguridad - Vulnerabilidades Resueltas
+
+### ✅ Vulnerabilidades Docker (RESUELTAS en v2.0)
+
+| Problema                   | Anterior                     | Ahora                     | Estado      |
+| -------------------------- | ---------------------------- | ------------------------- | ----------- |
+| **Node.js Image**          | `node:20-alpine` (HIGH vuln) | `node:22-alpine`          | ✅ Resuelto |
+| **Python Runtime**         | `python:3.11-slim`           | `python:3.12-slim`        | ✅ Resuelto |
+| **Docker Compose Version** | `version: '3.8'` (obsoleto)  | Sin versión (v2 nativa)   | ✅ Resuelto |
+| **Healthcheck Logic**      | Complejo y frágil            | Simple y robusto con curl | ✅ Mejorado |
+| **Error Handling**         | Sin trap handlers            | Con `trap_error`          | ✅ Mejorado |
+
+### 🔐 Recomendaciones Adicionales
+
+**Para Producción:**
+
+1. **Certificados SSL válidos:**
+
+   ```bash
+   # Usar Let's Encrypt en lugar de autofirmados
+   sudo apt-get install certbot python3-certbot-nginx
+   sudo certbot certonly --standalone -d tu-dominio.com
+   # Copiar a ./certs/
+   ```
+
+2. **Firewall:**
+
+   ```bash
+   # En AWS Security Groups, permitir solo:
+   # - Puerto 80 (HTTP) desde 0.0.0.0/0
+   # - Puerto 443 (HTTPS) desde 0.0.0.0/0
+   # - Puerto 22 (SSH) desde tu IP solamente
+   ```
+
+3. **Database:**
+
+   ```bash
+   # Usar AWS RDS en lugar de contenedor local
+   # En .env:
+   DATABASE_URL=postgresql://admin:SecurePass@db-prod.123456789.us-east-1.rds.amazonaws.com:5432/asistencia
+   ```
+
+4. **Monitoreo:**
+
+   ```bash
+   # Ver logs en tiempo real
+   docker compose logs -f
+
+   # Alertas automáticas (requiere configuración adicional)
+   # Considerar: CloudWatch, DataDog, New Relic
+   ```
+
+---
+
+## ✅ Checklist de Despliegue Exitoso
+
+Después de ejecutar `./deploy-compose.sh both`, verificar:
+
+- [ ] `docker compose ps` muestra todos los servicios en estado `Up`
+- [ ] `curl http://localhost` retorna HTML del cliente (código 200)
+- [ ] `curl http://localhost/api/health` retorna `{"status": "ok"}`
+- [ ] WebSocket accesible: `wscat -c ws://localhost/api/socket.io`
+- [ ] Logs sin errores críticos: `docker compose logs`
+- [ ] Base de datos conectada: `curl http://localhost/api/users`
+- [ ] Certificados generados: `ls -la ./certs/`
+- [ ] .env contiene valores de producción (no hardcoded en código)
+
+---
+
+## 🎯 Próximos Pasos
+
+**Después del primer despliegue exitoso:**
+
+1. ✅ Configurar dominio en DNS
+2. ✅ Obtener certificados SSL válidos (Let's Encrypt)
+3. ✅ Configurar backups automáticos de base de datos
+4. ✅ Monitoreo y alertas (CloudWatch, DataDog, etc.)
+5. ✅ Documentar runbooks para emergencias
+6. ✅ Entrenar equipo en CI/CD y troubleshooting
+
 ### Recursos Útiles
 
 - 📖 [Docker Compose Docs](https://docs.docker.com/compose/)

@@ -208,18 +208,42 @@ fi
 # Validar variables críticas
 WARNINGS_COUNT=0
 
-if [ -z "${DATABASE_URL:-}" ]; then
-    log_warning "DATABASE_URL no está configurada (necesaria para producción)"
+# Verificar DATABASE_URL - método alternativo más robusto
+if grep -q "^DATABASE_URL=" .env 2>/dev/null; then
+    DB_VALUE=$(grep "^DATABASE_URL=" .env | cut -d'=' -f2- | tr -d ' ')
+    if [ -n "$DB_VALUE" ] && [ "$DB_VALUE" != "your-database-url-here" ]; then
+        log_success "DATABASE_URL configurada ✓"
+    else
+        log_warning "DATABASE_URL está vacía o es un placeholder (necesaria para producción)"
+        WARNINGS_COUNT=$((WARNINGS_COUNT + 1))
+    fi
+else
+    log_warning "DATABASE_URL no está configurada en .env (necesaria para producción)"
     WARNINGS_COUNT=$((WARNINGS_COUNT + 1))
 fi
 
-if [ -z "${SECRET_KEY:-}" ] || [ -z "${JWT_SECRET_KEY:-}" ]; then
-    log_warning "SECRET_KEY o JWT_SECRET_KEY no están configuradas"
+# Verificar SECRET_KEY y JWT_SECRET_KEY
+if grep -q "^SECRET_KEY=" .env 2>/dev/null && grep -q "^JWT_SECRET_KEY=" .env 2>/dev/null; then
+    SECRET_VAL=$(grep "^SECRET_KEY=" .env | cut -d'=' -f2- | tr -d ' ')
+    JWT_VAL=$(grep "^JWT_SECRET_KEY=" .env | cut -d'=' -f2- | tr -d ' ')
+    
+    if ([ -z "$SECRET_VAL" ] || [ "$SECRET_VAL" = "your-secret-key-change-in-production-REPLACE-ME" ]) || \
+       ([ -z "$JWT_VAL" ] || [ "$JWT_VAL" = "your-jwt-secret-key-change-in-production-REPLACE-ME" ]); then
+        log_warning "SECRET_KEY o JWT_SECRET_KEY son placeholders (cambiar en producción)"
+        WARNINGS_COUNT=$((WARNINGS_COUNT + 1))
+    else
+        log_success "Claves de seguridad configuradas ✓"
+    fi
+else
+    log_warning "SECRET_KEY o JWT_SECRET_KEY no están en .env"
     WARNINGS_COUNT=$((WARNINGS_COUNT + 1))
 fi
 
 if [ $WARNINGS_COUNT -gt 0 ]; then
-    log_warning "Se encontraron $WARNINGS_COUNT advertencias en la configuración"
+    log_warning "Se encontraron $WARNINGS_COUNT advertencia(s) en la configuración"
+    log_info "⏳ Continuando con despliegue... (verifica que .env sea válido)"
+else
+    log_success "Todas las variables críticas están configuradas ✓"
 fi
 
 # ============================================
