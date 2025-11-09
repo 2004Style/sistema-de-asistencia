@@ -17,7 +17,8 @@ echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  DESPLIEGUE - CLIENTE (Next.js)${NC}"
 echo -e "${BLUE}========================================${NC}\n"
 
-BASE_DIR="$(dirname "$0")"
+# Resolve BASE_DIR to an absolute path (so script works when called from any CWD)
+BASE_DIR="$(cd "$(dirname "$0")" >/dev/null 2>&1 && pwd || printf '%s' "$(dirname "$0")")"
 CLIENT_DIR="$BASE_DIR/client"
 NGINX_DIR="$BASE_DIR/nginx"
 
@@ -134,8 +135,29 @@ setup_nginx_client() {
     NGINX_CONF_TARGET="/etc/nginx/conf.d/sistema-client.conf"
 
     if [ ! -f "$NGINX_CONF_SOURCE" ]; then
-        echo -e "${RED}❌ No se encontró nginx-client.conf en $NGINX_CONF_SOURCE${NC}"
-        exit 1
+        echo -e "${YELLOW}ℹ️  No se encontró nginx-client.conf en $NGINX_CONF_SOURCE — buscando rutas alternativas...${NC}"
+        alt_paths=(
+            "$BASE_DIR/nginx/nginx-client.conf"
+            "$PWD/nginx/nginx-client.conf"
+            "$BASE_DIR/../nginx/nginx-client.conf"
+        )
+        found=""
+        for p in "${alt_paths[@]}"; do
+            if [ -f "$p" ]; then
+                found="$p"
+                break
+            fi
+        done
+        if [ -n "$found" ]; then
+            NGINX_CONF_SOURCE="$found"
+            echo -e "${GREEN}✓ Encontrado nginx-client.conf en: $found — usando esa ruta${NC}"
+        else
+            echo -e "${RED}❌ No se encontró nginx-client.conf. Rutas buscadas:${NC}"
+            for p in "${alt_paths[@]}"; do echo "  - $p"; done
+            echo -e "${BLUE}→ Contenido del directorio $BASE_DIR/nginx:${NC}"
+            ls -la "$BASE_DIR/nginx" 2>/dev/null || true
+            exit 1
+        fi
     fi
 
     # Deshabilitar cualquier default site que cause conflicto
@@ -197,12 +219,14 @@ build_and_start_client() {
     echo -e "${GREEN}✓ Build del cliente completado${NC}"
 
     # Start (simple) - user can replace with pm2/systemd
+    # Avoid permission issues writing to /var/log when not running as root.
+    CLIENT_LOG="$BASE_DIR/client-start.log"
     if command -v pnpm &> /dev/null; then
-        nohup pnpm start &>/var/log/client-start.log &
+        nohup pnpm start &>"$CLIENT_LOG" &
     else
-        nohup npm start &>/var/log/client-start.log &
+        nohup npm start &>"$CLIENT_LOG" &
     fi
-    echo -e "${GREEN}✓ Cliente iniciado (ver /var/log/client-start.log)${NC}"
+    echo -e "${GREEN}✓ Cliente iniciado (ver $CLIENT_LOG)${NC}"
 }
 
 # Main
