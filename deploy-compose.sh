@@ -194,7 +194,21 @@ if [ ! -f docker-compose.yml ]; then
 fi
 
 if [ ! -f nginx.conf ]; then
-    log_warning "nginx.conf no encontrado (pode que no sea crítico)"
+    log_warning "nginx.conf no encontrado (puede que no sea crítico)"
+fi
+
+# Verificar .env del servidor
+if [ ! -f server/.env ]; then
+    log_warning "server/.env no existe (asegúrate de crear uno)"
+else
+    log_success "server/.env encontrado"
+fi
+
+# Verificar .env del cliente
+if [ ! -f client/.env ]; then
+    log_warning "client/.env no existe (asegúrate de crear uno)"
+else
+    log_success "client/.env encontrado"
 fi
 
 # Cargar variables de entorno

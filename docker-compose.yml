@@ -82,11 +82,14 @@ services:
     container_name: sistema-asistencia-client
     hostname: client
     
+    # Cargar variables del cliente
+    env_file:
+      - client/.env
+    
     environment:
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
-      # Variables de entorno para el cliente (si las necesita)
-      # NEXT_PUBLIC_API_URL se configura en nginx
+      # NEXT_PUBLIC_API_URL se configura en nginx via headers
     
     ports:
       # Puerto del cliente (solo internamente accesible desde nginx)
