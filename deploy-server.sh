@@ -2,11 +2,12 @@
 
 # ============================================
 # SCRIPT DE DESPLIEGUE - SERVIDOR (FastAPI)
+# AUTO-INSTALL: OpenCV + Python + Venv + NGINX
 # ============================================
-# Uso: chmod +x deploy-server.sh && ./deploy-server.sh
 
 set -e
 
+# Colores
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -14,122 +15,191 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}  DESPLIEGUE - SERVIDOR (FastAPI)${NC}"
+echo -e "${BLUE}   DESPLIEGUE - SERVIDOR (FastAPI)${NC}"
 echo -e "${BLUE}========================================${NC}\n"
-
-# Detectar el ambiente
-if [ -z "$ENVIRONMENT" ]; then
-    echo -e "${YELLOW}¿Qué ambiente es?${NC}"
-    echo "1) Desarrollo (localhost:8000)"
-    echo "2) Producción (HTTPS con Nginx)"
-    read -p "Elige opción (1 o 2): " ENV_CHOICE
-    
-    if [ "$ENV_CHOICE" = "1" ]; then
-        ENVIRONMENT="development"
-    elif [ "$ENV_CHOICE" = "2" ]; then
-        ENVIRONMENT="production"
-    else
-        echo -e "${RED}❌ Opción inválida${NC}"
-        exit 1
-    fi
-fi
-
-echo -e "${GREEN}✓${NC} Ambiente: ${YELLOW}$ENVIRONMENT${NC}\n"
-
-# Verificar Python
-if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}❌ Python 3 no está instalado${NC}"
-    exit 1
-fi
-
-echo -e "${GREEN}✓${NC} Python: $(python3 --version)"
 
 # Ir a carpeta server
 cd "$(dirname "$0")/server" || exit 1
 
-# Crear venv si no existe
-if [ ! -d "venv" ]; then
-    echo -e "${BLUE}→${NC} Creando entorno virtual..."
-    python3 -m venv venv
-    echo -e "${GREEN}✓${NC} Entorno virtual creado\n"
+
+# ============================================
+# DETECCIÓN DE DISTRO + DEPENDENCIAS OPENCV
+# ============================================
+install_cv2_dependencies() {
+    echo -e "${BLUE}→ Verificando dependencias del sistema para OpenCV...${NC}"
+
+    if ldconfig -p | grep -q "libGL.so.1"; then
+        echo -e "${GREEN}✓ Dependencias de OpenCV ya instaladas${NC}"
+        return
+    fi
+
+    echo -e "${YELLOW}⚠️  Falta libGL.so.1 — instalando dependencias...${NC}"
+
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        DISTRO=$ID
+    else
+        echo -e "${RED}❌ No se pudo detectar la distribución${NC}"
+        exit 1
+    fi
+
+    echo -e "${BLUE}→ Distro detectada: $DISTRO${NC}"
+
+    case "$DISTRO" in
+        debian|ubuntu|linuxmint|pop|elementary)
+            sudo apt update
+            sudo apt install -y libgl1 libglib2.0-0 libsm6 libxext6 libxrender1 ffmpeg
+            ;;
+        arch|manjaro|endeavouros|garuda)
+            sudo pacman -Syu --noconfirm
+            sudo pacman -S --noconfirm mesa glib2 libsm libxext libxrender ffmpeg
+            ;;
+        fedora)
+            sudo dnf install -y mesa-libGL glib2 libSM libXext libXrender ffmpeg
+            ;;
+        centos|rhel|rocky|almalinux)
+            sudo yum install -y mesa-libGL glib2 libSM libXext libXrender ffmpeg || \
+            sudo dnf install -y mesa-libGL glib2 libSM libXext libXrender ffmpeg
+            ;;
+        alpine)
+            sudo apk update
+            sudo apk add --no-cache mesa-gl glib libsm libxext libxrender ffmpeg
+            ;;
+        *)
+            sudo apt update 2>/dev/null || true
+            sudo apt install -y libgl1 libglib2.0-0 ffmpeg 2>/dev/null || true
+            ;;
+    esac
+
+    echo -e "${GREEN}✓ Dependencias de OpenCV instaladas${NC}\n"
+}
+
+install_cv2_dependencies
+
+
+# ============================================
+# INSTALAR Y CONFIGURAR NGINX AUTOMÁTICAMENTE
+# ============================================
+setup_nginx() {
+    echo -e "${BLUE}→ Configurando NGINX...${NC}"
+
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        DISTRO=$ID
+    fi
+
+    echo -e "${BLUE}→ Distro detectada para nginx: $DISTRO${NC}"
+
+    case "$DISTRO" in
+        debian|ubuntu|linuxmint|pop|elementary)
+            sudo apt update
+            sudo apt install -y nginx
+            ;;
+        arch|manjaro|endeavouros|garuda)
+            sudo pacman -Syu --noconfirm
+            sudo pacman -S --noconfirm nginx
+            ;;
+        fedora)
+            sudo dnf install -y nginx
+            ;;
+        centos|rhel|rocky|almalinux)
+            sudo yum install -y epel-release
+            sudo yum install -y nginx || sudo dnf install -y nginx
+            ;;
+        alpine)
+            sudo apk add nginx
+            ;;
+        *)
+            sudo apt install -y nginx 2>/dev/null || true
+            ;;
+    esac
+
+    sudo systemctl enable nginx || true
+
+    NGINX_CONF_SOURCE="$(dirname "$0")/nginx/nginx-server.conf"
+    NGINX_CONF_TARGET="/etc/nginx/conf.d/sistema-asistencia.conf"
+
+    if [ ! -f "$NGINX_CONF_SOURCE" ]; then
+        echo -e "${RED}❌ No se encontró nginx-server.conf${NC}"
+        exit 1
+    fi
+
+    echo -e "${BLUE}→ Copiando configuración de NGINX...${NC}"
+    sudo cp "$NGINX_CONF_SOURCE" "$NGINX_CONF_TARGET"
+
+    sudo mkdir -p /var/log/nginx
+
+    echo -e "${BLUE}→ Probando configuración de NGINX...${NC}"
+    if ! sudo nginx -t; then
+        echo -e "${RED}❌ Error en la configuración de NGINX${NC}"
+        exit 1
+    fi
+
+    echo -e "${BLUE}→ Reiniciando NGINX...${NC}"
+    sudo systemctl restart nginx
+
+    echo -e "${GREEN}✓ NGINX configurado correctamente${NC}\n"
+}
+
+setup_nginx
+
+
+# ============================================
+# Verificar archivo .env
+# ============================================
+if [ ! -f ".env" ]; then
+    echo -e "${YELLOW}⚠️  No existe .env${NC}"
+
+    if [ -f ".env.example" ]; then
+        cp .env.example .env
+        echo -e "${GREEN}✓ Archivo .env creado desde .env.example${NC}"
+    else
+        echo -e "${RED}❌ No existe .env.example${NC}"
+        exit 1
+    fi
+else
+    echo -e "${GREEN}✓ Archivo .env detectado${NC}"
 fi
 
-# Activar venv
-echo -e "${BLUE}→${NC} Activando entorno virtual..."
-source venv/bin/activate
-echo -e "${GREEN}✓${NC} Entorno activado\n"
 
-# Instalar dependencias
-echo -e "${BLUE}→${NC} Instalando dependencias..."
+# ============================================
+# Crear entorno virtual
+# ============================================
+if [ ! -d "venv" ]; then
+    echo -e "${BLUE}→ Creando entorno virtual...${NC}"
+    python3 -m venv venv || python -m venv venv
+    echo -e "${GREEN}✓ Entorno virtual creado${NC}"
+else
+    echo -e "${GREEN}✓ venv existente${NC}"
+fi
+
+
+# ============================================
+# Activar venv
+# ============================================
+echo -e "${BLUE}→ Activando entorno virtual...${NC}"
+source venv/bin/activate
+echo -e "${GREEN}✓ Entorno activado${NC}"
+
+
+# ============================================
+# Instalar dependencias Python
+# ============================================
+echo -e "${BLUE}→ Instalando dependencias Python...${NC}"
 pip install --upgrade pip
 pip install -r requirements.txt
-echo -e "${GREEN}✓${NC} Dependencias instaladas\n"
+echo -e "${GREEN}✓ Dependencias Python instaladas${NC}\n"
 
-# Verificar .env
-if [ ! -f ".env.local" ] && [ "$ENVIRONMENT" = "development" ]; then
-    echo -e "${YELLOW}⚠️  No existe .env.local${NC}"
-    if [ -f ".env.local.example" ]; then
-        cp .env.local.example .env.local
-        echo -e "${GREEN}✓${NC} Creado .env.local desde template"
-        echo -e "${YELLOW}📝 Edita .env.local y configura:${NC}"
-        echo "   - DATABASE_URL"
-        echo "   - ALLOWED_ORIGINS"
-        echo "   - SECRET_KEY\n"
-        read -p "¿Editar .env.local ahora? (y/n): " EDIT_ENV
-        if [ "$EDIT_ENV" = "y" ]; then
-            nano .env.local
-        fi
-    fi
+
+# ============================================
+# Ejecutar proyecto (run.sh)
+# ============================================
+echo -e "${BLUE}→ Ejecutando run.sh ...${NC}\n"
+
+if [ ! -f "run.sh" ]; then
+    echo -e "${RED}❌ No existe run.sh${NC}"
+    exit 1
 fi
 
-# Verificar base de datos
-echo -e "${BLUE}→${NC} Verificando base de datos..."
-if ! python3 -c "import psycopg2" 2>/dev/null; then
-    echo -e "${YELLOW}⚠️  psycopg2 no está disponible${NC}"
-    echo -e "${YELLOW}   Instala: pip install psycopg2-binary${NC}"
-fi
-
-# Ejecutar migraciones
-echo -e "${BLUE}→${NC} Ejecutando migraciones..."
-if [ -d "alembic" ]; then
-    alembic upgrade head 2>/dev/null && echo -e "${GREEN}✓${NC} Migraciones completadas" || echo -e "${YELLOW}⚠️  Verifica la conexión a BD${NC}"
-else
-    echo -e "${YELLOW}⚠️  Carpeta 'alembic' no encontrada${NC}"
-fi
-
-echo ""
-
-# Desarrollo
-if [ "$ENVIRONMENT" = "development" ]; then
-    echo -e "${BLUE}→${NC} Iniciando en modo DESARROLLO...\n"
-    echo -e "${YELLOW}📍 Servidor disponible en: http://localhost:8000${NC}"
-    echo -e "${YELLOW}📖 Documentación: http://localhost:8000/docs${NC}"
-    echo -e "${YELLOW}📍 WebSocket: ws://localhost:8000/socket.io\n${NC}"
-    
-    if [ -f "run.sh" ]; then
-        bash run.sh
-    else
-        uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
-    fi
-
-# Producción
-else
-    echo -e "${BLUE}→${NC} Iniciando en modo PRODUCCIÓN...\n"
-    echo -e "${YELLOW}📍 Servidor escucha en: 0.0.0.0:8000${NC}"
-    echo -e "${YELLOW}📍 Nginx redirige: 80/443 → 8000${NC}\n"
-    
-    # Verificar Gunicorn
-    if ! pip show gunicorn > /dev/null; then
-        echo -e "${BLUE}→${NC} Instalando Gunicorn..."
-        pip install gunicorn
-    fi
-    
-    # Iniciar con Gunicorn
-    gunicorn src.main:app \
-        --workers 4 \
-        --worker-class uvicorn.workers.UvicornWorker \
-        --bind 0.0.0.0:8000 \
-        --timeout 120 \
-        --access-logfile - \
-        --error-logfile -
-fi
+chmod +x run.sh
+./run.sh
