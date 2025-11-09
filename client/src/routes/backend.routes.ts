@@ -1,4 +1,4 @@
-const urlBase = process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:8000";
+const urlBase = process.env.NEXT_PUBLIC_URL_BACKEND;
 export const BACKEND_ROUTES = {
   urlSockets: urlBase,
   urlHttpBase: `${urlBase}/api`,
