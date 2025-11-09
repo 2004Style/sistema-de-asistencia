@@ -159,7 +159,12 @@ jobs:
     name: 🚀 Deploy a EC2
     runs-on: ubuntu-latest
     needs: [detect_changes, build_client, build_server]
-    if: always() && (needs.detect_changes.outputs.client_changed == 'true' || needs.detect_changes.outputs.server_changed == 'true')
+    if: |
+      always() && 
+      needs.detect_changes.result == 'success' &&
+      (needs.detect_changes.outputs.client_changed == 'true' || needs.detect_changes.outputs.server_changed == 'true') &&
+      (needs.build_client.result == 'success' || needs.build_client.result == 'skipped') &&
+      (needs.build_server.result == 'success' || needs.build_server.result == 'skipped')
     # Nota: if: always() permite ejecutarse aunque algún build sea skipped
 
     steps:
@@ -190,10 +195,31 @@ jobs:
             echo "⚙️ Se actualizará: SERVER"
           fi
 
-      - name: �🚀 Ejecutar script de despliegue selectivo
+      - name: � Autenticar en GitHub Container Registry en EC2
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
-            'bash /home/deploy/app/sistema-de-asistencia/deploy-compose.sh ${{ steps.deploy_type.outputs.deploy_type }}'
+            "echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u ${{ github.actor }} --password-stdin"
+
+      - name: �🚀 Ejecutar script de despliegue selectivo
+        run: |
+          DEPLOY_ARG="${{ steps.deploy_type.outputs.deploy_type }}"
+          
+          # Mapear 'both' a despliegue completo (sin argumento)
+          if [ "$DEPLOY_ARG" = "both" ]; then
+            DEPLOY_ARG=""
+          fi
+          
+          ssh -i ~/.ssh/deploy_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << ENDSSH
+            cd /home/deploy/app/sistema-de-asistencia
+            
+            # Hacer pull de las imágenes más recientes desde GHCR
+            echo "📦 Actualizando imágenes desde GitHub Container Registry..."
+            docker compose pull
+            
+            # Ejecutar el script de despliegue
+            echo "🚀 Ejecutando despliegue: bash deploy.sh $DEPLOY_ARG"
+            bash deploy.sh $DEPLOY_ARG
+          ENDSSH
 
       - name: ✅ Notificar éxito
         if: success()

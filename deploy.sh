@@ -301,7 +301,7 @@ case "$DEPLOY_TYPE" in
         SERVICES_TO_CHECK=("client")
         ;;
         
-    server|api)
+    server)
         log_info "Actualizando solo el servidor..."
         if $DC up -d --build api >> "$LOG_FILE" 2>&1; then
             log_success "Servidor iniciado"
