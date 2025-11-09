@@ -36,13 +36,11 @@ get_distro() {
 
 DISTRO=$(get_distro)
 
-
 # =====================================================================
 # VERIFICAR E INSTALAR: Node.js, npm y pnpm
 # =====================================================================
 install_node() {
     echo -e "${BLUE}→ Instalando Node.js 20 LTS...${NC}"
-
     case "$DISTRO" in
         debian|ubuntu|linuxmint|pop)
             curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
@@ -67,7 +65,6 @@ install_node() {
             exit 1
             ;;
     esac
-
     echo -e "${GREEN}✓ Node.js instalado correctamente${NC}"
 }
 
@@ -79,21 +76,18 @@ install_pnpm() {
 
 check_and_install_node_stack() {
     echo -e "${BLUE}→ Verificando Node.js y paquetes necesarios...${NC}"
-
     if ! command -v node >/dev/null 2>&1; then
         echo -e "${YELLOW}⚠️ Node.js no está instalado${NC}"
         install_node
     else
         echo -e "${GREEN}✓ Node.js encontrado → $(node -v)${NC}"
     fi
-
     if ! command -v npm >/dev/null 2>&1; then
         echo -e "${YELLOW}⚠️ npm no está instalado${NC}"
         install_node
     else
         echo -e "${GREEN}✓ npm encontrado → $(npm -v)${NC}"
     fi
-
     if ! command -v pnpm >/dev/null 2>&1; then
         echo -e "${YELLOW}⚠️ pnpm no está instalado${NC}"
         install_pnpm
@@ -102,17 +96,15 @@ check_and_install_node_stack() {
     fi
 }
 
-
 # =====================================================================
 # LIBERAR PUERTO 3000
 # =====================================================================
 liberar_puerto_3000() {
     echo -e "${BLUE}→ Liberando puerto 3000...${NC}"
-
-    pkill -9 -f 'pnpm start' 2>/dev/null || true
-    pkill -9 -f 'npm start' 2>/dev/null || true
-    pkill -9 -f 'next start' 2>/dev/null || true
-    pkill -9 -f 'node.*3000' 2>/dev/null || true
+    sudo pkill -9 -f 'pnpm start' 2>/dev/null || true
+    sudo pkill -9 -f 'npm start' 2>/dev/null || true
+    sudo pkill -9 -f 'next start' 2>/dev/null || true
+    sudo pkill -9 -f 'node.*3000' 2>/dev/null || true
 
     sleep 1
 
@@ -124,7 +116,6 @@ liberar_puerto_3000() {
     echo -e "${GREEN}✓ Puerto 3000 liberado${NC}"
 }
 
-
 # =====================================================================
 # CONFIGURACIÓN NGINX + TLS
 # =====================================================================
@@ -133,10 +124,8 @@ ensure_tls_certificates_client() {
 
     DOMAIN="${DOMAIN:-$(hostname -f || hostname)}"
     EMAIL="${EMAIL:-admin@$DOMAIN}"
-
     LOCAL_CERT="/etc/ssl/localcerts/client-sistema.crt"
     LOCAL_KEY="/etc/ssl/localcerts/client-sistema.key"
-
     sudo mkdir -p /etc/ssl/localcerts
 
     if [ -f "$LOCAL_CERT" ] && [ -f "$LOCAL_KEY" ]; then
@@ -147,17 +136,13 @@ ensure_tls_certificates_client() {
     echo -e "${BLUE}→ Generando certificado auto-firmado${NC}"
     sudo openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
         -keyout "$LOCAL_KEY" -out "$LOCAL_CERT" -subj "/CN=${DOMAIN}" >/dev/null 2>&1
-
     sudo chmod 644 "$LOCAL_CERT"
     sudo chmod 600 "$LOCAL_KEY"
-
     echo -e "${GREEN}✓ Certificado auto-firmado generado${NC}"
 }
 
-
 setup_nginx_client() {
     echo -e "${BLUE}→ Configurando NGINX CLIENTE...${NC}"
-
     case "$DISTRO" in
         debian|ubuntu|linuxmint|pop)
             sudo apt update && sudo apt install -y nginx ;;
@@ -174,37 +159,30 @@ setup_nginx_client() {
     esac
 
     sudo systemctl enable nginx || true
-
     sudo cp "$NGINX_DIR/nginx-client.conf" /etc/nginx/conf.d/sistema-client.conf
-
     ensure_tls_certificates_client
-
     sudo nginx -t
     sudo systemctl restart nginx
 }
-
 
 # =====================================================================
 # BUILD Y START NEXT.JS
 # =====================================================================
 build_and_start_client() {
     cd "$CLIENT_DIR" || { echo -e "${RED}❌ No existe $CLIENT_DIR${NC}"; exit 1; }
-
     liberar_puerto_3000
-
     echo -e "${BLUE}→ Instalando dependencias del cliente...${NC}"
-
     if command -v pnpm >/dev/null 2>&1; then
         pnpm install --frozen-lockfile || pnpm install
         pnpm build
         rm -f "$CLIENT_LOG"
-        nohup pnpm start -- --hostname 0.0.0.0 --port 3000 > "$CLIENT_LOG" 2>&1 &
+        nohup pnpm start --hostname 0.0.0.0 --port 3000 > "$CLIENT_LOG" 2>&1 &
         CLIENT_PID=$!
     else
         npm ci || npm install
         npm run build
-        rm -f "$CLIENT_LOG"
-        nohup npm start -- --hostname 0.0.0.0 --port 3000 > "$CLIENT_LOG" 2>&1 &
+        rm-f "$CLIENT_LOG"
+        nohup npm start --hostname 0.0.0.0 --port 3000 > "$CLIENT_LOG" 2>&1 &
         CLIENT_PID=$!
     fi
 
@@ -213,13 +191,10 @@ build_and_start_client() {
 
     MAX_RETRIES=40
     RETRY=0
-
     while [ $RETRY -lt $MAX_RETRIES ]; do
         sleep 1
-
         if ss -tulpn | grep -q ":3000"; then
             echo -e "${GREEN}✓ Cliente escuchando en puerto 3000${NC}\n"
-
             echo -e "${BLUE}════════════════════════════════════════${NC}"
             echo -e "${GREEN}✅ CLIENTE INICIADO EXITOSAMENTE${NC}"
             echo -e "${BLUE}════════════════════════════════════════${NC}\n"
@@ -227,10 +202,8 @@ build_and_start_client() {
             echo -e "  PID:              $CLIENT_PID"
             echo -e "  Puerto:           3000"
             echo -e "  Log:              $CLIENT_LOG"
-
             echo -e "${BLUE}🔗 Acceder:${NC}"
             echo -e "  ${GREEN}http://localhost:3000${NC}\n"
-
             return 0
         fi
 
@@ -240,7 +213,6 @@ build_and_start_client() {
             tail -n 30 "$CLIENT_LOG"
             exit 1
         fi
-
         RETRY=$((RETRY + 1))
     done
 
@@ -248,7 +220,6 @@ build_and_start_client() {
     tail -n 50 "$CLIENT_LOG"
     exit 1
 }
-
 
 # =====================================================================
 # EJECUCIÓN
