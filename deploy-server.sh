@@ -18,8 +18,12 @@ echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}   DESPLIEGUE - SERVIDOR (FastAPI)${NC}"
 echo -e "${BLUE}========================================${NC}\n"
 
-# Ir a carpeta server
-cd "$(dirname "$0")/server" || exit 1
+# Rutas reales basadas en estructura:
+BASE_DIR="$(dirname "$0")"
+SERVER_DIR="$BASE_DIR/server"
+NGINX_DIR="$BASE_DIR/nginx"
+
+cd "$BASE_DIR" || exit 1
 
 
 # ============================================
@@ -116,7 +120,7 @@ setup_nginx() {
 
     sudo systemctl enable nginx || true
 
-    NGINX_CONF_SOURCE="$(dirname "$0")/nginx/nginx-server.conf"
+    NGINX_CONF_SOURCE="$NGINX_DIR/nginx-server.conf"
     NGINX_CONF_TARGET="/etc/nginx/conf.d/sistema-asistencia.conf"
 
     if [ ! -f "$NGINX_CONF_SOURCE" ]; then
@@ -145,16 +149,16 @@ setup_nginx
 
 
 # ============================================
-# Verificar archivo .env
+# Verificar archivo .env EN server/
 # ============================================
-if [ ! -f ".env" ]; then
-    echo -e "${YELLOW}⚠️  No existe .env${NC}"
+if [ ! -f "$SERVER_DIR/.env" ]; then
+    echo -e "${YELLOW}⚠️  No existe server/.env${NC}"
 
-    if [ -f ".env.example" ]; then
-        cp .env.example .env
+    if [ -f "$SERVER_DIR/.env.example" ]; then
+        cp "$SERVER_DIR/.env.example" "$SERVER_DIR/.env"
         echo -e "${GREEN}✓ Archivo .env creado desde .env.example${NC}"
     else
-        echo -e "${RED}❌ No existe .env.example${NC}"
+        echo -e "${RED}❌ No existe server/.env.example${NC}"
         exit 1
     fi
 else
@@ -163,17 +167,11 @@ fi
 
 
 # ============================================
-# Crear entorno virtual si no existe
+# Crear entorno virtual EN server/
 # ============================================
-if [ ! -d "venv" ]; then
+if [ ! -d "$SERVER_DIR/venv" ]; then
     echo -e "${BLUE}→ Creando entorno virtual (con sudo)...${NC}"
-
-    if command -v python3 &> /dev/null; then
-        sudo python3 -m venv venv
-    else
-        sudo python -m venv venv
-    fi
-
+    sudo python3 -m venv "$SERVER_DIR/venv"
     echo -e "${GREEN}✓ Entorno virtual creado correctamente${NC}"
 else
     echo -e "${GREEN}✓ venv existente${NC}"
@@ -185,28 +183,31 @@ fi
 # Activar venv
 # ============================================
 echo -e "${BLUE}→ Activando entorno virtual...${NC}"
-source venv/bin/activate
+source "$SERVER_DIR/venv/bin/activate"
 echo -e "${GREEN}✓ Entorno activado${NC}"
 
 
 # ============================================
-# Instalar dependencias Python
+# Instalar dependencias Python (server/requirements.txt)
 # ============================================
 echo -e "${BLUE}→ Instalando dependencias Python...${NC}"
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r "$SERVER_DIR/requirements.txt"
 echo -e "${GREEN}✓ Dependencias Python instaladas${NC}\n"
 
 
 # ============================================
-# Ejecutar proyecto (run.sh)
+# Ejecutar proyecto (server/run.sh)
 # ============================================
 echo -e "${BLUE}→ Ejecutando run.sh ...${NC}\n"
 
-if [ ! -f "run.sh" ]; then
-    echo -e "${RED}❌ No existe run.sh${NC}"
+RUNFILE="$SERVER_DIR/run.sh"
+
+if [ ! -f "$RUNFILE" ]; then
+    echo -e "${RED}❌ No existe server/run.sh${NC}"
     exit 1
 fi
 
-chmod +x run.sh
+chmod +x "$RUNFILE"
+cd "$SERVER_DIR"
 ./run.sh
