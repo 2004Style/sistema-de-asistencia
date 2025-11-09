@@ -1,5 +1,5 @@
 # Stage 1: Build dependencies and application
-FROM node:20-alpine as builder
+FROM node:22-alpine as builder
 
 WORKDIR /app
 
@@ -17,7 +17,7 @@ COPY . .
 RUN pnpm build
 
 # Stage 2: Runtime - minimal image for production
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 

@@ -4,6 +4,73 @@
 
 ---
 
+## ⚡ RESUMEN EJECUTIVO - DESPLIEGUE AUTOMÁTICO
+
+> 🎯 **IMPORTANTE:** Desde v2.0, el script `deploy-compose.sh` automatiza TODO el proceso de Docker. No necesitas compilar manualmente.
+
+### 📌 Para Usuarios con Prisa
+
+**Si tu servidor ya está preparado, solo necesitas:**
+
+```bash
+# 1. Conectar al servidor
+ssh deploy@tu-ip
+
+# 2. Navegar al directorio
+cd /home/deploy/app/sistema-de-asistencia
+
+# 3. Crear .env (ÚNICO paso manual obligatorio)
+cp server/.env.example .env
+nano .env  # Editar variables críticas (DATABASE_URL, JWT_SECRET, etc.)
+
+# 4. Ejecutar script AUTOMÁTICO (TODO se hace por sí solo)
+bash deploy-compose.sh both
+
+# ¡Listo! El script se encarga de:
+# ✅ Actualizar repositorio
+# ✅ Verificar Docker y dependencias
+# ✅ Generar certificados SSL (si faltan)
+# ✅ Compilar imágenes Docker
+# ✅ Iniciar todos los contenedores
+# ✅ Esperar a que estén listos
+# ✅ Limpiar recursos antiguos
+
+# Servicios disponibles en:
+# - Cliente: http://tu-ip
+# - API: http://tu-ip/api/docs
+# - WebSocket: ws://tu-ip/api/socket.io
+```
+
+### ⚡ Opciones del Script
+
+```bash
+# Despliegue completo (cliente + servidor + nginx)
+bash deploy-compose.sh both
+
+# Solo actualizar cliente
+bash deploy-compose.sh client
+
+# Solo actualizar servidor (API)
+bash deploy-compose.sh server
+
+# Sin argumentos = despliegue completo
+bash deploy-compose.sh
+```
+
+### ✅ Checklist Pre-despliegue
+
+Antes de ejecutar el script, verificar:
+
+- [ ] Usuario `deploy` creado en servidor
+- [ ] Docker + Docker Compose instalados
+- [ ] GitHub Actions configurado con secrets (EC2_HOST, EC2_USER, EC2_SSH_KEY)
+- [ ] Archivo `.env` creado con valores de producción
+- [ ] Clave SSH (`/home/deploy/.ssh/authorized_keys`) configurada
+- [ ] Conexión SSH probada desde tu máquina local
+- [ ] Permisos: usuario `deploy` en grupo `docker` y `sudo`
+
+---
+
 ## 📋 Tabla de Contenidos
 
 1. [Arquitectura del Sistema](#arquitectura-del-sistema)
@@ -71,6 +138,68 @@
 
 ---
 
+## ⚡ INICIO RÁPIDO - Despliegue Automático
+
+> 🚀 **Si ya tienes el servidor preparado**, usa el script de despliegue automático que hace TODO por ti.
+
+### Opción A: Despliegue Selectivo (Recomendado)
+
+```bash
+# En el servidor, desde /home/deploy/app/sistema-de-asistencia/
+
+# Actualizar SOLO el cliente (Next.js)
+bash deploy-compose.sh client
+
+# Actualizar SOLO el servidor (FastAPI)
+bash deploy-compose.sh server
+
+# Actualizar CLIENTE + SERVIDOR + NGINX (completo)
+bash deploy-compose.sh both
+
+# O sin parámetro (por defecto: both)
+bash deploy-compose.sh
+```
+
+### Qué hace el script automáticamente:
+
+✅ Valida requisitos (Docker, Git, Docker Compose)  
+✅ Actualiza el repositorio  
+✅ Genera certificados SSL autofirmados (si no existen)  
+✅ Valida archivos de configuración (.env, docker-compose.yml, nginx.conf)  
+✅ Detiene y remueve contenedores antiguos  
+✅ Compila las imágenes Docker  
+✅ Inicia los servicios en orden correcto  
+✅ Espera a que todos los servicios estén healthy  
+✅ Verifica disponibilidad de endpoints  
+✅ Limpia recursos innecesarios  
+✅ Muestra resumen de acceso a servicios
+
+### Salida esperada:
+
+```
+╔════════════════════════════════════════════════════════════════╗
+║   🔥 SISTEMA DE ASISTENCIA - DOCKER COMPOSE DEPLOY 🔥       ║
+╚════════════════════════════════════════════════════════════════╝
+
+▶ 🔍 Validaciones Iniciales
+├─ ✅ Requisitos verificados
+├─ ✅ Repositorio actualizado
+├─ ✅ Certificados SSL generados
+└─ ✅ Configuración cargada
+
+▶ 🔄 Actualizando Servicios
+├─ ✅ Contenedores compilados
+├─ ✅ Servicios iniciados
+└─ ✅ Todos los servicios operacionales
+
+🌐 ACCESO A SERVICIOS
+├─ Cliente: http://tu-ip
+├─ API: http://tu-ip/api/docs
+└─ WebSocket: ws://tu-ip/api/socket.io
+```
+
+---
+
 ## 🖥️ Preparación del Servidor AWS
 
 ### Paso 1: Requisitos del Servidor
@@ -82,22 +211,66 @@
 - Disco: 30GB SSD
 - Puertos abiertos: 22 (SSH), 80 (HTTP), 443 (HTTPS)
 
-### Paso 2: Conectarse al Servidor
+### Paso 2: Conectarse al Servidor y Crear Usuario Deploy
+
+**Conectar al servidor:**
 
 ```bash
 # SSH al servidor
 ssh -i tu-clave.pem ubuntu@ec2-XX-XX-XX-XX.compute-1.amazonaws.com
+```
 
-# Crear usuario de despliegue
-sudo useradd -m -s /bin/bash deploy
+**Crear usuario de despliegue (seguro para CI/CD):**
+
+```bash
+# ⚠️ IMPORTANTE: Este es el comando CORRECTO para usuarios de despliegue
+# NO usa --disabled-password --disabled-login para mayor seguridad
+
+sudo adduser deploy --disabled-password --disabled-login --gecos "Deploy User"
+
+# Explicación:
+# --disabled-password    → No se puede hacer login con contraseña interactiva
+# --disabled-login       → Deshabilita el shell login interactivo completamente
+# --gecos "Deploy User"  → Comentario descriptivo del usuario
+# Beneficio: Solo SSH con clave pública es permitido (ideal para GitHub Actions)
+```
+
+**Agregar usuario a grupos necesarios:**
+
+```bash
 sudo usermod -aG docker deploy
 sudo usermod -aG sudo deploy
+```
 
-# Crear estructura de directorios
+**Crear estructura de directorios:**
+
+```bash
 sudo mkdir -p /home/deploy/app
+sudo mkdir -p /home/deploy/.ssh
 sudo chown -R deploy:deploy /home/deploy
+sudo chmod 700 /home/deploy/.ssh
+```
 
-# Cambiar a usuario deploy
+**Verificar que el usuario se creó correctamente:**
+
+```bash
+# En el servidor, verificar usuario
+grep deploy /etc/passwd
+# Salida: deploy:x:1001:1001:Deploy User:/home/deploy:/usr/sbin/nologin
+#                                                              ↑ importante: nologin
+
+# Verificar grupos
+groups deploy
+# Salida: deploy : docker sudo
+
+# Verificar permisos de .ssh
+ls -la /home/deploy/.ssh
+# Salida: drwx------ (permisos 700)
+```
+
+**Cambiar a usuario deploy (opcional, solo si necesitas probar):**
+
+```bash
 sudo su - deploy
 ```
 
@@ -137,9 +310,13 @@ ls -la
 
 ### Paso 5: Crear Archivo `.env` para Producción
 
+**⚠️ IMPORTANTE: Este es el ÚNICO paso manual. El script automatiza el resto.**
+
 ```bash
+cd /home/deploy/app/sistema-de-asistencia
+
 # Copiar archivo ejemplo
-cp server/.env.example server/.env
+cp server/.env.example .env
 
 # Editar variables de producción
 nano .env
@@ -206,53 +383,97 @@ FALTAS_MAX_ALERTA=2
 MINUTOS_TARDANZA=15
 ```
 
-### Paso 6: Generar Certificados SSL
+### Paso 6: Ejecutar Script de Despliegue Automático
 
-```bash
-# Crear carpeta de certificados
-mkdir -p /home/deploy/app/sistema-de-asistencia/certs
-
-# Generar certificados autofirmados (temporal)
-cd /home/deploy/app/sistema-de-asistencia/certs
-
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout key.pem \
-  -out cert.pem \
-  -subj "/C=CO/ST=Bogota/L=Bogota/O=Sistema/CN=tu-ip-o-dominio.com" \
-  -addext "subjectAltName=IP:tu-ip,DNS:tu-dominio.com"
-
-# Permisos
-chmod 600 key.pem
-chmod 644 cert.pem
-
-# Verificar
-ls -lh
-```
-
-### Paso 7: Prueba Local de Docker Compose
+**✅ El script automatiza TODO lo siguiente:**
 
 ```bash
 cd /home/deploy/app/sistema-de-asistencia
 
-# Construir imágenes
-docker compose build
+# Ejecutar el script (elige una opción)
+bash deploy-compose.sh both    # Despliegue completo (CLIENT + SERVER + NGINX)
+bash deploy-compose.sh client  # Solo actualizar cliente
+bash deploy-compose.sh server  # Solo actualizar servidor
+```
 
-# Iniciar servicios
-docker compose up -d
+**El script hace automáticamente:**
 
-# Verificar estado
+1. ✅ Genera certificados SSL autofirmados (si no existen)
+2. ✅ Valida todas las configuraciones
+3. ✅ Compila las imágenes Docker
+4. ✅ Inicia todos los servicios en orden correcto
+5. ✅ Espera a que todos los servicios estén healthy
+6. ✅ Limpia recursos innecesarios
+7. ✅ Muestra resumen de URLs de acceso
+
+**Salida del script:**
+
+```
+[2025-11-09 04:20:36] ✅ Requisitos verificados
+[2025-11-09 04:20:37] ✅ Repositorio actualizado
+[2025-11-09 04:20:37] ℹ️ Certificados SSL encontrados
+[2025-11-09 04:20:37] ✅ Configuración cargada
+[2025-11-09 04:20:38] ✅ Todos los servicios compilados
+[2025-11-09 04:20:45] ✅ API está healthy
+[2025-11-09 04:20:48] ✅ Cliente está healthy
+[2025-11-09 04:20:50] ✅ Nginx está operacional
+
+🌐 ACCESO A SERVICIOS
+├─ Cliente: http://tu-ip
+├─ API Docs: http://tu-ip/api/docs
+└─ WebSocket: ws://tu-ip/api/socket.io
+```
+
+### Paso 7: Verificar Despliegue
+
+```bash
+cd /home/deploy/app/sistema-de-asistencia
+
+# Ver estado de contenedores
 docker compose ps
 
-# Ver logs
+# Ver logs en tiempo real
+docker compose logs -f
+
+# Ver logs de un servicio específico
+docker compose logs -f api
+docker compose logs -f client
 docker compose logs -f nginx
 
-# Verificar endpoints
+# Verificar que nginx está funcionando
 curl http://localhost/health
+
+# Verificar API
 curl http://localhost/api/docs
 
-# Probar WebSocket
-# Desde otra terminal: npm install -g wscat
-# wscat -c ws://localhost/api/socket.io/
+# Probar WebSocket (si tienes wscat instalado)
+npm install -g wscat
+wscat -c ws://localhost/api/socket.io
+```
+
+### Paso 8: Comandos Útiles de Mantenimiento
+
+```bash
+cd /home/deploy/app/sistema-de-asistencia
+
+# Detener todos los servicios
+docker compose down
+
+# Detener e incluir volúmenes (CUIDADO: elimina datos)
+docker compose down -v
+
+# Reiniciar un servicio específico
+docker compose restart api
+docker compose restart client
+
+# Reconstruir y reiniciar todo
+docker compose up -d --build
+
+# Limpiar imágenes sin usar
+docker image prune -f
+
+# Limpiar todo (contenedores, redes, volúmenes)
+docker system prune -a --volumes
 ```
 
 ---
@@ -262,43 +483,129 @@ curl http://localhost/api/docs
 ### Paso 1: Generar Clave SSH para Deploy
 
 ```bash
-# En tu máquina local
-ssh-keygen -t ed25519 -f ~/github-deploy-key -C "GitHub Deploy"
+# En tu máquina LOCAL (no en el servidor)
+ssh-keygen -t ed25519 -f ~/github-deploy-key -C "GitHub Deploy" -N ""
 
-# Sin contraseña
-# Copiar clave privada
-cat ~/github-deploy-key
+# Opciones:
+# -t ed25519        → Algoritmo moderno y seguro
+# -f ~/github-deploy-key → Ubicación del archivo
+# -C "GitHub Deploy"     → Comentario para identificar
+# -N ""              → Sin contraseña (importante para CI/CD)
 
-# Copiar clave pública al servidor
-cat ~/github-deploy-key.pub >> /home/deploy/.ssh/authorized_keys
-chmod 600 /home/deploy/.ssh/authorized_keys
+# Verificar que se creó correctamente
+ls -lh ~/github-deploy-key*
+
+# Salida esperada:
+# -rw------- github-deploy-key      (clave privada - 464 bytes)
+# -rw-r--r-- github-deploy-key.pub  (clave pública - 104 bytes)
+```
+
+**Paso 1B: Copiar clave pública al servidor**
+
+```bash
+# OPCIÓN A: Si ya tienes SSH acceso (primer setup)
+ssh-copy-id -i ~/github-deploy-key.pub deploy@tu-ip
+
+# OPCIÓN B: Manual (desde la máquina con las claves)
+cat ~/github-deploy-key.pub | ssh deploy@tu-ip "cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+
+# OPCIÓN C: Manual paso a paso en el servidor
+# 1. Editar archivo manualmente
+ssh deploy@tu-ip
+nano ~/.ssh/authorized_keys
+
+# 2. Pegar el contenido de github-deploy-key.pub
+# 3. Guardar (Ctrl+O, Enter, Ctrl+X)
+
+# Verificar en servidor
+ssh deploy@tu-ip "cat ~/.ssh/authorized_keys"
+```
+
+**Verificar que SSH funciona sin contraseña:**
+
+```bash
+# Desde tu máquina local
+ssh -i ~/github-deploy-key deploy@tu-ip "echo '✅ SSH sin contraseña funciona'"
+
+# Debe mostrar: ✅ SSH sin contraseña funciona
+```
+
+**¿Por qué `--disabled-password --disabled-login`?**
+
+- `--disabled-password`: No se puede hacer login con contraseña (es una contraseña más segura)
+- `--disabled-login`: Deshabilita el shell login interactivo
+- **Beneficio**: Solo SSH con clave es permitido (ideal para CI/CD)
+
+**Verificar que el usuario se creó correctamente:**
+
+```bash
+# En el servidor
+grep deploy /etc/passwd
+# Debe mostrar: deploy:x:1001:1001:Deploy User:/home/deploy:/usr/sbin/nologin
+
+# Verificar grupos
+groups deploy
+# Debe mostrar: deploy : docker sudo
 ```
 
 ### Paso 2: Crear Secrets en GitHub
 
-En **GitHub → Settings → Secrets and variables → Actions**:
+En **GitHub → Settings → Secrets and variables → Actions**, agregar estos 3 secrets:
+
+#### **Secret 1: EC2_HOST**
 
 ```
-EC2_HOST=tu-ip-o-dominio.com
-EC2_USER=deploy
-EC2_SSH_KEY=<contenido-de-github-deploy-key>
+Nombre:  EC2_HOST
+Valor:   tu-ip-publica  (ej: 54.123.45.67)
+         o tu-dominio   (ej: deploy.tu-dominio.com)
 ```
 
-**Donde:**
+#### **Secret 2: EC2_USER**
 
-- `EC2_HOST`: IP pública o dominio del servidor
-- `EC2_USER`: Usuario `deploy` creado en el servidor
-- `EC2_SSH_KEY`: Clave privada sin contraseña (contenido completo)
+```
+Nombre:  EC2_USER
+Valor:   deploy
+```
 
-### Paso 3: Verificar Configuración
+#### **Secret 3: EC2_SSH_KEY** ⚠️ MÁS IMPORTANTE
 
 ```bash
-# En el servidor
-ssh -i ~/.ssh/deploy_key deploy@tu-ip "echo '✅ SSH funciona'"
-
-# Desde GitHub Actions (manual)
-gh secret list
+# En tu máquina LOCAL
+# Copiar contenido COMPLETO de la clave privada
+cat ~/github-deploy-key
 ```
+
+**Salida (ejemplo):**
+
+```
+-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUtbm9uZS1ub25lAAAAAAAAABIAAAAzAAAAC2Vj
+ZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABIBBzUd5xhSoKlT0Qy...
+[muchas líneas más]
+-----END OPENSSH PRIVATE KEY-----
+```
+
+**En GitHub:**
+
+1. Ir a Settings → Secrets and variables → Actions
+2. Click "New repository secret"
+3. Nombre: `EC2_SSH_KEY`
+4. Valor: Pegar **TODOS LOS CARACTERES** (desde `-----BEGIN` hasta `-----END`)
+5. Click "Add secret"
+
+**Verificar Secrets creados:**
+
+```bash
+# En terminal
+gh secret list
+
+# Salida esperada:
+# EC2_HOST       Updated 2 minutes ago
+# EC2_SSH_KEY    Updated 1 minute ago
+# EC2_USER       Updated 1 minute ago
+```
+
+### Paso 3: Verificar Configuración SSH
 
 ---
 
@@ -645,128 +952,143 @@ ghcr.io/2004style/sistema-asistencia-client:sha-abc123
 
 ## 🎯 Despliegue Selectivo en Servidor
 
-### Script de Despliegue: `deploy-compose.sh`
+### Script de Despliegue: `deploy-compose.sh` (AUTOMÁTICO)
 
 **Ubicación:** `/home/deploy/app/sistema-de-asistencia/deploy-compose.sh`
 
-**Uso:**
+**El script hace TODO automáticamente. Solo necesitas ejecutar:**
 
 ```bash
-# Desde GitHub Actions (automático)
-bash deploy-compose.sh both      # Actualizar client + server
-bash deploy-compose.sh client    # Solo Next.js
-bash deploy-compose.sh server    # Solo FastAPI
-
-# Manual en servidor
 cd /home/deploy/app/sistema-de-asistencia
-./deploy-compose.sh both
+bash deploy-compose.sh [opción]
 ```
 
-### Flujo del Script
-
-```
-┌─────────────────────────────────────────┐
-│  Validaciones                           │
-│  - Docker instalado ✓                   │
-│  - Git instalado ✓                      │
-│  - Docker Compose ✓                     │
-│  - .env existe ✓                        │
-└────────────────┬────────────────────────┘
-                 │
-                 ▼
-        ┌────────────────────┐
-        │ Actualizar repo    │
-        │ git pull origin    │
-        │ git reset --hard   │
-        └────────────────┬───┘
-                         │
-                         ▼
-        ┌────────────────────────┐
-        │ Generar certificados   │
-        │ SSL/TLS (si no existen)│
-        └────────────────┬───────┘
-                         │
-        ┌────────────────┴─────────────┐
-        │                              │
-        ▼                              ▼
-    deploy=client             deploy=server
-    docker compose pull        docker compose pull
-    client                     api
-        │                          │
-        ▼                          ▼
-    docker compose up          docker compose up
-    -d client                  -d api
-        │                          │
-        ▼                          ▼
-    Esperar listo              Esperar listo
-    health check               curl /health
-        │                          │
-        └────────────────┬─────────┘
-                         │
-                         ▼
-                ┌──────────────────┐
-                │ Limpiar recursos │
-                │ docker prune     │
-                │ Mostrar estado   │
-                └──────────────────┘
-```
-
-### Comandos Principales
-
-#### **Caso 1: Actualizar solo CLIENT**
+### Opciones Disponibles
 
 ```bash
-./deploy-compose.sh client
+# Opción 1: Despliegue completo (recomendado)
+bash deploy-compose.sh both
+# o sin parámetro (por defecto es 'both')
+bash deploy-compose.sh
 
-# Salida esperada:
-# ✅ Descargando imagen del cliente...
-# ✅ Reiniciando contenedor client...
-# ✅ Esperando a que el cliente esté disponible...
-# ✅ Cliente listo
+# Opción 2: Actualizar solo el cliente
+bash deploy-compose.sh client
+
+# Opción 3: Actualizar solo la API
+bash deploy-compose.sh server
 ```
 
-#### **Caso 2: Actualizar solo SERVER**
+### Qué hace el Script Automáticamente
 
-```bash
-./deploy-compose.sh server
+El script realiza estos pasos **sin intervención manual:**
 
-# Salida esperada:
-# ✅ Descargando imagen del servidor...
-# ✅ Reiniciando contenedor api...
-# ✅ Esperando a que la API esté disponible...
-# ✅ API lista
+1. ✅ **Valida requisitos**
+
+   - Docker ¿instalado?
+   - Git ¿instalado?
+   - Docker Compose ¿disponible?
+
+2. ✅ **Actualiza repositorio**
+
+   - `git fetch` desde origin
+   - `git reset --hard`
+   - Siempre sincronizado con main
+
+3. ✅ **Genera certificados SSL**
+
+   - Crea `/certs/cert.pem` y `/certs/key.pem` (si no existen)
+   - Válidos por 365 días
+   - Autofirmados (reemplaza con Let's Encrypt en producción)
+
+4. ✅ **Valida configuración**
+
+   - ¿Existe `.env`?
+   - ¿Existe `docker-compose.yml`?
+   - ¿Existe `nginx.conf`?
+   - ¿Variables críticas seteadas?
+
+5. ✅ **Maneja contenedores**
+
+   - Detiene contenedores antiguos
+   - Los remueve completamente
+   - Compila nuevas imágenes
+   - Inicia servicios en orden correcto
+
+6. ✅ **Verifica salud de servicios**
+
+   - Espera a que API esté `healthy`
+   - Espera a que Cliente esté `healthy`
+   - Verifica Nginx está operacional
+   - Timeout automático después de 3 minutos
+
+7. ✅ **Limpia recursos**
+
+   - Remueve imágenes sin usar
+   - Optimiza espacio en disco
+
+8. ✅ **Muestra resumen final**
+   - URLs de acceso
+   - Estado de contenedores
+   - Ubicación de logs
+
+### Salida Típica del Script
+
+```
+╔════════════════════════════════════════════════════════════════╗
+║   🔥 SISTEMA DE ASISTENCIA - DOCKER COMPOSE DEPLOY 🔥       ║
+╚════════════════════════════════════════════════════════════════╝
+
+▶ 🔍 Validaciones Iniciales
+[2025-11-09 04:20:36] ℹ️ Tipo de despliegue: both
+[2025-11-09 04:20:36] ✅ Requisitos verificados: Docker, Git, Docker Compose
+
+▶ 📥 Actualizando Repositorio
+[2025-11-09 04:20:37] ✅ Repositorio actualizado
+[2025-11-09 04:20:37] ✅ Ubicado en: /home/deploy/app/sistema-de-asistencia
+
+▶ 🔐 Verificando Certificados SSL
+[2025-11-09 04:20:37] ℹ️ Certificados SSL encontrados
+
+▶ ⚙️ Cargando Configuración
+[2025-11-09 04:20:37] ✅ Configuración cargada correctamente
+
+▶ 🔄 Iniciando Actualización Selectiva
+[2025-11-09 04:20:37] ℹ️ Usando: docker compose
+[2025-11-09 04:20:37] ℹ️ Actualizando CLIENT + SERVER + NGINX...
+[2025-11-09 04:20:38] ✅ Todos los servicios compilados e iniciados
+[2025-11-09 04:20:45] ✅ api está listo
+[2025-11-09 04:20:48] ✅ client está listo
+[2025-11-09 04:20:50] ✅ Todos los servicios están operacionales ✓
+
+▶ 🧹 Limpiando Recursos
+[2025-11-09 04:20:51] ✅ Limpieza completada
+
+▶ 📊 Estado de Contenedores
+CONTAINER ID   IMAGE                    STATUS
+a1b2c3d4       sistema-asistencia-api   Up 10s (healthy)
+e5f6g7h8       sistema-asistencia-client Up 8s (healthy)
+i9j0k1l2       nginx:alpine             Up 5s (healthy)
+
+🌐 ACCESO A SERVICIOS
+├─ Cliente (Frontend): http://54.123.45.67
+├─ API (Backend): http://54.123.45.67/api/docs
+└─ WebSocket: ws://54.123.45.67/api/socket.io
+
+🎉 ¡Despliegue finalizado!
 ```
 
-#### **Caso 3: Actualizar AMBOS (por defecto)**
+### Troubleshooting del Script
 
 ```bash
-./deploy-compose.sh both
-# o simplemente
-./deploy-compose.sh
+# Si el script falla, ver logs completos
+tail -100 ~/.deploy/logs/deploy_*.log
 
-# Salida esperada:
-# ✅ Imágenes descargadas
-# ✅ Contenedores actualizados
-# ✅ API lista
-# ✅ Cliente listo
-```
+# Ver log del último despliegue
+ls -lt ~/.deploy/logs/ | head -1
 
-### Verificar Estado
-
-```bash
-# Ver contenedores en ejecución
-docker compose ps
-
-# Ver logs en tiempo real
-docker compose logs -f nginx
-
-# Ver logs específicos
-docker compose logs -f api
-docker compose logs -f client
-
-# Acceso rápido a documentación
-curl http://localhost/api/docs    # Swagger API
-curl http://localhost/health      # Health check
+# Detener todo y reintentar
+docker compose down
+bash deploy-compose.sh both
 ```
 
 ---
