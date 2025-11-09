@@ -80,7 +80,6 @@ install_pnpm() {
 check_and_install_node_stack() {
     echo -e "${BLUE}→ Verificando Node.js y paquetes necesarios...${NC}"
 
-    # Node
     if ! command -v node >/dev/null 2>&1; then
         echo -e "${YELLOW}⚠️ Node.js no está instalado${NC}"
         install_node
@@ -88,15 +87,13 @@ check_and_install_node_stack() {
         echo -e "${GREEN}✓ Node.js encontrado → $(node -v)${NC}"
     fi
 
-    # npm
     if ! command -v npm >/dev/null 2>&1; then
-        echo -e "${YELLOW}⚠️ npm no está instalado, reinstalando Node.js${NC}"
+        echo -e "${YELLOW}⚠️ npm no está instalado${NC}"
         install_node
     else
         echo -e "${GREEN}✓ npm encontrado → $(npm -v)${NC}"
     fi
 
-    # pnpm
     if ! command -v pnpm >/dev/null 2>&1; then
         echo -e "${YELLOW}⚠️ pnpm no está instalado${NC}"
         install_pnpm
@@ -117,23 +114,14 @@ liberar_puerto_3000() {
     pkill -9 -f 'next start' 2>/dev/null || true
     pkill -9 -f 'node.*3000' 2>/dev/null || true
 
-    MAX_WAIT=12
-    WAITED=0
+    sleep 1
 
-    while [ $WAITED -lt $MAX_WAIT ]; do
-        if ! lsof -i :3000 >/dev/null 2>&1; then
-            echo -e "${GREEN}✓ Puerto 3000 liberado${NC}"
-            return 0
-        fi
-
-        echo -ne "${YELLOW}  Esperando... ($WAITED/$MAX_WAIT)\r${NC}"
-        sudo fuser -k 3000/tcp 2>/dev/null || true
+    if ss -tulpn | grep -q ":3000"; then
+        sudo fuser -k 3000/tcp || true
         sleep 1
-        WAITED=$((WAITED+1))
-    done
+    fi
 
-    echo -e "${RED}❌ No se pudo liberar puerto 3000${NC}"
-    exit 1
+    echo -e "${GREEN}✓ Puerto 3000 liberado${NC}"
 }
 
 
@@ -210,31 +198,28 @@ build_and_start_client() {
         pnpm install --frozen-lockfile || pnpm install
         pnpm build
         rm -f "$CLIENT_LOG"
-        nohup pnpm start > "$CLIENT_LOG" 2>&1 &
+        nohup pnpm start -- --hostname 0.0.0.0 --port 3000 > "$CLIENT_LOG" 2>&1 &
         CLIENT_PID=$!
     else
         npm ci || npm install
         npm run build
         rm -f "$CLIENT_LOG"
-        nohup npm start > "$CLIENT_LOG" 2>&1 &
+        nohup npm start -- --hostname 0.0.0.0 --port 3000 > "$CLIENT_LOG" 2>&1 &
         CLIENT_PID=$!
     fi
 
     echo -e "${BLUE}→ Cliente iniciado (PID: $CLIENT_PID)${NC}"
     echo -e "${BLUE}→ Esperando a que escuche en puerto 3000...${NC}"
 
-    # Esperar a que el puerto esté listo
     MAX_RETRIES=40
     RETRY=0
 
     while [ $RETRY -lt $MAX_RETRIES ]; do
         sleep 1
 
-        # Verificar si puerto está escuchando
-        if lsof -i :3000 >/dev/null 2>&1; then
+        if ss -tulpn | grep -q ":3000"; then
             echo -e "${GREEN}✓ Cliente escuchando en puerto 3000${NC}\n"
-            
-            # Mostrar resumen
+
             echo -e "${BLUE}════════════════════════════════════════${NC}"
             echo -e "${GREEN}✅ CLIENTE INICIADO EXITOSAMENTE${NC}"
             echo -e "${BLUE}════════════════════════════════════════${NC}\n"
@@ -242,43 +227,25 @@ build_and_start_client() {
             echo -e "  PID:              $CLIENT_PID"
             echo -e "  Puerto:           3000"
             echo -e "  Log:              $CLIENT_LOG"
-            echo -e "  Build:            Completado\n"
-            
+
             echo -e "${BLUE}🔗 Acceder:${NC}"
             echo -e "  ${GREEN}http://localhost:3000${NC}\n"
-            
-            echo -e "${BLUE}📋 MONITOREO Y CONTROL:${NC}"
-            echo -e "  Ver logs en tiempo real:"
-            echo -e "    ${GREEN}tail -f $CLIENT_LOG${NC}"
-            echo -e "  Ver últimas líneas:"
-            echo -e "    ${GREEN}tail -n 50 $CLIENT_LOG${NC}"
-            echo -e "  Buscar errores:"
-            echo -e "    ${GREEN}grep -i error $CLIENT_LOG${NC}"
-            echo -e "  Detener cliente:"
-            echo -e "    ${GREEN}pkill -f 'pnpm start'${NC}"
-            echo -e "  Reiniciar cliente:"
-            echo -e "    ${GREEN}./deploy-client.sh${NC}\n"
-            
+
             return 0
         fi
 
-        # Verificar si proceso murió
         if ! ps -p $CLIENT_PID > /dev/null 2>&1; then
             echo -e "${RED}❌ Proceso cliente murió (PID $CLIENT_PID)${NC}"
             echo -e "${RED}→ Últimas líneas del log:${NC}\n"
-            tail -n 30 "$CLIENT_LOG" || echo "No se pudo leer log"
+            tail -n 30 "$CLIENT_LOG"
             exit 1
         fi
 
         RETRY=$((RETRY + 1))
-        if [ $((RETRY % 10)) -eq 0 ]; then
-            echo -ne "${YELLOW}  Esperando... ($RETRY/$MAX_RETRIES)\r${NC}"
-        fi
     done
 
     echo -e "${RED}❌ Timeout esperando puerto 3000${NC}"
-    echo -e "${RED}→ Verificando logs...${NC}\n"
-    tail -n 50 "$CLIENT_LOG" || true
+    tail -n 50 "$CLIENT_LOG"
     exit 1
 }
 
