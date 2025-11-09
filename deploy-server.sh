@@ -19,7 +19,8 @@ echo -e "${BLUE}   DESPLIEGUE - SERVIDOR (FastAPI)${NC}"
 echo -e "${BLUE}========================================${NC}\n"
 
 # Rutas reales basadas en estructura:
-BASE_DIR="$(dirname "$0")"
+# Resolve BASE_DIR to an absolute path (so script works when called from any CWD)
+BASE_DIR="$(cd "$(dirname "$0")" >/dev/null 2>&1 && pwd || printf '%s' "$(dirname "$0")")"
 SERVER_DIR="$BASE_DIR/server"
 NGINX_DIR="$BASE_DIR/nginx"
 
@@ -295,11 +296,11 @@ echo -e "${GREEN}✓ Dependencias Python instaladas${NC}\n"
 
 
 # ============================================
-# Ejecutar proyecto (server/run.sh)
+# Ejecutar proyecto (server/run.sh) en background
 # ============================================
-echo -e "${BLUE}→ Ejecutando run.sh ...${NC}\n"
 
 RUNFILE="$SERVER_DIR/run.sh"
+SERVER_LOG="$BASE_DIR/server-start.log"
 
 if [ ! -f "$RUNFILE" ]; then
     echo -e "${RED}❌ No existe server/run.sh${NC}"
@@ -307,5 +308,70 @@ if [ ! -f "$RUNFILE" ]; then
 fi
 
 chmod +x "$RUNFILE"
+
+# Verificar si ya hay un servidor corriendo (puerto 8000)
+if netstat -tuln 2>/dev/null | grep -q ":8000 " || lsof -i :8000 >/dev/null 2>&1; then
+    echo -e "${YELLOW}⚠️  Servidor ya está corriendo en puerto 8000${NC}"
+    echo -e "${BLUE}→ Opciones:${NC}"
+    echo -e "   1. Ver logs en tiempo real:     ${BLUE}tail -f $SERVER_LOG${NC}"
+    echo -e "   2. Detener servidor:           ${BLUE}pkill -f 'uvicorn main'${NC}"
+    echo -e "   3. Reiniciar servidor:         ${BLUE}pkill -f 'uvicorn main' && sleep 2 && ./deploy-server.sh${NC}"
+    echo -e "   4. Ver procesos:               ${BLUE}ps aux | grep uvicorn${NC}"
+    echo ""
+    ps aux | grep "uvicorn main" | grep -v grep || true
+    exit 0
+fi
+
+echo -e "${BLUE}→ Iniciando servidor en background...${NC}"
+
 cd "$SERVER_DIR"
-./run.sh
+
+# Ejecutar en background para no bloquear la terminal
+# Redirigir stdout y stderr al log
+nohup bash "$RUNFILE" > "$SERVER_LOG" 2>&1 &
+SERVER_PID=$!
+
+echo -e "${GREEN}✓ Servidor iniciado (PID: $SERVER_PID)${NC}\n"
+
+# Pausa para que inicie y escuche en el puerto
+sleep 4
+
+# Verificar si el servidor está realmente escuchando en el puerto 8000
+if netstat -tuln 2>/dev/null | grep -q ":8000 " || lsof -i :8000 >/dev/null 2>&1; then
+    echo -e "${GREEN}✓ Servidor escuchando en puerto 8000${NC}\n"
+elif ps -p $SERVER_PID > /dev/null 2>&1; then
+    echo -e "${YELLOW}⚠️  Proceso iniciado pero verificando puerto...${NC}\n"
+    sleep 2
+    if netstat -tuln 2>/dev/null | grep -q ":8000 " || lsof -i :8000 >/dev/null 2>&1; then
+        echo -e "${GREEN}✓ Servidor escuchando en puerto 8000${NC}\n"
+    else
+        echo -e "${YELLOW}⚠️  Proceso corriendo pero puerto no responde${NC}"
+        echo -e "${YELLOW}→ Verificando logs...${NC}\n"
+        tail -n 30 "$SERVER_LOG" || true
+        exit 1
+    fi
+else
+    echo -e "${RED}❌ Proceso no inició correctamente${NC}"
+    echo -e "${RED}→ Verificando logs...${NC}\n"
+    tail -n 50 "$SERVER_LOG" || true
+    exit 1
+fi
+
+# Mostrar instrucciones
+echo -e "${BLUE}═══════════════════════════════════════════${NC}"
+echo -e "${BLUE}📋 INSTRUCCIONES PARA MONITOREAR LOGS:${NC}"
+echo -e "${BLUE}═══════════════════════════════════════════${NC}\n"
+echo -e "${BLUE}Ver logs en tiempo real:${NC}"
+echo -e "  ${GREEN}tail -f $SERVER_LOG${NC}\n"
+echo -e "${BLUE}Ver últimas 50 líneas:${NC}"
+echo -e "  ${GREEN}tail -n 50 $SERVER_LOG${NC}\n"
+echo -e "${BLUE}Ver todo el log:${NC}"
+echo -e "  ${GREEN}cat $SERVER_LOG${NC}\n"
+echo -e "${BLUE}Filtrar solo errores:${NC}"
+echo -e "  ${GREEN}grep -i error $SERVER_LOG${NC}\n"
+echo -e "${BLUE}Detener servidor:${NC}"
+echo -e "  ${GREEN}pkill -f 'uvicorn main'${NC}\n"
+echo -e "${BLUE}Ver procesos del servidor:${NC}"
+echo -e "  ${GREEN}ps aux | grep uvicorn${NC}\n"
+echo -e "${BLUE}Probar API (health check):${NC}"
+echo -e "  ${GREEN}curl http://localhost:8000/health${NC}\n"

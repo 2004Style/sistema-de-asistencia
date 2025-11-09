@@ -202,6 +202,19 @@ setup_nginx_client() {
 build_and_start_client() {
     cd "$CLIENT_DIR" || { echo -e "${RED}❌ No existe $CLIENT_DIR${NC}"; return 1; }
 
+    # Verificar si ya hay un cliente corriendo (puerto 3000)
+    if netstat -tuln 2>/dev/null | grep -q ":3000 " || lsof -i :3000 >/dev/null 2>&1; then
+        echo -e "${YELLOW}⚠️  Cliente ya está corriendo en puerto 3000${NC}"
+        echo -e "${BLUE}→ Opciones:${NC}"
+        CLIENT_LOG="$BASE_DIR/client-start.log"
+        echo -e "   1. Ver logs en tiempo real:     ${BLUE}tail -f $CLIENT_LOG${NC}"
+        echo -e "   2. Detener cliente:            ${BLUE}pkill -f 'pnpm start'${NC}"
+        echo -e "   3. Reiniciar cliente:          ${BLUE}pkill -f 'pnpm start' && sleep 2 && ./deploy-client.sh build-only${NC}"
+        echo -e "   4. Ver procesos:               ${BLUE}ps aux | grep pnpm${NC}"
+        echo ""
+        return 0
+    fi
+
     # Install deps if needed
     if command -v pnpm &> /dev/null; then
         pnpm install --frozen-lockfile || pnpm install
@@ -222,11 +235,56 @@ build_and_start_client() {
     # Avoid permission issues writing to /var/log when not running as root.
     CLIENT_LOG="$BASE_DIR/client-start.log"
     if command -v pnpm &> /dev/null; then
-        nohup pnpm start &>"$CLIENT_LOG" &
+        nohup pnpm start > "$CLIENT_LOG" 2>&1 &
+        CLIENT_PID=$!
     else
-        nohup npm start &>"$CLIENT_LOG" &
+        nohup npm start > "$CLIENT_LOG" 2>&1 &
+        CLIENT_PID=$!
     fi
-    echo -e "${GREEN}✓ Cliente iniciado (ver $CLIENT_LOG)${NC}"
+    
+    echo -e "${GREEN}✓ Cliente iniciado (PID: $CLIENT_PID)${NC}"
+    
+    # Pausa para que inicie
+    sleep 3
+    
+    # Verificar si el cliente está realmente escuchando en el puerto 3000
+    if netstat -tuln 2>/dev/null | grep -q ":3000 " || lsof -i :3000 >/dev/null 2>&1; then
+        echo -e "${GREEN}✓ Cliente escuchando en puerto 3000${NC}\n"
+    elif ps -p $CLIENT_PID > /dev/null 2>&1; then
+        echo -e "${YELLOW}⚠️  Proceso iniciado pero verificando puerto...${NC}\n"
+        sleep 2
+        if netstat -tuln 2>/dev/null | grep -q ":3000 " || lsof -i :3000 >/dev/null 2>&1; then
+            echo -e "${GREEN}✓ Cliente escuchando en puerto 3000${NC}\n"
+        else
+            echo -e "${YELLOW}⚠️  Proceso corriendo pero puerto no responde${NC}"
+            echo -e "${YELLOW}→ Verificando logs...${NC}\n"
+            tail -n 30 "$CLIENT_LOG" || true
+        fi
+    else
+        echo -e "${RED}❌ Proceso no inició correctamente${NC}"
+        echo -e "${RED}→ Verificando logs...${NC}\n"
+        tail -n 50 "$CLIENT_LOG" || true
+        return 1
+    fi
+    
+    # Mostrar instrucciones
+    echo -e "${BLUE}═══════════════════════════════════════════${NC}"
+    echo -e "${BLUE}📋 INSTRUCCIONES PARA MONITOREAR LOGS:${NC}"
+    echo -e "${BLUE}═══════════════════════════════════════════${NC}\n"
+    echo -e "${BLUE}Ver logs en tiempo real:${NC}"
+    echo -e "  ${GREEN}tail -f $CLIENT_LOG${NC}\n"
+    echo -e "${BLUE}Ver últimas 50 líneas:${NC}"
+    echo -e "  ${GREEN}tail -n 50 $CLIENT_LOG${NC}\n"
+    echo -e "${BLUE}Ver todo el log:${NC}"
+    echo -e "  ${GREEN}cat $CLIENT_LOG${NC}\n"
+    echo -e "${BLUE}Filtrar solo errores:${NC}"
+    echo -e "  ${GREEN}grep -i error $CLIENT_LOG${NC}\n"
+    echo -e "${BLUE}Detener cliente:${NC}"
+    echo -e "  ${GREEN}pkill -f 'pnpm start'${NC}\n"
+    echo -e "${BLUE}Ver procesos del cliente:${NC}"
+    echo -e "  ${GREEN}ps aux | grep pnpm${NC}\n"
+    echo -e "${BLUE}Probar cliente (en navegador):${NC}"
+    echo -e "  ${GREEN}http://localhost:3000${NC}\n"
 }
 
 # Main
