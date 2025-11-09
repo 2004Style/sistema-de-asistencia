@@ -198,6 +198,14 @@ setup_nginx() {
     NGINX_CONF_SOURCE="$NGINX_DIR/nginx-server.conf"
     NGINX_CONF_TARGET="/etc/nginx/conf.d/sistema-asistencia.conf"
 
+    # Si existe el sitio por defecto de Debian/Ubuntu, deshabilitarlo para evitar conflicto
+    if [ -e "/etc/nginx/sites-enabled/default" ]; then
+        echo -e "${YELLOW}→ Sitio por defecto de NGINX detectado en /etc/nginx/sites-enabled/default - deshabilitando...${NC}"
+        # mover a copia de seguridad por si hace falta restaurarlo manualmente
+        sudo mv /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/default.disabled || sudo rm -f /etc/nginx/sites-enabled/default || true
+        echo -e "${GREEN}✓ default site deshabilitado${NC}"
+    fi
+
     if [ ! -f "$NGINX_CONF_SOURCE" ]; then
         echo -e "${RED}❌ No se encontró nginx-server.conf${NC}"
         exit 1
