@@ -110,7 +110,7 @@ export function useRegister() {
       toast.success(response.message || "Usuario registrado exitosamente", { position: "bottom-right" });
 
       return response.data || null;
-    } catch (error) {
+    } catch {
       toast.error("Error al registrar usuario", { position: "top-center" });
       return null;
     } finally {

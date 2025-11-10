@@ -5,17 +5,15 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useJustificacionesApi } from "@/hooks/useJustificacionesApi.hook";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Loader2, ArrowLeft, FileText, Download } from "lucide-react";
+import { AlertCircle, Loader2, ArrowLeft, Download } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 import { JustificacionDetails } from "@/interfaces/justificaciones.interface";
 
 export default function JustificacionDetail({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
-    const { data: session } = useSession();
-    const router = useRouter();
     const { getDetail } = useJustificacionesApi();
 
     const [justificacion, setJustificacion] = useState<JustificacionDetails | null>(null);

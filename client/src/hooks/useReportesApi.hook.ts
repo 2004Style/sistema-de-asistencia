@@ -2,7 +2,7 @@
 
 import { BACKEND_ROUTES } from "@/routes/backend.routes";
 import { useClientApi } from "./useClientApi.hook";
-import { ResportesList, ReportesListResponse, ReporteGenerado } from "@/interfaces";
+import { ReportesListResponse, ReporteGenerado } from "@/interfaces";
 
 export function useReportesApi() {
   const { get, del, data, loading, error, alert } = useClientApi(true, BACKEND_ROUTES.urlHttpBase);
@@ -11,7 +11,7 @@ export function useReportesApi() {
    * Listar reportes generados
    * Retorna: { success, total, records }
    */
-  const list = async (pageNumber: number = 1, limite: number = 50) => {
+  const list = async (_pageNumber: number = 1, limite: number = 50) => {
     const params = new URLSearchParams({
       limite: limite.toString(),
     });
@@ -150,7 +150,7 @@ export function useReportesApi() {
       document.body.removeChild(a);
 
       return { alert: "success" as const, message: "Reporte descargado" };
-    } catch (err) {
+    } catch  {
       return { alert: "error" as const, message: "Error al descargar reporte" };
     }
   };

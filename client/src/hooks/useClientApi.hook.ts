@@ -2,7 +2,6 @@
 
 import { BACKEND_ROUTES } from "@/routes/backend.routes";
 import { useState, useCallback } from "react";
-import { useSession } from "next-auth/react";
 
 // ============================================
 // TIPOS E INTERFACES
@@ -134,7 +133,7 @@ const getSessionTokens = async (): Promise<BackendTokens | null> => {
     }
 
     return null;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -143,6 +142,7 @@ const getSessionTokens = async (): Promise<BackendTokens | null> => {
  * Los tokens se manejan automáticamente con Next-Auth
  * Esta función se mantiene por compatibilidad
  */
+
 const saveTokens = (tokens: BackendTokens): void => {};
 
 /**
@@ -162,8 +162,7 @@ const handleRefreshFailure = async <T = unknown>(baseURL: string): Promise<void>
     // Llamar a signout de Next-Auth para limpiar la sesión
     const { signOut } = await import("next-auth/react");
     await signOut({ redirect: false });
-  } catch (error) {
-  }
+  } catch {}
 };
 
 /**
@@ -175,7 +174,7 @@ const refreshAuthToken = async (refreshToken: string, baseURL: string): Promise<
     // Solo obtenemos los nuevos tokens de la sesión
     const tokens = await getSessionTokens();
     return tokens?.accessToken || null;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -422,7 +421,6 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
 
         // Manejar refresh de token si es 401
         if (response.status === 401 && requiresAuth && refreshToken && !url.includes("/auth/refresh")) {
-
           if (isRefreshing) {
             // Esperar a que termine el refresh actual
             try {
@@ -433,7 +431,7 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
               // Reintentar con nuevo token
               fetchOptions.headers = createHeaders(contentType, customHeaders, newToken);
               response = await fetch(fullUrl, fetchOptions);
-            } catch (queueError) {
+            } catch {
               // Si falla el refresh en cola, hacer logout
               await handleRefreshFailure<T>(baseURL);
               return {
@@ -475,7 +473,7 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
 
                 return errorResponse;
               }
-            } catch (error) {
+            } catch (error){
               processQueue(error as Error, null);
 
               // Hacer logout
@@ -544,7 +542,7 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
         });
 
         return result;
-      } catch (error) {
+      } catch (error){
         const errorResponse = handleApiError(error);
 
         setState({

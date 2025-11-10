@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useReportesApi } from "@/hooks/useReportesApi.hook";
 import { useAsistenciasApi } from "@/hooks/useAsistenciasApi.hook";
-import { validatePaginatedResponse, getErrorMessage, ensureArray, validateObject } from "@/utils";
+import {  getErrorMessage, ensureArray } from "@/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
-    Legend,
     ResponsiveContainer,
 } from "recharts";
 import {

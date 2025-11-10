@@ -53,7 +53,7 @@ async function refreshToken(token: JWT): Promise<JWT> {
       ...token,
       backendTokens: response.data,
     };
-  } catch (error) {
+  } catch {
     // Retorna token con expiración 0 para forzar logout
     return {
       ...token,

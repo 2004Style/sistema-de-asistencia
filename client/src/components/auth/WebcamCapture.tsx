@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useRef, useState, useEffect, useCallback } from 'react';
@@ -137,7 +138,7 @@ export function WebcamCapture({
         context.setTransform(scale, 0, 0, scale, 0, 0);
         // for photographic images, high quality smoothing gives better results
         context.imageSmoothingEnabled = true;
-        // @ts-ignore - some browsers support 'imageSmoothingQuality'
+
         if ((context as any).imageSmoothingQuality !== undefined) {
             try { (context as any).imageSmoothingQuality = 'high'; } catch (e) { /* ignore */ }
         }
