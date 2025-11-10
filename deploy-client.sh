@@ -173,7 +173,7 @@ build_and_start_client() {
     liberar_puerto_3000
     echo -e "${BLUE}→ Instalando dependencias del cliente...${NC}"
     if command -v pnpm >/dev/null 2>&1; then
-        pnpm install --frozen-lockfile || pnpm install
+        pnpm install
         pnpm build
         rm -f "$CLIENT_LOG"
         nohup pnpm start --hostname 0.0.0.0 --port 3000 > "$CLIENT_LOG" 2>&1 &
@@ -181,7 +181,7 @@ build_and_start_client() {
     else
         npm ci || npm install
         npm run build
-        rm-f "$CLIENT_LOG"
+        rm -f "$CLIENT_LOG"
         nohup npm start --hostname 0.0.0.0 --port 3000 > "$CLIENT_LOG" 2>&1 &
         CLIENT_PID=$!
     fi
