@@ -26,6 +26,7 @@ from sqlalchemy import or_, asc, desc
 from fastapi import HTTPException, status, UploadFile
 from typing import Optional, List
 import os
+import logging
 
 from .model import User
 from .schemas import UserCreate, UserUpdate, UserResponse
@@ -34,6 +35,9 @@ from src.utils.security import hash_password
 from src.utils.file_handler import save_user_images, delete_user_folder
 from src.recognize.registro import quick_register, quick_remove
 from src.utils.base_service import BaseService
+
+# Logger
+logger = logging.getLogger(__name__)
 
 
 class UserService(BaseService):
@@ -159,15 +163,40 @@ class UserService(BaseService):
             
             # Registrar en el sistema de reconocimiento facial
             try:
-                quick_register(user.name)
+                registration_success = quick_register(user.name)
+                
+                # Verificar si el registro fue exitoso
+                if not registration_success:
+                    raise Exception("No se pudo registrar en el sistema de reconocimiento facial")
+                    
             except Exception as e:
-                # Si falla el registro facial, eliminar usuario
+                # Si falla el registro facial, hacer rollback completo
+                logger.error(f"Error en registro facial para usuario {user.name}: {str(e)}")
+                
+                # Eliminar usuario de la base de datos
                 db.delete(user)
                 db.commit()
+                
+                # Eliminar carpeta de imágenes
                 delete_user_folder(user.name)
+                
+                # Determinar mensaje de error apropiado
+                error_msg = str(e)
+                if "No se detectó rostro" in error_msg or "No se pudo extraer" in error_msg:
+                    detail_msg = (
+                        "No se detectaron rostros válidos en las imágenes. "
+                        "Por favor, asegúrate de que:\n"
+                        "- Las fotos muestren claramente tu rostro\n"
+                        "- Haya buena iluminación\n"
+                        "- La cámara esté enfocada\n"
+                        "- No uses accesorios que cubran el rostro"
+                    )
+                else:
+                    detail_msg = f"Error al registrar en el sistema de reconocimiento: {error_msg}"
+                
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Error al registrar en el sistema de reconocimiento: {str(e)}"
+                    detail=detail_msg
                 )
             
             # ✅ REGISTRO EXITOSO - Eliminar carpeta de imágenes temporales

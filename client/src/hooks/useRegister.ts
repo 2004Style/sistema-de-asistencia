@@ -95,7 +95,8 @@ export function useRegister() {
       for (let i = 0; i < capturedPhotos.length; i++) {
         const photo = capturedPhotos[i];
         const blob = await fetch(photo.dataUrl).then((r) => r.blob());
-        formData.append("images", blob, `image${i + 1}.jpg`);
+        // enviar como PNG para mantener calidad (dataUrl ahora es image/png)
+        formData.append("images", blob, `image${i + 1}.png`);
       }
 
       const response = await post<UseRegisterReturn>(BACKEND_ROUTES.urlUsersRegister, formData, { contentType: "form-data" });
@@ -104,7 +105,6 @@ export function useRegister() {
         toast.error(response.message || "Error al registrar usuario", { position: "top-center" });
         return null;
       }
-
 
       // NO limpiar formulario ni fotos aquí, dejar que el componente lo haga
       toast.success(response.message || "Usuario registrado exitosamente", { position: "bottom-right" });

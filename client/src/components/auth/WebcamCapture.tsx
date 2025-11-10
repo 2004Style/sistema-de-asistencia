@@ -26,6 +26,7 @@ export function WebcamCapture({
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isStreaming, setIsStreaming] = useState(false);
     const [stream, setStream] = useState<MediaStream | null>(null);
+    const [qualityScore, setQualityScore] = useState<{ brightness: number, blur: number, isGood: boolean } | null>(null);
 
     const startCamera = useCallback(async () => {
         try {
@@ -59,6 +60,59 @@ export function WebcamCapture({
         }
     }, [stream]);
 
+    // Evaluar calidad de la imagen en tiempo real
+    const evaluateQuality = useCallback(() => {
+        if (!videoRef.current || !canvasRef.current || !isStreaming) return;
+
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        const context = canvas.getContext('2d');
+
+        if (!context) return;
+
+        // Capturar frame actual
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+
+        // Calcular brillo promedio
+        let brightness = 0;
+        for (let i = 0; i < data.length; i += 4) {
+            brightness += (data[i] + data[i + 1] + data[i + 2]) / 3;
+        }
+        brightness = brightness / (data.length / 4);
+
+        // Estimar blur usando varianza del gradiente (simplificado)
+        let gradientSum = 0;
+        const step = 4; // Muestrear cada 4 píxeles para performance
+        for (let y = 0; y < canvas.height - 1; y += step) {
+            for (let x = 0; x < canvas.width - 1; x += step) {
+                const idx = (y * canvas.width + x) * 4;
+                const gray1 = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+                const gray2 = (data[idx + 4] + data[idx + 5] + data[idx + 6]) / 3;
+                gradientSum += Math.abs(gray2 - gray1);
+            }
+        }
+        const blurScore = gradientSum / ((canvas.width * canvas.height) / (step * step));
+
+        // Validación muy permisiva - solo avisar en casos extremos
+        // El preprocesamiento se encargará de mejorar la calidad
+        const isGood = brightness >= 20 && brightness <= 240;
+
+        setQualityScore({ brightness, blur: blurScore, isGood });
+    }, [isStreaming]);
+
+    // Evaluar calidad periódicamente
+    useEffect(() => {
+        if (!isStreaming) return;
+
+        const interval = setInterval(evaluateQuality, 500); // Cada 500ms
+        return () => clearInterval(interval);
+    }, [isStreaming, evaluateQuality]);
+
     const capturePhoto = useCallback(() => {
         if (!videoRef.current || !canvasRef.current) return;
 
@@ -68,11 +122,31 @@ export function WebcamCapture({
 
         if (!context) return;
 
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        // Improve output resolution by accounting for devicePixelRatio.
+        // This creates a higher-resolution canvas and scales the drawing so
+        // the resulting image is sharper when saved (especially as PNG).
+        const scale = window.devicePixelRatio || 1;
 
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+        // Set canvas logical size to device pixels and CSS size to video size
+        canvas.width = Math.max(1, Math.floor(video.videoWidth * scale));
+        canvas.height = Math.max(1, Math.floor(video.videoHeight * scale));
+        canvas.style.width = `${video.videoWidth}px`;
+        canvas.style.height = `${video.videoHeight}px`;
+
+        // Use transform to draw at higher resolution and tune smoothing for quality
+        context.setTransform(scale, 0, 0, scale, 0, 0);
+        // for photographic images, high quality smoothing gives better results
+        context.imageSmoothingEnabled = true;
+        // @ts-ignore - some browsers support 'imageSmoothingQuality'
+        if ((context as any).imageSmoothingQuality !== undefined) {
+            try { (context as any).imageSmoothingQuality = 'high'; } catch (e) { /* ignore */ }
+        }
+
+        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+
+        // Export as PNG (lossless) for best quality
+        // NO aplicar preprocesamiento - el servidor lo hará mejor
+        const dataUrl = canvas.toDataURL('image/png');
 
         if (isAvatar && onAvatarCapture) {
             onAvatarCapture(dataUrl);
@@ -165,7 +239,19 @@ export function WebcamCapture({
 
                 {isStreaming && (
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                        <p className="text-white text-center font-medium mb-3">
+                        {/* Indicador de calidad en tiempo real - Solo verifica luz */}
+                        {qualityScore && (
+                            <div className={`mb-3 px-3 py-2 rounded-lg text-sm font-medium ${qualityScore.isGood
+                                ? 'bg-green-500/90 text-white'
+                                : 'bg-orange-500/90 text-white'
+                                }`}>
+                                {qualityScore.isGood ? (
+                                    <>✓ Nivel de luz correcto</>
+                                ) : (
+                                    <>💡 {qualityScore.brightness < 20 ? 'Acércate a una fuente de luz' : 'Aléjate de la luz directa'}</>
+                                )}
+                            </div>
+                        )}                        <p className="text-white text-center font-medium mb-3">
                             {getCurrentInstruction()}
                         </p>
                         <div className="flex gap-2 justify-center">

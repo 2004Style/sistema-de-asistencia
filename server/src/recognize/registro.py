@@ -222,13 +222,26 @@ class FaceRegistration:
                 
                 # Extraer embeddings de todas las variaciones
                 for idx, img_variant in enumerate(images_to_process):
+                    temp_file = None
                     try:
+                        # CRITICAL FIX: DeepFace.represent con numpy arrays procesados causa KerasTensor error
+                        # Solución: Guardar el array numpy preprocesado a archivo temporal PNG
+                        from .utils import save_image_to_temp, cleanup_temp_file
+                        
+                        # Guardar img_variant (numpy array) como archivo temporal
+                        temp_file = save_image_to_temp(img_variant, extension='.png')
+                        if temp_file is None:
+                            logger.warning(f"  ⚠ No se pudo crear archivo temporal para variación {idx}")
+                            continue
+                        
+                        logger.debug(f"  → Extrayendo embedding de variación {idx} desde temp file")
+                        
                         embedding_obj = DeepFace.represent(
-                            img_path=img_variant,
+                            img_path=temp_file,  # Usar archivo temporal (evita KerasTensor)
                             model_name=RECOGNITION_MODEL,
-                            detector_backend='skip',  # Ya tenemos el rostro
-                            enforce_detection=False,
-                            align=True
+                            detector_backend='skip',  # Ya tenemos el rostro alineado
+                            enforce_detection=False,  # No volver a detectar
+                            align=False  # Ya está alineado por nuestro detector
                         )
                         
                         if isinstance(embedding_obj, list):
@@ -245,6 +258,10 @@ class FaceRegistration:
                     except Exception as e:
                         logger.debug(f"  ⚠ Error en variación {idx}: {str(e)}")
                         continue
+                    finally:
+                        # Limpiar archivo temporal
+                        if temp_file:
+                            cleanup_temp_file(temp_file)
             
             except Exception as e:
                 logger.error(f"  ✗ Error al procesar {image_path}: {str(e)}")

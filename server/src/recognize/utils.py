@@ -10,6 +10,8 @@ from pathlib import Path
 from typing import Tuple, Optional, List, Dict, Any
 from datetime import datetime
 import json
+import tempfile
+import uuid
 
 from .config import (
     LOG_FILE, LOG_FORMAT, LOG_LEVEL,
@@ -189,29 +191,55 @@ def check_image_quality(image: np.ndarray) -> Tuple[bool, str, Dict[str, float]]
 # ============================================================================
 def preprocess_face(face_img: np.ndarray, target_size: Tuple[int, int] = (224, 224)) -> np.ndarray:
     """
-    Preprocesa una imagen de rostro para mejorar la calidad.
-    Aplica ecualización adaptativa, reducción de ruido y normalización.
+    Preprocesa una imagen de rostro para mejorar la calidad SIGNIFICATIVAMENTE.
+    Aplica múltiples técnicas avanzadas de mejora de imagen.
+    
+    Técnicas aplicadas:
+    1. Ecualización adaptativa (CLAHE) - mejora iluminación no uniforme
+    2. Ajuste automático de brillo - corrige subexposición/sobreexposición
+    3. Ajuste automático de contraste - mejora definición
+    4. Reducción de ruido adaptativa - elimina noise manteniendo detalles
+    5. Sharpening adaptativo - mejora nitidez sin artifacts
+    6. Gamma correction - mejora rango dinámico
     
     Args:
         face_img: Imagen del rostro
         target_size: Tamaño objetivo
         
     Returns:
-        Imagen preprocesada
+        Imagen preprocesada de alta calidad
     """
     try:
+        original_shape = face_img.shape
+        
         # Resize si es necesario
         if face_img.shape[:2] != target_size:
             face_img = cv2.resize(face_img, target_size, interpolation=cv2.INTER_CUBIC)
         
-        # Ecualización adaptativa (CLAHE) para iluminación no uniforme
+        # ===== PASO 1: Ajuste automático de brillo =====
         if len(face_img.shape) == 3:
-            # Convertir a LAB color space para mejor ecualización
+            # Convertir a LAB para trabajar con luminancia
             lab = cv2.cvtColor(face_img, cv2.COLOR_BGR2LAB)
             l, a, b = cv2.split(lab)
             
-            # CLAHE en canal L (luminancia)
-            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+            # Calcular brillo promedio
+            mean_brightness = np.mean(l)
+            target_brightness = 128  # Objetivo: brillo medio
+            
+            # Ajustar si está muy oscuro o muy brillante
+            if mean_brightness < 100:  # Muy oscuro
+                adjustment = min(40, target_brightness - mean_brightness)
+                l = cv2.add(l, adjustment)
+                logger.debug(f"Imagen oscura detectada (brillo: {mean_brightness:.1f}), aumentando +{adjustment}")
+            elif mean_brightness > 180:  # Muy brillante
+                adjustment = min(40, mean_brightness - target_brightness)
+                l = cv2.subtract(l, adjustment)
+                logger.debug(f"Imagen brillante detectada (brillo: {mean_brightness:.1f}), reduciendo -{adjustment}")
+            
+            # ===== PASO 2: CLAHE mejorado en canal L =====
+            # Usar CLAHE más agresivo para imágenes de baja calidad
+            clip_limit = 3.0 if mean_brightness < 100 else 2.0
+            clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=(8, 8))
             l = clahe.apply(l)
             
             # Merge y convertir de vuelta
@@ -219,24 +247,93 @@ def preprocess_face(face_img: np.ndarray, target_size: Tuple[int, int] = (224, 2
             face_img = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
         else:
             # Para escala de grises
-            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+            mean_brightness = np.mean(face_img)
+            target_brightness = 128
+            
+            if mean_brightness < 100:
+                adjustment = min(40, target_brightness - mean_brightness)
+                face_img = cv2.add(face_img, adjustment)
+            
+            clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
             face_img = clahe.apply(face_img)
         
-        # Reducción de ruido adaptativa
-        face_img = cv2.fastNlMeansDenoisingColored(face_img, None, 10, 10, 7, 21)
+        # ===== PASO 3: Ajuste automático de contraste =====
+        # Calcular contraste actual
+        if len(face_img.shape) == 3:
+            gray = cv2.cvtColor(face_img, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = face_img
         
-        # Sharpening suave para mejorar detalles
-        kernel = np.array([[-1,-1,-1], [-1, 9,-1], [-1,-1,-1]]) / 9
-        face_img = cv2.filter2D(face_img, -1, kernel)
+        current_contrast = gray.std()
+        
+        # Si el contraste es bajo, aumentarlo
+        if current_contrast < 30:
+            alpha = 1.5  # Factor de contraste
+            beta = 0     # Brillo
+            face_img = cv2.convertScaleAbs(face_img, alpha=alpha, beta=beta)
+            logger.debug(f"Bajo contraste detectado ({current_contrast:.1f}), aumentando contraste")
+        
+        # ===== PASO 4: Reducción de ruido adaptativa =====
+        # Usar bilateral filter que preserva bordes mejor que fastNlMeans
+        if len(face_img.shape) == 3:
+            face_img = cv2.bilateralFilter(face_img, d=9, sigmaColor=75, sigmaSpace=75)
+        else:
+            face_img = cv2.bilateralFilter(face_img, d=9, sigmaColor=75, sigmaSpace=75)
+        
+        # ===== PASO 5: Sharpening adaptativo =====
+        # Calcular blur score para decidir intensidad de sharpening
+        laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
+        
+        if laplacian_var < 100:  # Imagen borrosa
+            # Sharpening más agresivo
+            kernel = np.array([[-1, -1, -1],
+                             [-1,  9, -1],
+                             [-1, -1, -1]])
+            face_img = cv2.filter2D(face_img, -1, kernel)
+            logger.debug(f"Imagen borrosa detectada (score: {laplacian_var:.1f}), aplicando sharpening fuerte")
+        else:
+            # Sharpening suave
+            kernel = np.array([[0, -1, 0],
+                             [-1, 5, -1],
+                             [0, -1, 0]])
+            face_img = cv2.filter2D(face_img, -1, kernel)
+        
+        # ===== PASO 6: Gamma correction para mejorar rango dinámico =====
+        # Aplicar gamma correction si la imagen aún está oscura
+        if len(face_img.shape) == 3:
+            gray_check = cv2.cvtColor(face_img, cv2.COLOR_BGR2GRAY)
+        else:
+            gray_check = face_img
+        
+        final_brightness = np.mean(gray_check)
+        if final_brightness < 100:
+            gamma = 1.2  # Gamma > 1 aclara la imagen
+            inv_gamma = 1.0 / gamma
+            table = np.array([((i / 255.0) ** inv_gamma) * 255
+                            for i in np.arange(0, 256)]).astype("uint8")
+            face_img = cv2.LUT(face_img, table)
+            logger.debug(f"Aplicando gamma correction ({gamma}) para mejorar rango dinámico")
         
         return face_img
     
     except Exception as e:
-        logger.error(f"Error en preprocesamiento: {str(e)}")
-        # Fallback: al menos resize
-        if face_img.shape[:2] != target_size:
-            return cv2.resize(face_img, target_size)
-        return face_img
+        logger.error(f"Error en preprocesamiento avanzado: {str(e)}")
+        # Fallback: al menos resize y CLAHE básico
+        try:
+            if face_img.shape[:2] != target_size:
+                face_img = cv2.resize(face_img, target_size)
+            
+            if len(face_img.shape) == 3:
+                lab = cv2.cvtColor(face_img, cv2.COLOR_BGR2LAB)
+                l, a, b = cv2.split(lab)
+                clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+                l = clahe.apply(l)
+                lab = cv2.merge([l, a, b])
+                face_img = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+            
+            return face_img
+        except:
+            return face_img
 
 
 def augment_face_image(face_img: np.ndarray) -> List[np.ndarray]:
@@ -591,6 +688,63 @@ def calculate_statistics(distances: List[float]) -> Dict[str, float]:
         "median": float(np.median(distances)),
         "std": float(np.std(distances))
     }
+
+
+# ============================================================================
+# MANEJO DE ARCHIVOS TEMPORALES
+# ============================================================================
+def save_image_to_temp(image: np.ndarray, extension: str = '.png') -> Optional[str]:
+    """
+    Guarda una imagen numpy array a un archivo temporal.
+    Útil para pasar imágenes a DeepFace cuando requiere rutas de archivo.
+    
+    Args:
+        image: Imagen como numpy array (BGR format)
+        extension: Extensión del archivo (.png, .jpg, etc.)
+        
+    Returns:
+        Ruta al archivo temporal o None si falla
+    """
+    try:
+        # Crear archivo temporal con nombre único
+        temp_dir = tempfile.gettempdir()
+        filename = f"face_temp_{uuid.uuid4().hex}{extension}"
+        temp_path = os.path.join(temp_dir, filename)
+        
+        # Guardar imagen
+        success = cv2.imwrite(temp_path, image)
+        
+        if success:
+            logger.debug(f"Imagen temporal guardada: {temp_path}")
+            return temp_path
+        else:
+            logger.error(f"Error al guardar imagen temporal")
+            return None
+    
+    except Exception as e:
+        logger.error(f"Error al crear archivo temporal: {str(e)}")
+        return None
+
+
+def cleanup_temp_file(file_path: str) -> bool:
+    """
+    Limpia un archivo temporal.
+    
+    Args:
+        file_path: Ruta al archivo temporal
+        
+    Returns:
+        True si se eliminó correctamente
+    """
+    try:
+        if file_path and os.path.exists(file_path):
+            os.remove(file_path)
+            logger.debug(f"Archivo temporal eliminado: {file_path}")
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"Error al eliminar archivo temporal: {str(e)}")
+        return False
 
 
 if __name__ == "__main__":
