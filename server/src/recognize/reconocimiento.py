@@ -126,45 +126,27 @@ class FaceRecognizer:
                 logger.debug("Aplicando preprocesamiento avanzado...")
                 face_img = preprocess_face(face_img)
             
-            # CRITICAL FIX: Extraer embedding usando archivo temporal
-            # para evitar KerasTensor error con numpy arrays preprocesados
-            temp_file = None
-            try:
-                # Si tenemos preprocesamiento, debemos usar archivo temporal
-                if ENABLE_PREPROCESSING:
-                    from .utils import save_image_to_temp, cleanup_temp_file
-                    # Guardar face_img preprocesado como archivo temporal
-                    temp_file = save_image_to_temp(face_img, extension='.png')
-                    if temp_file is None:
-                        logger.error("No se pudo crear archivo temporal para embedding")
-                        return None, context_hints
-                    
-                    logger.debug("→ Extrayendo embedding desde temp file (evita KerasTensor)")
-                    img_source = temp_file
-                else:
-                    img_source = image_path
-                
-                embedding_obj = DeepFace.represent(
-                    img_path=img_source,
-                    model_name=RECOGNITION_MODEL,
-                    detector_backend='skip' if ENABLE_PREPROCESSING else self.detector.backend,
-                    enforce_detection=not ENABLE_PREPROCESSING,
-                    align=False if ENABLE_PREPROCESSING else True  # No realinear si ya preprocesamos
-                )
-                
-                # Extraer array del embedding
-                if isinstance(embedding_obj, list):
-                    embedding = np.array(embedding_obj[0]['embedding'])
-                else:
-                    embedding = np.array(embedding_obj['embedding'])
-                
-                return embedding, context_hints
+            # Extraer embedding
+            if image_path is not None and not ENABLE_PREPROCESSING:
+                img_source = image_path
+            else:
+                img_source = face_img
             
-            finally:
-                # Limpiar archivo temporal si se creó
-                if temp_file:
-                    from .utils import cleanup_temp_file
-                    cleanup_temp_file(temp_file)
+            embedding_obj = DeepFace.represent(
+                img_path=img_source,
+                model_name=RECOGNITION_MODEL,
+                detector_backend='skip' if ENABLE_PREPROCESSING else self.detector.backend,
+                enforce_detection=not ENABLE_PREPROCESSING,
+                align=True
+            )
+            
+            # Extraer array del embedding
+            if isinstance(embedding_obj, list):
+                embedding = np.array(embedding_obj[0]['embedding'])
+            else:
+                embedding = np.array(embedding_obj['embedding'])
+            
+            return embedding, context_hints
         
         except Exception as e:
             logger.error(f"Error al extraer embedding: {str(e)}")
@@ -509,54 +491,16 @@ def initialize_recognizer() -> FaceRecognizer:
     Returns:
         Instancia del reconocedor
     """
-    import sys
+    # Pre-cargar detector facial
+    logger.info("📸 Pre-cargando detector facial...")
+    initialize_detector()
     
-    # SAFETY: Verificar si ya está inicializado para evitar doble carga
-    global _global_recognizer
-    if _global_recognizer is not None:
-        logger.info("ℹ️ Reconocedor ya estaba inicializado, reutilizando instancia")
-        return _global_recognizer
+    # Pre-cargar reconocedor (que usa el detector singleton)
+    logger.info("🧠 Pre-cargando reconocedor facial...")
+    recognizer = get_recognizer()
     
-    # Inicializar optimizaciones de memoria ANTES de cargar los modelos
-    try:
-        from .memory_cleanup import initialize_memory_optimization, cleanup_tensorflow, full_cleanup
-        initialize_memory_optimization()
-    except Exception as e:
-        logger.warning(f"Memory optimization setup failed: {e}")
-        cleanup_tensorflow = None
-        full_cleanup = None
-    
-    try:
-        # Pre-cargar detector facial
-        logger.info("📸 Pre-cargando detector facial...")
-        initialize_detector()
-        
-        # Limpiar memoria después de cargar el detector
-        try:
-            if cleanup_tensorflow:
-                cleanup_tensorflow()
-        except Exception as e:
-            logger.warning(f"TensorFlow cleanup failed: {e}")
-        
-        # Pre-cargar reconocedor (que usa el detector singleton)
-        logger.info("🧠 Pre-cargando reconocedor facial...")
-        recognizer = get_recognizer()
-        
-        # Limpiar memoria después de cargar el reconocedor
-        try:
-            if full_cleanup:
-                full_cleanup()
-        except Exception as e:
-            logger.warning(f"Full cleanup failed: {e}")
-        
-        logger.info("✅ Sistema completamente inicializado y listo")
-        return recognizer
-        
-    except Exception as e:
-        logger.error(f"❌ Error durante inicialización: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
-        raise
+    logger.info("✅ Sistema completamente inicializado y listo")
+    return recognizer
 
 
 def reset_recognizer():

@@ -10,7 +10,7 @@ Contiene toda la lógica de negocio para:
 
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, UploadFile
 from typing import Optional, List, Dict
 from datetime import datetime, date, time, timedelta
 
@@ -21,6 +21,7 @@ from src.users.service import user_service
 from src.recognize.reconocimiento import get_recognizer
 from src.utils.base_service import BaseService
 import numpy as np
+from src.utils.file_handler import save_user_images, delete_user_folder
 import cv2
 
 
@@ -515,78 +516,87 @@ class AsistenciaService(BaseService):
         self,
         db: Session,
         codigo_user: str,
-        image_bytes: bytes
+        image: UploadFile,
     ) -> Dict:
         """
         Registra asistencia mediante reconocimiento facial.
 
-        - Extrae la imagen desde bytes
-        - Ejecuta el reconocedor y valida que la persona reconocida coincida
-          con el `name` del usuario asociado al `codigo_user`.
-        - Determina tipo_registro (entrada/salida) y delega en
-          `_registrar_common` para persistir.
+        - Guarda temporalmente la imagen en disco
+        - Ejecuta el reconocedor pasándole la ruta (no bytes)
+        - Valida que la persona reconocida coincida con el usuario
+        - Determina tipo_registro (entrada/salida)
+        - Elimina la imagen temporal después del reconocimiento
         """
+        from datetime import datetime
+        
         # Validar y obtener usuario
         user = self._validar_y_obtener_usuario(db, codigo_user)
 
-        # Convertir bytes a imagen numpy
         try:
-            nparr = np.frombuffer(image_bytes, np.uint8)
-            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            if img is None:
-                raise ValueError("Imagen no procesable")
+            image_paths = save_user_images(codigo_user, [image])
+            image_save = image_paths[0]  # Obtener la primera (única) imagen guardada
         except Exception as e:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Error al leer la imagen: {str(e)}"
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error al procesar imagen: {str(e)}"
             )
 
-        # Reconocer
-        recognizer = get_recognizer()
-        result = recognizer.recognize(image=img, return_details=True)
-
-        if not result.get('recognized'):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Rostro no reconocido en la imagen"
-            )
-
-        person_name = result.get('person')
-        if person_name is None or person_name.strip().lower() != (user.name or "").strip().lower():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Persona reconocida ('{person_name}') no coincide con el usuario del código {codigo_user}"
-            )
-
-        # Obtener turno activo
         ahora = datetime.now()
-        dia_actual = self._get_dia_semana(ahora)
-        horario = self.horario_service.detectar_turno_activo(
-            db, user.id, dia_actual, ahora.time()
-        )
-        
-        # IMPORTANTE: Validar que exista turno activo (mismo que en registro manual)
-        if not horario:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"El usuario {user.name} no tiene ningún turno activo en este momento para {dia_actual.value}"
+
+        try:
+            # Reconocer usando la ruta de la imagen (no bytes)
+            recognizer = get_recognizer()
+            result = recognizer.recognize(image_path=image_save, return_details=True)
+
+            if not result.get('recognized'):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Rostro no reconocido en la imagen"
+                )
+
+            person_name = result.get('person')
+            if person_name is None or person_name.strip().lower() != (user.name or "").strip().lower():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Persona reconocida ('{person_name}') no coincide con el usuario del código {codigo_user}"
+                )
+
+            # Obtener turno activo
+            dia_actual = self._get_dia_semana(ahora)
+            horario = self.horario_service.detectar_turno_activo(
+                db, user.id, dia_actual, ahora.time()
+            )
+            
+            # IMPORTANTE: Validar que exista turno activo
+            if not horario:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"El usuario {user.name} no tiene ningún turno activo en este momento para {dia_actual.value}"
+                )
+
+            # Determinar tipo de registro
+            tipo_registro = self._determinar_tipo_registro(
+                db, user.id, ahora.date(), horario.id
             )
 
-        # Determinar tipo de registro
-        tipo_registro = self._determinar_tipo_registro(
-            db, user.id, ahora.date(), horario.id
-        )
+            # Delegar en la lógica común usando MetodoRegistro.FACIAL
+            asistencia_result = self._registrar_common(
+                db=db,
+                user=user,
+                horario=horario,
+                ahora=ahora,
+                tipo_registro=tipo_registro,
+                metodo=MetodoRegistro.FACIAL,
+                observaciones=None
+            )
+            
+            return asistencia_result
 
-        # Delegar en la lógica común usando MetodoRegistro.FACIAL
-        return self._registrar_common(
-            db=db,
-            user=user,
-            horario=horario,
-            ahora=ahora,
-            tipo_registro=tipo_registro,
-            metodo=MetodoRegistro.FACIAL,
-            observaciones=None
-        )
+        finally:
+            try:
+               delete_user_folder(codigo_user)
+            except Exception as e:
+                print(f"⚠️ Advertencia: No se pudo eliminar imagen temporal: {str(e)}")
 
     def registrar_asistencia_huella(
         self,

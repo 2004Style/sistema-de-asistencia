@@ -149,8 +149,8 @@ async def registrar_asistencia_manual(
 
 @router.post("/registro-facial")
 async def registrar_asistencia_facial(
-    codigo: str = Query(..., description="Código único del usuario"),
-    image: UploadFile = File(..., description="Imagen que contiene el rostro"),
+    codigo: str = Query(...),
+    image: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
     """
@@ -165,27 +165,10 @@ async def registrar_asistencia_facial(
       asociado al `codigo`, se registra la asistencia (entrada/salida) usando el
       servicio `asistencia_service.registrar_asistencia`.
     - Si no coincide, se devuelve error.
+    - La imagen se guarda de forma permanente en la carpeta de asistencias.
     """
     try:
-        from src.users.model import User
-        
-        # Validar usuario por código
-        usuario = db.query(User).filter(User.codigo_user == codigo).first()
-        if not usuario:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Usuario con código {codigo} no encontrado")
-
-        # Leer imagen en memoria y hacer validaciones ligeras
-        content = await image.read()
-        if not content:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Imagen vacía")
-
-        # Limitar tamaño máximo (ej. 5 MB) para evitar cargas excesivas desde el controller
-        max_size_bytes = 5 * 1024 * 1024
-        if len(content) > max_size_bytes:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Imagen demasiado grande (máx 5MB)")
-
-        # Delegar toda la decodificación y reconocimiento facial al servicio
-        asistencia_resp = asistencia_service.registrar_asistencia_facial(db, codigo, content)
+        asistencia_resp = asistencia_service.registrar_asistencia_facial(db, codigo, image)
 
         return create_single_response(data=asistencia_resp, message="Asistencia registrada por reconocimiento facial")
 

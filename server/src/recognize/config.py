@@ -30,44 +30,41 @@ for directory in [DATA_DIR, DATABASE_DIR, LOGS_DIR]:
     directory.mkdir(parents=True, exist_ok=True)
 
 # ============================================================================
-# CONFIGURACIÓN DE MODELOS - MÁXIMA POTENCIA Y ROBUSTEZ
+# CONFIGURACIÓN DE MODELOS
 # ============================================================================
-# Modelo de detección facial (RetinaFace es el mejor y más robusto)
-DETECTOR_BACKEND = "retinaface"  # El más potente: maneja múltiples poses, oclusiones, baja luz
+# Modelo de detección facial (RetinaFace es el mejor)
+DETECTOR_BACKEND = "retinaface"  # Opciones: retinaface, mtcnn, opencv, ssd
 
-# Modelo de reconocimiento facial (Facenet512 - mayor dimensionalidad = mejor precisión)
-RECOGNITION_MODEL = "Facenet512"  # 512 dimensiones - máxima capacidad discriminativa
+# Modelo de reconocimiento facial (Facenet512 es más estable y robusto)
+RECOGNITION_MODEL = "Facenet512"  # Opciones: ArcFace, Facenet512, Facenet, VGG-Face
 
-# Distancia métrica (cosine es más robusta para embeddings normalizados)
-DISTANCE_METRIC = "cosine"  # Más estable ante variaciones de iluminación
+# Distancia métrica
+DISTANCE_METRIC = "cosine"  # Opciones: cosine, euclidean, euclidean_l2
 
 # ============================================================================
 # PARÁMETROS DE PRECISIÓN ULTRA-ROBUSTOS
 # ============================================================================
-# Umbrales ajustados científicamente para MÁXIMA discriminación entre personas similares
-# CRÍTICO: Evitar confusión entre gemelos, hermanos, personas con rasgos parecidos
+# Umbrales ajustados científicamente para máxima discriminación entre personas similares
 # Basado en investigación de embeddings faciales y análisis de distribución de distancias
 
 THRESHOLDS = {
     "ArcFace": {
-        "cosine": 0.60,  # Más estricto - evita confusión entre similares
+        "cosine": 0.65,  # Optimizado para discriminar personas con rasgos similares
         "euclidean": 4.15,
         "euclidean_l2": 1.13
     },
     "Facenet512": {
-        "cosine": 0.25,  # MUY ESTRICTO - solo acepta matches muy cercanos
-        # Facenet512 con 512 dimensiones permite discriminación fina
-        # 0.25 = solo ~15° de ángulo en espacio embedding
+        "cosine": 0.28,  # Más estricto para evitar confusión entre similares
         "euclidean": 23.56,
         "euclidean_l2": 1.04
     },
     "Facenet": {
-        "cosine": 0.35,  # Más estricto que default
+        "cosine": 0.38,  # Balance entre precisión y recall
         "euclidean": 10.0,
         "euclidean_l2": 0.80
     },
     "VGG-Face": {
-        "cosine": 0.35,  # Más estricto
+        "cosine": 0.38,
         "euclidean": 0.60,
         "euclidean_l2": 0.86
     }
@@ -76,152 +73,94 @@ THRESHOLDS = {
 # Umbral base según modelo y métrica
 RECOGNITION_THRESHOLD = THRESHOLDS[RECOGNITION_MODEL][DISTANCE_METRIC]
 
-# UMBRAL ADAPTATIVO - Ajusta dinámicamente según contexto PERO mantiene discriminación
-USE_ADAPTIVE_THRESHOLD = True  # Calcula threshold óptimo por cada persona en DB
+# Umbral adaptativo para casos difíciles (se calculará dinámicamente)
+USE_ADAPTIVE_THRESHOLD = True  # Ajusta según distribución de distancias en DB
 
 # ============================================================================
-# PARÁMETROS DE PROCESAMIENTO DE IMÁGENES - ULTRA POTENTE
+# PARÁMETROS DE PROCESAMIENTO DE IMÁGENES AVANZADO
 # ============================================================================
-# Tamaño de imagen para normalización (mayor = más detalles preservados)
-TARGET_SIZE = (224, 224)  # Óptimo para Facenet512
+# Tamaño de imagen para normalización
+TARGET_SIZE = (224, 224)
 
-# Detectar todos los rostros (para análisis de contexto)
-ENFORCE_DETECTION = False  # Permite procesamiento flexible
+# Detectar todos los rostros (importante para contexto multi-persona)
+ENFORCE_DETECTION = False  # Permite detectar múltiples rostros
 
-# Alineación facial de 5 puntos - CRÍTICO para precisión
-ALIGN_FACES = True  # Normaliza pose, rotación, escala
+# Alineación facial de 5 puntos (ojos, nariz, boca) para máxima precisión
+ALIGN_FACES = True
 
-# PREPROCESAMIENTO ULTRA-AGRESIVO - Funciona con CUALQUIER calidad
-ENABLE_PREPROCESSING = True   # 6 técnicas de mejora (CLAHE, denoising, sharpening, etc)
-ENABLE_AUGMENTATION = True    # 8 variaciones por imagen en registro = máxima robustez
-ENABLE_QUALITY_FILTER = False # DESACTIVADO - el preprocesamiento se encarga de todo
+# Preprocesamiento avanzado
+ENABLE_PREPROCESSING = True  # Ecualización + denoising + normalización
+ENABLE_AUGMENTATION = True   # Data augmentation en registro (flip, brightness, etc)
+ENABLE_QUALITY_FILTER = True # Filtrar imágenes de muy baja calidad
 
-# Normalización RGB adaptativa
-NORMALIZATION = "base"  # Compatible con todos los modelos
+# Normalizar RGB
+NORMALIZATION = "base"  # Opciones: base, raw, Facenet, Facenet2018, VGGFace, ArcFace
 
 # ============================================================================
-# ESTRATEGIA DE MATCHING ULTRA-AVANZADA - MÁXIMA PRECISIÓN Y ROBUSTEZ
+# ESTRATEGIA DE MATCHING AVANZADA
 # ============================================================================
-# Estrategia ensemble: combina 4 técnicas para decisión óptima
-MATCHING_STRATEGY = "ensemble"  # La más potente: promedio ponderado de múltiples métricas
+# Estrategia híbrida: combina múltiples enfoques para máxima precisión
+MATCHING_STRATEGY = "ensemble"  # ensemble, voting, min_distance, average, weighted
 
-# Número de imágenes por persona - OPTIMIZADO para capturar variabilidad completa
-# CRÍTICO: Más imágenes = mejor discriminación entre similares + robustez ante cambios
-MIN_IMAGES_PER_PERSON = 8     # Mínimo para cobertura básica (antes 5)
-RECOMMENDED_IMAGES_PER_PERSON = 12  # ÓPTIMO - cubre todas las variaciones (antes 10)
-                                    # - Diferentes poses (frontal, 3/4, perfil)
-                                    # - Diferentes expresiones (neutral, sonrisa)
-                                    # - Diferentes luces (natural, artificial)
-                                    # - Con/sin lentes, diferentes peinados
-MAX_IMAGES_PER_PERSON = 20    # Máximo útil - más allá es redundante (antes 15)
+# Número de imágenes por persona para capturar variabilidad completa
+MIN_IMAGES_PER_PERSON = 8   # Mínimo para cubrir variaciones (pose, expresión, iluminación)
+RECOMMENDED_IMAGES_PER_PERSON = 12  # Óptimo para robustez
+MAX_IMAGES_PER_PERSON = 20  # Máximo útil (más allá reduce rendimiento sin mejora)
 
-# Con 12 imágenes + augmentation (8 variaciones cada una) = 96 embeddings
-# Esto permite discriminación muy fina entre personas similares
+# K-vecinos para voting y análisis de distribución
+K_NEIGHBORS = 7  # Número impar para desempate en voting
 
-# K-vecinos para voting y análisis (impar para desempate)
-K_NEIGHBORS = 5  # Reducido a 5 - más rápido y suficientemente robusto
-
-# ENSEMBLE WEIGHTS OPTIMIZADOS - Balanceados para discriminación fina
+# Weights para estrategia ensemble (suma = 1.0)
 ENSEMBLE_WEIGHTS = {
-    'min_distance': 0.50,    # MÁXIMA prioridad al mejor match (↑ de 0.45)
-    'average': 0.20,         # Reduce peso de promedio (puede incluir outliers)
-    'median': 0.20,          # Mantiene robustez ante outliers
-    'voting': 0.10           # Consenso secundario
+    'min_distance': 0.40,    # Mayor peso: el mejor match es más confiable
+    'average': 0.25,         # Considera tendencia general
+    'median': 0.20,          # Robusto a outliers
+    'voting': 0.15           # Consenso de vecinos cercanos
 }
 
-# TOLERANCIAS ADAPTATIVAS INTELIGENTES
-# ⚠️ CRÍTICO: Estas tolerancias aplican SOLO si el contexto lo detecta
-# NO relajan el umbral base - solo compensan cuando hay razón específica
-
-BASE_VARIATION_TOLERANCE = 1.15   # Base: solo 15% más permisivo (antes 1.30)
-                                  # Mantiene discriminación entre personas similares
-
-# Tolerancias contextuales - SOLO si se detecta el problema específico
-ILLUMINATION_TOLERANCE = 1.40     # Si detecta cambio drástico de luz (antes 1.50)
-                                  # Ej: foto en oficina vs exterior
-                                  
-OCCLUSION_TOLERANCE = 1.35        # Si detecta lentes/barba/accesorios (antes 1.45)
-                                  # Permite cambios de look del mismo individuo
-                                  
-POSE_TOLERANCE = 1.25             # Si detecta ángulo diferente (antes 1.35)
-                                  # Ej: foto frontal vs perfil
-
-# NUEVO: Configuración de variabilidad intra-persona
-ALLOW_INTRA_PERSON_VARIABILITY = True  # Tolera cambios del mismo individuo
-REJECT_INTER_PERSON_SIMILARITY = True  # Rechaza personas similares
-
-# Mínima separación entre personas en embedding space
-MIN_INTER_PERSON_DISTANCE = 0.35  # Si dos personas están más cerca que esto, 
-                                  # requiere confianza EXTRA alta para distinguir
+# Tolerancia adaptativa según contexto
+BASE_VARIATION_TOLERANCE = 1.25  # Base: 25% más permisivo
+ILLUMINATION_TOLERANCE = 1.35    # Iluminación extrema: 35% más permisivo
+OCCLUSION_TOLERANCE = 1.40       # Oclusiones (lentes, barba): 40% más permisivo
+POSE_TOLERANCE = 1.30            # Ángulos diferentes: 30% más permisivo
 
 # ============================================================================
-# VALIDACIÓN Y CALIDAD - CONFIGURACIÓN ULTRA-ROBUSTA Y ADAPTATIVA
+# VALIDACIÓN Y CALIDAD MULTI-NIVEL
 # ============================================================================
-# Confianza mínima en detección - BALANCEADA para alta/baja calidad
-MIN_DETECTION_CONFIDENCE = 0.55  # Óptimo: detecta en condiciones difíciles sin falsos positivos
+# Confianza mínima en detección (ajustado para balance precisión/recall)
+MIN_DETECTION_CONFIDENCE = 0.65  # Balance óptimo
 
-# Tamaño mínimo de rostro - ADAPTATIVO
-MIN_FACE_SIZE = 35  # Mínimo para mantener calidad útil de embeddings
+# Tamaño mínimo de rostro en pixels
+MIN_FACE_SIZE = 50  # Detecta rostros lejanos pero mantiene calidad mínima
 
-# SISTEMA DE VALIDACIÓN ADAPTATIVO - NO rechaza, solo advierte y compensa
-CHECK_IMAGE_QUALITY = True  # Activo para logging y métricas, NO para rechazo
-QUALITY_STRICTNESS = "adaptive"  # NUEVO: Se adapta automáticamente a la calidad disponible
+# Control de calidad multinivel
+CHECK_IMAGE_QUALITY = True
+QUALITY_STRICTNESS = "medium"  # strict, medium, lenient
 
-# UMBRALES MULTI-NIVEL - El preprocesamiento compensa cualquier calidad
+# Umbrales de calidad según strictness
 QUALITY_THRESHOLDS = {
-    "strict": {  # Para producción con cámaras profesionales
-        "blur": 120,
+    "strict": {
+        "blur": 120,      # Laplacian variance
         "brightness_min": 50,
         "brightness_max": 200,
         "contrast_min": 30
     },
-    "medium": {  # Para cámaras web estándar
-        "blur": 60,
-        "brightness_min": 25,
-        "brightness_max": 225,
-        "contrast_min": 15
+    "medium": {
+        "blur": 80,
+        "brightness_min": 30,
+        "brightness_max": 220,
+        "contrast_min": 20
     },
-    "lenient": {  # Para cámaras de laptop
-        "blur": 20,  # Acepta casi cualquier nivel (preprocesamiento compensará)
-        "brightness_min": 5,   # Extremadamente permisivo
-        "brightness_max": 250, # Acepta sobreexposición
-        "contrast_min": 5      # Mínimo absoluto
-    },
-    "adaptive": {  # NUEVO - Se ajusta dinámicamente
-        "blur": 15,  # No rechaza por blur - sharpening lo arregla
-        "brightness_min": 3,   # Casi sin mínimo
-        "brightness_max": 252, # Casi sin máximo
-        "contrast_min": 3      # Preprocesamiento aumentará contraste
+    "lenient": {
+        "blur": 50,
+        "brightness_min": 15,
+        "brightness_max": 240,
+        "contrast_min": 10
     }
 }
 
 # Usar threshold según strictness
 MAX_BLUR_THRESHOLD = QUALITY_THRESHOLDS[QUALITY_STRICTNESS]["blur"]
-
-# ============================================================================
-# ANTI-CONFUSIÓN: DETECCIÓN DE PERSONAS SIMILARES
-# ============================================================================
-# Sistema para evitar confusión entre personas con rasgos parecidos
-ENABLE_SIMILARITY_CHECK = True  # Analiza similitud entre personas registradas
-
-# Si dos personas registradas tienen embeddings muy cercanos, aumenta umbral
-SIMILARITY_WARNING_THRESHOLD = 0.35  # Si distancia < 0.35, son MUY similares
-SIMILARITY_CRITICAL_THRESHOLD = 0.25 # Si distancia < 0.25, casi idénticas (gemelos)
-
-# Ajuste de umbral cuando hay personas similares en DB
-SIMILARITY_STRICTNESS_MULTIPLIER = 0.85  # Reduce threshold 15% (más estricto)
-                                         # Ej: threshold 0.25 → 0.21 con personas similares
-
-# ============================================================================
-# ROBUSTEZ ANTE CAMBIOS INTRA-PERSONA
-# ============================================================================
-# Sistema para tolerar cambios del mismo individuo sin confundir con otros
-INTRA_PERSON_VARIANCE_TOLERANCE = 0.18  # Variación normal dentro de una persona
-                                        # Cambios de peinado, lentes, barba, etc.
-
-# Confidence boost para variaciones conocidas
-KNOWN_VARIATION_CONFIDENCE_BOOST = 1.15  # +15% confianza si match está dentro
-                                         # de variabilidad esperada de esa persona
 
 # ============================================================================
 # ARCHIVOS DE BASE DE DATOS

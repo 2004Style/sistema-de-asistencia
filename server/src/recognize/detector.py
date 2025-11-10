@@ -152,48 +152,27 @@ class FaceDetector:
         """
         self._load_model()
         
-        # PASO 1: Determinar fuente de imagen y cargar si es necesario
-        source_image = None  # Imagen original (numpy array)
-        original_path = None  # Path original (si se proporcionó)
-        
+        # Cargar imagen si se proporcionó path
         if image_path is not None:
-            # Caso 1: Se proporcionó path - cargar imagen
-            source_image = load_image(image_path)
-            original_path = image_path
-            if source_image is None:
+            image = load_image(image_path)
+            if image is None:
                 return []
-        elif image is not None:
-            # Caso 2: Se proporcionó numpy array directamente
-            source_image = image
-        else:
-            # Caso 3: No se proporcionó nada
+        
+        if image is None:
             logger.error("No se proporcionó imagen válida")
             return []
         
-        # PASO 2: Verificar calidad de imagen (con numpy array)
-        quality_ok, quality_msg, quality_metrics = check_image_quality(source_image)
+        # Verificar calidad de imagen
+        quality_ok, quality_msg, quality_metrics = check_image_quality(image)
         if not quality_ok:
             logger.warning(f"Calidad de imagen: {quality_msg}")
         
-        # PASO 3: CRITICAL FIX - Crear archivo temporal para DeepFace
-        # DeepFace.extract_faces con numpy arrays causa KerasTensor error
-        # Solución: Siempre guardar numpy array como archivo temporal PNG
-        temp_file = None
         try:
             from deepface import DeepFace
-            from .utils import save_image_to_temp, cleanup_temp_file
             
-            # Guardar imagen como archivo temporal
-            temp_file = save_image_to_temp(source_image, extension='.png')
-            if temp_file is None:
-                logger.error("No se pudo crear archivo temporal para detección")
-                return []
-            
-            logger.debug(f"→ Detección usando archivo temporal: {temp_file}")
-            
-            # Detectar rostros usando archivo temporal (evita KerasTensor)
+            # Detectar rostros usando DeepFace
             face_objs = DeepFace.extract_faces(
-                img_path=temp_file,  # Usar archivo temporal (NUNCA numpy array)
+                img_path=image,
                 detector_backend=self.backend,
                 enforce_detection=False,  # No lanzar excepción si no detecta
                 align=True
@@ -262,14 +241,10 @@ class FaceDetector:
                 return [best_face]
             
             return detected_faces
-            
+        
         except Exception as e:
             logger.error(f"Error en detección de rostros: {str(e)}")
             return []
-        finally:
-            # CRÍTICO: Limpiar archivo temporal SIEMPRE
-            if temp_file:
-                cleanup_temp_file(temp_file)
     
     def extract_face(
         self,
