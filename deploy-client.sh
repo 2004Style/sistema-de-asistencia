@@ -172,20 +172,17 @@ build_and_start_client() {
     cd "$CLIENT_DIR" || { echo -e "${RED}❌ No existe $CLIENT_DIR${NC}"; exit 1; }
     liberar_puerto_3000
     echo -e "${BLUE}→ Instalando dependencias del cliente...${NC}"
-
     if command -v pnpm >/dev/null 2>&1; then
         pnpm install
         pnpm build
-
-        # ✅ Iniciar sin guardar logs del arranque
-        nohup pnpm start --hostname 0.0.0.0 --port 3000 >/dev/null 2>&1 &
+        rm -f "$CLIENT_LOG"
+        nohup pnpm start --hostname 0.0.0.0 --port 3000 > "$CLIENT_LOG" 2>&1 &
         CLIENT_PID=$!
     else
         npm ci || npm install
         npm run build
-
-        # ✅ Iniciar sin guardar logs del arranque
-        nohup npm start --hostname 0.0.0.0 --port 3000 >/dev/null 2>&1 &
+        rm -f "$CLIENT_LOG"
+        nohup npm start --hostname 0.0.0.0 --port 3000 > "$CLIENT_LOG" 2>&1 &
         CLIENT_PID=$!
     fi
 
@@ -194,48 +191,35 @@ build_and_start_client() {
 
     MAX_RETRIES=40
     RETRY=0
-
     while [ $RETRY -lt $MAX_RETRIES ]; do
         sleep 1
-
-        # ✅ Cuando ya está escuchando en el puerto, recién se inicia logging
         if ss -tulpn | grep -q ":3000"; then
-            echo -e "${GREEN}✓ Cliente escuchando en puerto 3000${NC}"
-
-            # ✅ Ahora sí iniciar logs del servidor YA ARRANCADO
-            rm -f "$CLIENT_LOG" 2>/dev/null
-            echo -e "${BLUE}→ Comenzando a capturar logs...${NC}"
-            tail -f "/proc/$CLIENT_PID/fd/1" > "$CLIENT_LOG" 2>&1 &
-            LOG_PID=$!
-
-            echo -e "${GREEN}✓ Logging activo (PID: $LOG_PID)${NC}\n"
+            echo -e "${GREEN}✓ Cliente escuchando en puerto 3000${NC}\n"
             echo -e "${BLUE}════════════════════════════════════════${NC}"
             echo -e "${GREEN}✅ CLIENTE INICIADO EXITOSAMENTE${NC}"
             echo -e "${BLUE}════════════════════════════════════════${NC}\n"
             echo -e "${BLUE}📊 INFO:${NC}"
             echo -e "  PID:              $CLIENT_PID"
             echo -e "  Puerto:           3000"
-            echo -e "  Archivo Log:      $CLIENT_LOG"
+            echo -e "  Log:              $CLIENT_LOG"
             echo -e "${BLUE}🔗 Acceder:${NC}"
             echo -e "  ${GREEN}http://localhost:3000${NC}\n"
             return 0
         fi
 
-        # ❌ Si el proceso murió antes de arrancar
         if ! ps -p $CLIENT_PID > /dev/null 2>&1; then
-            echo -e "${RED}❌ Proceso cliente murió durante el arranque (PID $CLIENT_PID)${NC}"
-            echo -e "${RED}ℹ️ No existe log porque NO se guardan logs de arranque${NC}"
+            echo -e "${RED}❌ Proceso cliente murió (PID $CLIENT_PID)${NC}"
+            echo -e "${RED}→ Últimas líneas del log:${NC}\n"
+            tail -n 30 "$CLIENT_LOG"
             exit 1
         fi
-
         RETRY=$((RETRY + 1))
     done
 
     echo -e "${RED}❌ Timeout esperando puerto 3000${NC}"
-    echo -e "${YELLOW}ℹ️ No hay log porque no se guardan logs antes del arranque${NC}"
+    tail -n 50 "$CLIENT_LOG"
     exit 1
 }
-
 
 # =====================================================================
 # EJECUCIÓN
