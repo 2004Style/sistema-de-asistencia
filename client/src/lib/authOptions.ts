@@ -116,6 +116,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       // Primera vez después del login
       if (user) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const maybe = user as any;
 
         if (maybe.user && maybe.backendTokens) {
