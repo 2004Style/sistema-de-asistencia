@@ -66,7 +66,7 @@ async function refreshToken(token: JWT): Promise<JWT> {
 }
 
 export const authOptions: NextAuthOptions = {
-  debug: process.env.NODE_ENV === "development", // ✅ Agregar logs en desarrollo
+  debug: true,
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -94,13 +94,12 @@ export const authOptions: NextAuthOptions = {
 
           const loginResponse = await res.json();
 
-          // ✅ Retornar estructura que NextAuth espera en el JWT callback
-          // El servidor retorna: { user: {...}, backendTokens: {...} }
-          // NextAuth espera que authorize() retorne el usuario + data extra
-          return {
+          const dataUser = {
             ...loginResponse.user,
             backendTokens: loginResponse.backendTokens,
           };
+          console.log("Login response:", loginResponse);
+          return dataUser;
         } catch (error) {
           console.error("Authorization error:", error);
           return null;
@@ -117,11 +116,20 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       // Primera vez después del login
       if (user) {
-        const authResponse = user as unknown as AuthorizeResponse;
+        const maybe = user as any;
+
+        if (maybe.user && maybe.backendTokens) {
+          return {
+            ...token,
+            user: maybe.user,
+            backendTokens: maybe.backendTokens,
+          };
+        }
+
         return {
           ...token,
-          user: authResponse.user,
-          backendTokens: authResponse.backendTokens,
+          user: maybe,
+          backendTokens: maybe.backendTokens,
         };
       }
 
