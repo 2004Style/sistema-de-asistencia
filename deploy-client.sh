@@ -1,22 +1,35 @@
 #!/bin/bash
 
 # =====================================================================
-#   SCRIPT DE DESPLIEGUE CLIENTE (Next.js) — COMPLETO + AUTO-INSTALADOR
+#   SCRIPT DE DESPLIEGUE CLIENTE (Next.js) — LIMPIO Y PROFESIONAL
 # =====================================================================
 
 set -euo pipefail
 
-# Colores
+# --------------------------------------------------
+# Colores y helpers
+# --------------------------------------------------
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-echo -e "${BLUE}════════════════════════════════════════${NC}"
-echo -e "${BLUE}  DESPLIEGUE CLIENTE (Next.js)${NC}"
-echo -e "${BLUE}════════════════════════════════════════${NC}\n"
+title() {
+    echo -e "\n${BLUE}════════════════════════════════════════${NC}"
+    echo -e "${BLUE}  $1${NC}"
+    echo -e "${BLUE}════════════════════════════════════════${NC}\n"
+}
 
+step() { echo -e "→ ${YELLOW}$1${NC}"; }
+ok() { echo -e "  ${GREEN}✓ $1${NC}"; }
+error() { echo -e "  ${RED}❌ $1${NC}"; }
+
+title "DESPLIEGUE CLIENTE (Next.js)"
+
+# --------------------------------------------------
+# Rutas
+# --------------------------------------------------
 BASE_DIR="$(cd "$(dirname "$0")" >/dev/null 2>&1 && pwd)"
 CLIENT_DIR="$BASE_DIR/client"
 NGINX_DIR="$BASE_DIR/nginx"
@@ -36,190 +49,213 @@ get_distro() {
 
 DISTRO=$(get_distro)
 
+
 # =====================================================================
 # VERIFICAR E INSTALAR: Node.js, npm y pnpm
 # =====================================================================
 install_node() {
-    echo -e "${BLUE}→ Instalando Node.js 20 LTS...${NC}"
+    step "Instalando Node.js 20 LTS..."
+
     case "$DISTRO" in
         debian|ubuntu|linuxmint|pop)
-            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-            sudo apt install -y nodejs
+            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - >/dev/null 2>&1
+            sudo apt install -y nodejs >/dev/null 2>&1
             ;;
         arch|manjaro|endeavouros)
-            sudo pacman -Syu --noconfirm
-            sudo pacman -S --noconfirm nodejs npm
+            sudo pacman -Syu --noconfirm >/dev/null 2>&1
+            sudo pacman -S --noconfirm nodejs npm >/dev/null 2>&1
             ;;
         fedora)
-            sudo dnf install -y nodejs npm
+            sudo dnf install -y nodejs npm >/dev/null 2>&1
             ;;
         centos|rhel|rocky|almalinux)
-            curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
-            sudo yum install -y nodejs || sudo dnf install -y nodejs
+            curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash - >/dev/null 2>&1
+            sudo yum install -y nodejs >/dev/null 2>&1 || sudo dnf install -y nodejs >/dev/null 2>&1
             ;;
         alpine)
-            sudo apk add nodejs npm
+            sudo apk add nodejs npm >/dev/null 2>&1
             ;;
         *)
-            echo -e "${RED}❌ Distro no soportada automáticamente para instalar Node${NC}"
+            error "Distro no soportada automáticamente."
             exit 1
             ;;
     esac
-    echo -e "${GREEN}✓ Node.js instalado correctamente${NC}"
+    ok "Node.js instalado"
 }
 
 install_pnpm() {
-    echo -e "${BLUE}→ Instalando pnpm global...${NC}"
-    sudo npm install -g pnpm
-    echo -e "${GREEN}✓ pnpm instalado${NC}"
+    step "Instalando pnpm global..."
+    sudo npm install -g pnpm >/dev/null 2>&1
+    ok "pnpm instalado"
 }
 
 check_and_install_node_stack() {
-    echo -e "${BLUE}→ Verificando Node.js y paquetes necesarios...${NC}"
+    title "VERIFICAR NODE.JS / PNPM"
+
     if ! command -v node >/dev/null 2>&1; then
-        echo -e "${YELLOW}⚠️ Node.js no está instalado${NC}"
+        step "Node.js no encontrado"
         install_node
     else
-        echo -e "${GREEN}✓ Node.js encontrado → $(node -v)${NC}"
+        ok "Node.js encontrado → $(node -v)"
     fi
+
     if ! command -v npm >/dev/null 2>&1; then
-        echo -e "${YELLOW}⚠️ npm no está instalado${NC}"
+        step "npm no encontrado"
         install_node
     else
-        echo -e "${GREEN}✓ npm encontrado → $(npm -v)${NC}"
+        ok "npm encontrado → $(npm -v)"
     fi
+
     if ! command -v pnpm >/dev/null 2>&1; then
-        echo -e "${YELLOW}⚠️ pnpm no está instalado${NC}"
+        step "pnpm no encontrado"
         install_pnpm
     else
-        echo -e "${GREEN}✓ pnpm encontrado → $(pnpm -v)${NC}"
+        ok "pnpm encontrado → $(pnpm -v)"
     fi
 }
 
+
 # =====================================================================
-# LIBERAR PUERTO 3000
+# LIBERAR PUERTO 3000 (Sin output feo)
 # =====================================================================
 liberar_puerto_3000() {
-    echo -e "${BLUE}→ Liberando puerto 3000...${NC}"
-    sudo pkill -9 -f 'pnpm start' 2>/dev/null || true
-    sudo pkill -9 -f 'npm start' 2>/dev/null || true
-    sudo pkill -9 -f 'next start' 2>/dev/null || true
-    sudo pkill -9 -f 'node.*3000' 2>/dev/null || true
+    title "LIBERANDO PUERTO 3000"
+
+    sudo pkill -9 -f 'pnpm start' >/dev/null 2>&1 || true
+    sudo pkill -9 -f 'npm start' >/dev/null 2>&1 || true
+    sudo pkill -9 -f 'next start' >/dev/null 2>&1 || true
+    sudo pkill -9 -f 'node.*3000' >/dev/null 2>&1 || true
 
     sleep 1
 
     if ss -tulpn | grep -q ":3000"; then
-        sudo fuser -k 3000/tcp || true
+        sudo fuser -k 3000/tcp >/dev/null 2>&1 || true
         sleep 1
     fi
 
-    echo -e "${GREEN}✓ Puerto 3000 liberado${NC}"
+    ok "Puerto 3000 completamente libre"
 }
 
+
 # =====================================================================
-# CONFIGURACIÓN NGINX + TLS
+# TLS + NGINX
 # =====================================================================
 ensure_tls_certificates_client() {
-    echo -e "${BLUE}→ Verificando certificados TLS CLIENTE...${NC}"
+    title "CERTIFICADOS TLS CLIENTE"
 
     DOMAIN="${DOMAIN:-$(hostname -f || hostname)}"
     EMAIL="${EMAIL:-admin@$DOMAIN}"
     LOCAL_CERT="/etc/ssl/localcerts/client-sistema.crt"
     LOCAL_KEY="/etc/ssl/localcerts/client-sistema.key"
+
     sudo mkdir -p /etc/ssl/localcerts
 
-    if [ -f "$LOCAL_CERT" ] && [ -f "$LOCAL_KEY" ]; then
-        echo -e "${GREEN}✓ Certificados TLS ya existen${NC}"
+    if [[ -f "$LOCAL_CERT" && -f "$LOCAL_KEY" ]]; then
+        ok "Certificados ya existen"
         return
     fi
 
-    echo -e "${BLUE}→ Generando certificado auto-firmado${NC}"
+    step "Generando certificado auto-firmado..."
     sudo openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
-        -keyout "$LOCAL_KEY" -out "$LOCAL_CERT" -subj "/CN=${DOMAIN}" >/dev/null 2>&1
+        -keyout "$LOCAL_KEY" -out "$LOCAL_CERT" \
+        -subj "/CN=${DOMAIN}" >/dev/null 2>&1
+
     sudo chmod 644 "$LOCAL_CERT"
     sudo chmod 600 "$LOCAL_KEY"
-    echo -e "${GREEN}✓ Certificado auto-firmado generado${NC}"
+
+    ok "Certificado generado"
 }
 
 setup_nginx_client() {
-    echo -e "${BLUE}→ Configurando NGINX CLIENTE...${NC}"
+    title "CONFIGURANDO NGINX"
+
     case "$DISTRO" in
         debian|ubuntu|linuxmint|pop)
-            sudo apt update && sudo apt install -y nginx ;;
+            sudo apt update >/dev/null 2>&1
+            sudo apt install -y nginx >/dev/null 2>&1
+            ;;
         arch|manjaro|endeavouros)
-            sudo pacman -Syu --noconfirm && sudo pacman -S --noconfirm nginx ;;
+            sudo pacman -Syu --noconfirm >/dev/null 2>&1
+            sudo pacman -S --noconfirm nginx >/dev/null 2>&1
+            ;;
         fedora)
-            sudo dnf install -y nginx ;;
+            sudo dnf install -y nginx >/dev/null 2>&1
+            ;;
         centos|rhel|rocky|almalinux)
-            sudo yum install -y nginx || sudo dnf install -y nginx ;;
+            sudo yum install -y nginx >/dev/null 2>&1 || sudo dnf install -y nginx >/dev/null 2>&1
+            ;;
         alpine)
-            sudo apk add nginx ;;
-        *)
-            sudo apt install -y nginx || true ;;
+            sudo apk add nginx >/dev/null 2>&1
+            ;;
     esac
 
-    sudo systemctl enable nginx || true
+    sudo systemctl enable nginx >/dev/null 2>&1
+
     sudo cp "$NGINX_DIR/nginx-client.conf" /etc/nginx/conf.d/sistema-client.conf
+
     ensure_tls_certificates_client
-    sudo nginx -t
+
+    sudo nginx -t >/dev/null 2>&1
     sudo systemctl restart nginx
+
+    ok "NGINX configurado correctamente"
 }
 
+
 # =====================================================================
-# BUILD Y START NEXT.JS
+# BUILD Y START CLIENTE
 # =====================================================================
 build_and_start_client() {
-    cd "$CLIENT_DIR" || { echo -e "${RED}❌ No existe $CLIENT_DIR${NC}"; exit 1; }
+    title "BUILD & START CLIENTE"
+
+    cd "$CLIENT_DIR" || { error "No existe directorio cliente"; exit 1; }
+
     liberar_puerto_3000
-    echo -e "${BLUE}→ Instalando dependencias del cliente...${NC}"
+
+    step "Instalando dependencias..."
     if command -v pnpm >/dev/null 2>&1; then
-        pnpm install
-        pnpm build
+        pnpm install --silent
+        step "Compilando cliente…"
+        pnpm build 2>&1 | sed 's/^/   /'
         rm -f "$CLIENT_LOG"
         nohup pnpm start --hostname 0.0.0.0 --port 3000 > "$CLIENT_LOG" 2>&1 &
         CLIENT_PID=$!
     else
-        npm ci || npm install
-        npm run build
+        npm ci --silent || npm install --silent
+        step "Compilando cliente…"
+        npm run build 2>&1 | sed 's/^/   /'
         rm -f "$CLIENT_LOG"
         nohup npm start --hostname 0.0.0.0 --port 3000 > "$CLIENT_LOG" 2>&1 &
         CLIENT_PID=$!
     fi
 
-    echo -e "${BLUE}→ Cliente iniciado (PID: $CLIENT_PID)${NC}"
-    echo -e "${BLUE}→ Esperando a que escuche en puerto 3000...${NC}"
+    step "Esperando a que escuche en :3000…"
 
-    MAX_RETRIES=40
-    RETRY=0
-    while [ $RETRY -lt $MAX_RETRIES ]; do
+    for _ in {1..40}; do
         sleep 1
         if ss -tulpn | grep -q ":3000"; then
-            echo -e "${GREEN}✓ Cliente escuchando en puerto 3000${NC}\n"
-            echo -e "${BLUE}════════════════════════════════════════${NC}"
-            echo -e "${GREEN}✅ CLIENTE INICIADO EXITOSAMENTE${NC}"
-            echo -e "${BLUE}════════════════════════════════════════${NC}\n"
-            echo -e "${BLUE}📊 INFO:${NC}"
-            echo -e "  PID:              $CLIENT_PID"
-            echo -e "  Puerto:           3000"
-            echo -e "  Log:              $CLIENT_LOG"
-            echo -e "${BLUE}🔗 Acceder:${NC}"
-            echo -e "  ${GREEN}http://localhost:3000${NC}\n"
-            return 0
+            ok "Cliente escuchando en puerto 3000"
+            break
         fi
-
-        if ! ps -p $CLIENT_PID > /dev/null 2>&1; then
-            echo -e "${RED}❌ Proceso cliente murió (PID $CLIENT_PID)${NC}"
-            echo -e "${RED}→ Últimas líneas del log:${NC}\n"
-            tail -n 30 "$CLIENT_LOG"
-            exit 1
-        fi
-        RETRY=$((RETRY + 1))
     done
 
-    echo -e "${RED}❌ Timeout esperando puerto 3000${NC}"
-    tail -n 50 "$CLIENT_LOG"
-    exit 1
+    if ! ss -tulpn | grep -q ":3000"; then
+        error "Timeout esperando al cliente"
+        tail -n 50 "$CLIENT_LOG"
+        exit 1
+    fi
+
+    title "✅ CLIENTE INICIADO EXITOSAMENTE"
+
+    echo -e "${BLUE}📊 INFO${NC}"
+    printf "  %-18s %s\n" "PID:" "$CLIENT_PID"
+    printf "  %-18s %s\n" "Puerto:" "3000"
+    printf "  %-18s %s\n" "Log:" "$CLIENT_LOG"
+
+    echo -e "\n${BLUE}🔗 Acceso${NC}"
+    echo -e "  ${GREEN}http://localhost:3000${NC}\n"
 }
+
 
 # =====================================================================
 # EJECUCIÓN
