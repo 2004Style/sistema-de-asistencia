@@ -158,7 +158,7 @@ export function ClientHorarioCreate({ id_user }: { id_user?: number }) {
             const [horaEntrada, minEntrada] = formData.hora_entrada.split(":").map(Number);
             const [horaSalida, minSalida] = formData.hora_salida.split(":").map(Number);
             const minutosTotales = (horaSalida * 60 + minSalida) - (horaEntrada * 60 + minEntrada);
-            const horasRequeridas = minutosTotales / 60;
+            const horasRequeridas = Math.round(minutosTotales / 60);
 
             const createData: CrearHorario = {
                 user_id: userId,
