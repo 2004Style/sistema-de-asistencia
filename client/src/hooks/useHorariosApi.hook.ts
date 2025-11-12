@@ -10,7 +10,7 @@ import { HorariosList, HorarioDetails, ActualizarHorario, CrearHorario } from "@
  * Incluye listado, consulta, actualización, eliminación y creación masiva
  */
 export const useHorariosApi = (requireAuth?: boolean) => {
-  const api = useClientApi(requireAuth);
+  const api = useClientApi(requireAuth || true);
 
   /**
    * 🔒 PROTECTED - Listar mis horarios con filtros
