@@ -202,19 +202,45 @@ show_quick_summary() {
     echo ""
     
     # Ejecutar y capturar salida
+    # Ejecutar y capturar salida
     output=$(python -m pytest tests/integration/ -q --tb=no --disable-warnings 2>&1)
-    
-    # Extraer información
-    total=$(echo "$output" | grep -oP '^\d+' | tail -1)
-    passed=$(echo "$output" | grep -oP '\d+(?= passed)' | tail -1)
-    failed=$(echo "$output" | grep -oP '\d+(?= failed)' | tail -1 || echo "0")
-    
-    # Cálculos
-    if [ ! -z "$passed" ] && [ ! -z "$total" ]; then
-        percentage=$((passed * 100 / total))
-        echo "$output"
+
+    # Mostrar la salida cruda de pytest para diagnóstico
+    echo "$output"
+
+    # Obtener la línea de resumen de pytest y mostrarla (p. ej. "152 passed, 14 warnings in 4.49s")
+    pytest_line=$(printf "%s\n" "$output" | grep -E 'collected [0-9]+ items|[0-9]+ passed|[0-9]+ failed|[0-9]+ errors?|[0-9]+ skipped' | tail -n 1 || true)
+    if [ -n "$pytest_line" ]; then
+        echo ""
+        print_section "LÍNEA RESUMEN DE PYTEST"
+        echo "$pytest_line"
+    fi
+
+    # Extraer contadores usando patrones más fiables
+    passed=$(printf "%s\n" "$output" | grep -oE '[0-9]+ passed' | tail -n1 | grep -oE '[0-9]+' || true)
+    failed=$(printf "%s\n" "$output" | grep -oE '[0-9]+ failed' | tail -n1 | grep -oE '[0-9]+' || true)
+    errors=$(printf "%s\n" "$output" | grep -oE '[0-9]+ errors?' | tail -n1 | grep -oE '[0-9]+' || true)
+    skipped=$(printf "%s\n" "$output" | grep -oE '[0-9]+ skipped' | tail -n1 | grep -oE '[0-9]+' || true)
+    collected=$(printf "%s\n" "$output" | grep -oE 'collected [0-9]+ items' | tail -n1 | grep -oE '[0-9]+' || true)
+
+    # Normalizar a 0 cuando no existan
+    passed=${passed:-0}
+    failed=${failed:-0}
+    errors=${errors:-0}
+    skipped=${skipped:-0}
+    collected=${collected:-0}
+
+    # Calcular total preferentemente desde 'collected' si está disponible
+    if [ "$collected" -gt 0 ]; then
+        total=$collected
     else
-        python -m pytest tests/integration/ -q --tb=no --disable-warnings
+        total=$((passed + failed + errors + skipped))
+    fi
+
+    # Calcular porcentaje de éxito (manera segura)
+    percentage=0
+    if [ "$total" -gt 0 ]; then
+        percentage=$((passed * 100 / total))
     fi
     
     echo ""

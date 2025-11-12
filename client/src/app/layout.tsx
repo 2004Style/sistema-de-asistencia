@@ -29,7 +29,7 @@ export default function RootLayout({
               <AppNav />
               <div className="flex flex-1">
                 <AppMenu />
-                <SidebarInset>
+                <SidebarInset className="p-4 md:py-10">
                   {children}
                 </SidebarInset>
               </div>

@@ -162,7 +162,7 @@ export default function DashboardPage() {
 
     if (error) {
         return (
-            <div className="space-y-6">
+            <div className="space-y-6 ">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
                     <p className="text-muted-foreground mt-2">Estadísticas del sistema de asistencia</p>
@@ -207,7 +207,7 @@ export default function DashboardPage() {
     const COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#06b6d4", "#6366f1"];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 ">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>

@@ -362,7 +362,7 @@ export default function AsistenciasPage() {
     const columns = createColumns(tableActions);
 
     return (
-        <div className="container mx-auto p-4 md:py-10">
+        <div className="container mx-auto ">
             <div className="mb-6">
                 <h1 className="text-3xl font-bold tracking-tight">Asistencias</h1>
                 <p className="text-muted-foreground">

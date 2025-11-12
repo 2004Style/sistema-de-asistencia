@@ -125,7 +125,7 @@ export default function TurnosPage() {
     const columns = createColumns(tableActions);
 
     return (
-        <div className="container mx-auto p-4 md:py-10">
+        <div className="container mx-auto ">
             <div className="mb-6 flex items-center w-full justify-between gap-3">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Turnos</h1>

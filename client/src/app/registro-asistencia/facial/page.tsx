@@ -24,7 +24,6 @@ function ReconocimientoFacialContent() {
     const [mensaje, setMensaje] = useState("Inicializando cámara...");
     const [mostrarModalExito, setMostrarModalExito] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [countdown, setCountdown] = useState<number | null>(null);
 
     const codigo = searchParams.get("codigo");
     const tipoRegistro = searchParams.get("tipo");
@@ -69,14 +68,7 @@ function ReconocimientoFacialContent() {
     const capturarRostro = async () => {
         if (!videoRef.current || !canvasRef.current) return;
 
-        // Countdown antes de capturar
-        setEstadoFacial("capturando");
-        for (let i = 3; i > 0; i--) {
-            setCountdown(i);
-            setMensaje(`Capturando en ${i}...`);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-        setCountdown(null);
+        
 
         // Capturar imagen
         const canvas = canvasRef.current;
@@ -202,14 +194,6 @@ function ReconocimientoFacialContent() {
                                 </div>
                             )}
 
-                            {/* Countdown overlay */}
-                            {countdown !== null && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                                    <div className="text-white text-9xl font-bold animate-pulse">
-                                        {countdown}
-                                    </div>
-                                </div>
-                            )}
 
                             {/* Estado de procesamiento */}
                             {estadoFacial === "procesando" && (

@@ -48,7 +48,7 @@ export default function HorariosPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [diaSemana, setDiaSemana] = useState<DiaSemanaType | "">("");
-    const [activo, setActivo] = useState<"all" | "true" | "false">("all");
+    const [activo, setActivo] = useState<"true" | "false">("true");
 
     useEffect(() => {
         const fetchHorarios = async () => {
@@ -101,7 +101,7 @@ export default function HorariosPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 ">
             {/* Encabezado */}
             <div className="flex items-center justify-between">
                 <div>
@@ -154,14 +154,13 @@ export default function HorariosPage() {
                             <Select
                                 value={activo}
                                 onValueChange={(value) =>
-                                    setActivo(value as "all" | "true" | "false")
+                                    setActivo(value as "true" | "false")
                                 }
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Todos los estados" />
+                                    <SelectValue placeholder="Activo" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">Todos los estados</SelectItem>
                                     <SelectItem value="true">Activo</SelectItem>
                                     <SelectItem value="false">Inactivo</SelectItem>
                                 </SelectContent>

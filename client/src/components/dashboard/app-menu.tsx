@@ -168,10 +168,10 @@ export function AppMenu({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarHeader>
             <SidebarContent className="bg-sidebar-primary">
                 <SubMenu items={navItems} />
-                <Thememode />
             </SidebarContent>
-            <SidebarFooter className="bg-secondary  text-secondary-foreground">
-                <NavSecondary items={data.navSecondary} className="mt-auto" />
+            <SidebarFooter className="bg-secondary gap-0 text-secondary-foreground">
+                <Thememode />
+                <NavSecondary items={data.navSecondary} className="" />
             </SidebarFooter>
         </Sidebar>
     )
