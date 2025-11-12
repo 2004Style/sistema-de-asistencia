@@ -14,6 +14,7 @@ import { WebcamCapture } from "./WebcamCapture"
 import { Loader2, UserPlus } from "lucide-react"
 import { HuellaVerificationModal } from "../huella/HuellaVerificationModal";
 import { useState } from "react";
+import { CLIENT_ROUTES } from "@/routes/client.routes";
 
 export function SignupForm({
     className,
@@ -219,6 +220,7 @@ export function SignupForm({
                 userId={registeredUser?.id || 0}
                 onSuccess={handleHuellaSuccess}
                 showInternalSuccessModal={true}
+                AuthRedirect={`${CLIENT_ROUTES.urlRegister}/${registeredUser?.id}`}
             />
 
         </>

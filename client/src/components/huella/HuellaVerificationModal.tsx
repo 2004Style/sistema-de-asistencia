@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Fingerprint, CheckCircle2, XCircle, AlertCircle, Info } from "lucide-react";
 import { useSocket } from "@/contexts/socketContext";
+import { useRouter } from "next/navigation";
 
 export type MetodoVerificacion = "facial" | "dactilar" | "manual";
 
@@ -42,6 +43,7 @@ interface HuellaVerificationModalProps {
     showInternalSuccessModal?: boolean;
     tipo?: "registro" | "asistencia";
     huella?: string | null;
+    AuthRedirect?: string;
 }
 
 type EstadoVerificacion = "esperando" | "procesando" | "exitoso" | "error" | "cancelado";
@@ -57,7 +59,9 @@ export function HuellaVerificationModal({
     showInternalSuccessModal = false,
     tipo = "asistencia",
     huella = null,
+    AuthRedirect
 }: HuellaVerificationModalProps) {
+    const router = useRouter();
     const socket = useSocket();
     const [estado, setEstado] = useState<EstadoVerificacion>("esperando");
     const [mensaje, setMensaje] = useState<string>("");
@@ -151,6 +155,9 @@ export function HuellaVerificationModal({
                         ? "✓ Huella registrada exitosamente"
                         : "✓ Asistencia registrada exitosamente"
                 );
+                if(AuthRedirect){
+                    router.push(AuthRedirect);
+                }
                 onStatusChange?.("exitoso");
                 setRespuestaServidor(data);
 
@@ -230,7 +237,7 @@ export function HuellaVerificationModal({
 
             // Enviar evento de cancelación al servidor (que lo reenviará al ESP32)
             socket.emit("sensor-cancel-request", cancelRequest);
-        } 
+        }
 
         setEstado("cancelado");
 
