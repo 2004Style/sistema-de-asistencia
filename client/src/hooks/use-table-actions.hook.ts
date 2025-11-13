@@ -44,7 +44,7 @@ export function useTableActions<T extends { id: string | number }>({ resourceNam
     setIsDeleting(true);
     try {
       const { alert } = await DELETE(deleteEndpoint(Number(itemToDelete.id)));
-
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
       alert === "success"
         ? toast.success(`${resourceName} eliminado correctamente`, {
             description: `El ${resourceName} ha sido eliminado exitosamente.`,

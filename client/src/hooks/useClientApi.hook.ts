@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { BACKEND_ROUTES } from "@/routes/backend.routes";

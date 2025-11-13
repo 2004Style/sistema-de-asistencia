@@ -91,6 +91,7 @@ export default function HorariosPage() {
 
     const handleDelete = async (id: number) => {
         const { alert } = await delete_(id);
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
         alert === "success" ? toast.success("Horario eliminado correctamente") : toast.error("Error al eliminar el horario");
         fetchHorarios();
     }
