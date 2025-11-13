@@ -172,7 +172,7 @@ def actualizar_turno(
 @router.delete(
     "/{turno_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Eliminar turno (soft delete)"
+    summary="Eliminar turno (eliminación física)"
 )
 def eliminar_turno(
     turno_id: int,
@@ -180,14 +180,39 @@ def eliminar_turno(
     db: Session = Depends(get_db)
 ):
     """
-    🔐 ADMIN ONLY - Desactivar un turno (soft delete)
+    🔐 ADMIN ONLY - Eliminar un turno de la base de datos (eliminación física)
     
     - **turno_id**: ID del turno a eliminar
-    - No elimina físicamente, solo marca como inactivo
-    - No se puede eliminar si tiene horarios activos asociados
+    - Solo se puede eliminar si no tiene horarios asociados
+    - No se pueden recuperar turnos eliminados
     """
     turno_service.eliminar_turno(db, turno_id)
     return None
+
+
+# ============================================================================
+# ENDPOINT PARA DESACTIVAR TURNOS (ADMIN ONLY)
+# Requerimiento: Solo administradores pueden desactivar turnos
+@router.post(
+    "/{turno_id}/desactivar",
+    response_model=TurnoResponse,
+    summary="Desactivar turno (soft delete)"
+)
+def desactivar_turno(
+    turno_id: int,
+    current_user: "User" = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    🔐 ADMIN ONLY - Desactivar un turno (soft delete)
+    
+    - **turno_id**: ID del turno a desactivar
+    - No elimina físicamente, solo marca como inactivo
+    - No se puede desactivar si tiene horarios activos asociados
+    - Se puede reactivar usando el endpoint `/activar`
+    """
+    turno_actualizado = turno_service.desactivar_turno(db, turno_id)
+    return turno_actualizado
 
 
 # ============================================================================

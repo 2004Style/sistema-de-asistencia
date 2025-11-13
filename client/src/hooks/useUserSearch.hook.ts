@@ -11,7 +11,7 @@ interface UseUserSearchOptions {
 
 export function useUserSearch(options: UseUserSearchOptions = {}) {
   const { enabled = true, debounceMs = 350 } = options;
-  const { get } = useClientApi();
+  const { GET } = useClientApi();
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<UserList[]>([]);
@@ -38,7 +38,7 @@ export function useUserSearch(options: UseUserSearchOptions = {}) {
       try {
         const url = searchQuery && searchQuery.trim().length > 0 ? `${BACKEND_ROUTES.urlUsuarios}?search=${encodeURIComponent(searchQuery)}` : BACKEND_ROUTES.urlUsuarios;
 
-        const response = await get<PaginatedResponse<UserList>>(url);
+        const response = await GET<PaginatedResponse<UserList>>(url);
 
         if (response.data && typeof response.data === "object" && "records" in response.data) {
           setResults((response.data as PaginatedResponse<UserList>).records);
@@ -67,7 +67,7 @@ export function useUserSearch(options: UseUserSearchOptions = {}) {
         window.clearTimeout(debounceRef.current);
       }
     };
-  }, [query, enabled, debounceMs, get]);
+  }, [query, enabled, debounceMs, GET]);
 
   const clearSearch = useCallback(() => {
     setQuery("");

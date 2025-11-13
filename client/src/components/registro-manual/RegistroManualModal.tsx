@@ -21,7 +21,7 @@ interface RegistroManualModalProps {
 }
 
 export function RegistroManualModal({ open, onOpenChange, user, onSuccess }: RegistroManualModalProps) {
-    const { post } = useClientApi(false);
+    const { POST } = useClientApi(false);
     const [observaciones, setObservaciones] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -53,7 +53,7 @@ export function RegistroManualModal({ open, onOpenChange, user, onSuccess }: Reg
         setError("");
 
         try {
-            const response = await post(`${BACKEND_ROUTES.urlAsistencias}/registrar-manual`, {
+            const response = await POST(`${BACKEND_ROUTES.urlAsistencias}/registrar-manual`, {
                 user_id: user.id,
                 observaciones: obs
             });

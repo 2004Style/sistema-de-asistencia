@@ -15,10 +15,10 @@ export interface ResponseVerifyUserCode {
 }
 
 export function useVerifyUserCode() {
-  const { get } = useClientApi(false);
+  const { GET } = useClientApi(false);
 
   const verifyUserCode = async (body: VerifyUserCodeData) => {
-    const { data } = await get<ResponseVerifyUserCode>(`${BACKEND_ROUTES.urlVerifyCode}/${body.codigo_user}`);
+    const { data } = await GET<ResponseVerifyUserCode>(`${BACKEND_ROUTES.urlVerifyCode}/${body.codigo_user}`);
     return { user: data };
   };
   return { verifyUserCode };

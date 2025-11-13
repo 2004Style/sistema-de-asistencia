@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useClientApi } from "./useClientApi.hook";
 
 interface UseTableActionsProps<T> {
   resourceName: string; // "usuario", "asistencia", "rol"
-  deleteEndpoint?: (id: string | number) => string;
+  deleteEndpoint?: (id: number) => string;
   editRoute?: (id: string | number) => string;
   detailRoute?: (id: string | number) => string;
   onDeleteSuccess?: () => void;
@@ -20,6 +21,7 @@ export function useTableActions<T extends { id: string | number }>({ resourceNam
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<T | null>(null);
+  const { DELETE } = useClientApi();
 
   // Abrir modal de confirmación de eliminación
   const openDeleteDialog = (item: T) => {
@@ -41,17 +43,13 @@ export function useTableActions<T extends { id: string | number }>({ resourceNam
 
     setIsDeleting(true);
     try {
-      const response = await fetch(deleteEndpoint(itemToDelete.id), {
-        method: "DELETE",
-      });
+      const { alert } = await DELETE(deleteEndpoint(Number(itemToDelete.id)));
 
-      if (!response.ok) {
-        throw new Error(`Error al eliminar ${resourceName}`);
-      }
-
-      toast.success(`${resourceName} eliminado correctamente`, {
-        description: `El ${resourceName} ha sido eliminado exitosamente.`,
-      });
+      alert === "success"
+        ? toast.success(`${resourceName} eliminado correctamente`, {
+            description: `El ${resourceName} ha sido eliminado exitosamente.`,
+          })
+        : new Error(`Error al eliminar ${resourceName}`);
 
       closeDeleteDialog();
       onDeleteSuccess?.();

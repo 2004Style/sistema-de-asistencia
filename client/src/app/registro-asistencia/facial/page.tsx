@@ -14,7 +14,7 @@ type EstadoFacial = "inicializando" | "listo" | "capturando" | "procesando" | "e
 
 function ReconocimientoFacialContent() {
     const router = useRouter();
-    const { post } = useClientApi(false);
+    const { POST } = useClientApi(false);
     const searchParams = useSearchParams();
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -106,7 +106,7 @@ function ReconocimientoFacialContent() {
             formData.append("image", blob, "rostro.jpg");
 
 
-            const res = await post(`${BACKEND_ROUTES.urlAsistenciaFacial}?codigo=${encodeURIComponent(codigo)}`, formData, { contentType: "form-data" });
+            const res = await POST(`${BACKEND_ROUTES.urlAsistenciaFacial}?codigo=${encodeURIComponent(codigo)}`, formData, { contentType: "form-data" });
 
             if (res.alert === "success") {
                 setEstadoFacial("exitoso");

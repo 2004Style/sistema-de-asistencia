@@ -12,20 +12,20 @@ import JsonViewer from "@/components/notifications/JsonViewer";
 export default function NotificacionDetailPage() {
     const params = useParams();
     const id = params?.id as string;
-    const { get, put } = useClientApi(false);
+    const { GET, PUT } = useClientApi(false);
     const [notificacion, setNotificacion] = useState<NotificacionDetails | null>(null);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
     const fetchDetail = async () => {
         setLoading(true);
-        const { data, alert } = await get<NotificacionDetails>(`/notificaciones/${id}`);
+        const { data, alert } = await GET<NotificacionDetails>(`/notificaciones/${id}`);
         if (alert === "success" && data) {
             setNotificacion(data);
 
             // Si la notificación no está leída, marcarla como leída automáticamente
             if (!data.leida) {
-                const { alert: alertPut, data: dataPut } = await put(`/notificaciones/${id}/marcar-leida`);
+                const { alert: alertPut, data: dataPut } = await PUT(`/notificaciones/${id}/marcar-leida`);
                 if (alertPut === "success" && dataPut) {
                     setNotificacion(dataPut as NotificacionDetails);
                 } else {
@@ -42,7 +42,7 @@ export default function NotificacionDetailPage() {
     const markRead = async () => {
         if (!notificacion) return;
         setLoading(true);
-        const { alert } = await put(`/notificaciones/${notificacion.id}/marcar-leida`);
+        const { alert } = await PUT(`/notificaciones/${notificacion.id}/marcar-leida`);
         if (alert === "success") {
             await fetchDetail();
         }

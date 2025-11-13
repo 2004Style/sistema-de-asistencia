@@ -12,7 +12,7 @@ interface PaginatedResponse<T> {
 }
 
 export function useRolesApi() {
-  const { get, post, put, del, data, loading, error, alert } = useClientApi(true, BACKEND_ROUTES.urlHttpBase);
+  const { GET, POST, PUT, DELETE, data, loading, error, alert } = useClientApi(true, BACKEND_ROUTES.urlHttpBase);
 
   /**
    * Listar todos los roles con paginación
@@ -24,7 +24,7 @@ export function useRolesApi() {
       ...(search && { search }),
     });
 
-    const response = await get<PaginatedResponse<RoleList>>(`${BACKEND_ROUTES.urlRoles}?${params}`);
+    const response = await GET<PaginatedResponse<RoleList>>(`${BACKEND_ROUTES.urlRoles}?${params}`);
 
     return response;
   };
@@ -33,7 +33,7 @@ export function useRolesApi() {
    * Obtener rol por ID
    */
   const getDetail = async (id: number) => {
-    const response = await get<RolesDetails>(`${BACKEND_ROUTES.urlRoles}/${id}`);
+    const response = await GET<RolesDetails>(`${BACKEND_ROUTES.urlRoles}/${id}`);
     return response;
   };
 
@@ -41,7 +41,7 @@ export function useRolesApi() {
    * Crear nuevo rol
    */
   const create = async (data: CrearRole) => {
-    const response = await post<ResponseCrearRole>(BACKEND_ROUTES.urlRoles, data);
+    const response = await POST<ResponseCrearRole>(BACKEND_ROUTES.urlRoles, data);
     return response;
   };
 
@@ -49,7 +49,7 @@ export function useRolesApi() {
    * Actualizar rol
    */
   const update = async (id: number, data: ActualizarRole) => {
-    const response = await put<ResponseActualizarRole>(`${BACKEND_ROUTES.urlRoles}/${id}`, data);
+    const response = await PUT<ResponseActualizarRole>(`${BACKEND_ROUTES.urlRoles}/${id}`, data);
     return response;
   };
 
@@ -57,7 +57,7 @@ export function useRolesApi() {
    * Eliminar rol
    */
   const delete_ = async (id: number) => {
-    const response = await del(`${BACKEND_ROUTES.urlRoles}/${id}`);
+    const response = await DELETE(`${BACKEND_ROUTES.urlRoles}/${id}`);
     return response;
   };
 
@@ -65,7 +65,7 @@ export function useRolesApi() {
    * Obtener roles activos
    */
   const getActivos = async () => {
-    const response = await get<RoleList[]>(`${BACKEND_ROUTES.urlRoles}/activos/listar`);
+    const response = await GET<RoleList[]>(`${BACKEND_ROUTES.urlRoles}/activos/listar`);
     return response;
   };
 

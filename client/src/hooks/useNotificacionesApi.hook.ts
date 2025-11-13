@@ -5,7 +5,7 @@ import { useClientApi } from "./useClientApi.hook";
 import { NotificacionesUserList, NotificacionDetails } from "@/interfaces";
 
 export function useNotificacionesApi() {
-  const { get, put, del, data, loading, error, alert } = useClientApi(true, BACKEND_ROUTES.urlHttpBase);
+  const { GET, PUT, DELETE, data, loading, error, alert } = useClientApi(true, BACKEND_ROUTES.urlHttpBase);
 
   /**
    * Listar notificaciones del usuario
@@ -16,7 +16,7 @@ export function useNotificacionesApi() {
       pageSize: pageSize.toString(),
     });
 
-    const response = await get<NotificacionesUserList>(`${BACKEND_ROUTES.urlNotificaciones}?${params}`);
+    const response = await GET<NotificacionesUserList>(`${BACKEND_ROUTES.urlNotificaciones}?${params}`);
 
     return response;
   };
@@ -25,7 +25,7 @@ export function useNotificacionesApi() {
    * Obtener notificación por ID
    */
   const getDetail = async (id: number) => {
-    const response = await get<NotificacionDetails>(`${BACKEND_ROUTES.urlNotificaciones}/${id}`);
+    const response = await GET<NotificacionDetails>(`${BACKEND_ROUTES.urlNotificaciones}/${id}`);
     return response;
   };
 
@@ -33,7 +33,7 @@ export function useNotificacionesApi() {
    * Contar notificaciones no leídas
    */
   const contar = async () => {
-    const response = await get<{ count: number }>(`${BACKEND_ROUTES.urlNotificaciones}/count`);
+    const response = await GET<{ count: number }>(`${BACKEND_ROUTES.urlNotificaciones}/count`);
     return response;
   };
 
@@ -41,7 +41,7 @@ export function useNotificacionesApi() {
    * Marcar notificación como leída
    */
   const marcarLeida = async (id: number) => {
-    const response = await put(`${BACKEND_ROUTES.urlNotificaciones}/${id}/marcar-leida`);
+    const response = await PUT(`${BACKEND_ROUTES.urlNotificaciones}/${id}/marcar-leida`);
     return response;
   };
 
@@ -49,7 +49,7 @@ export function useNotificacionesApi() {
    * Marcar todas las notificaciones como leídas
    */
   const marcarTodasLeidas = async () => {
-    const response = await put(`${BACKEND_ROUTES.urlNotificaciones}/marcar-todas-leidas`);
+    const response = await PUT(`${BACKEND_ROUTES.urlNotificaciones}/marcar-todas-leidas`);
     return response;
   };
 
@@ -63,7 +63,7 @@ export function useNotificacionesApi() {
       limit: pageSize.toString(),
     });
 
-    const response = await get<NotificacionesUserList>(`${BACKEND_ROUTES.urlNotificaciones}/admin/todas?${params}`);
+    const response = await GET<NotificacionesUserList>(`${BACKEND_ROUTES.urlNotificaciones}/admin/todas?${params}`);
 
     return response;
   };
@@ -72,7 +72,7 @@ export function useNotificacionesApi() {
    * Limpiar notificaciones (solo admin)
    */
   const limpiar = async () => {
-    const response = await del(`${BACKEND_ROUTES.urlNotificaciones}/limpiar`);
+    const response = await DELETE(`${BACKEND_ROUTES.urlNotificaciones}/limpiar`);
     return response;
   };
 

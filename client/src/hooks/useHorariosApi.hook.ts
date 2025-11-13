@@ -24,7 +24,7 @@ export const useHorariosApi = (requireAuth?: boolean) => {
         if (filters.activo !== undefined) params.append("activo", filters.activo.toString());
       }
 
-      return api.get<HorariosList[]>(`${BACKEND_ROUTES.urlHorarios}/?${params.toString()}`);
+      return api.GET<HorariosList[]>(`${BACKEND_ROUTES.urlHorarios}/?${params.toString()}`);
     },
     [api]
   );
@@ -52,7 +52,7 @@ export const useHorariosApi = (requireAuth?: boolean) => {
         if (filters.activo !== undefined) params.append("activo", filters.activo.toString());
       }
 
-      return api.get<{ records: HorariosList[]; total: number }>(`${BACKEND_ROUTES.urlHorarios}/admin/todos?${params.toString()}`);
+      return api.GET<{ records: HorariosList[]; total: number }>(`${BACKEND_ROUTES.urlHorarios}/admin/todos?${params.toString()}`);
     },
     [api]
   );
@@ -62,7 +62,7 @@ export const useHorariosApi = (requireAuth?: boolean) => {
    */
   const getDetail = useCallback(
     async (id: number): Promise<ApiResponse<HorarioDetails>> => {
-      return api.get<HorarioDetails>(`${BACKEND_ROUTES.urlHorarios}/${id}`);
+      return api.GET<HorarioDetails>(`${BACKEND_ROUTES.urlHorarios}/${id}`);
     },
     [api]
   );
@@ -76,7 +76,7 @@ export const useHorariosApi = (requireAuth?: boolean) => {
 
       if (diaSemana) params.append("dia_semana", diaSemana);
 
-      return api.get<HorariosList[]>(`${BACKEND_ROUTES.urlHorarios}/usuario/${userId}?${params.toString()}`);
+      return api.GET<HorariosList[]>(`${BACKEND_ROUTES.urlHorarios}/usuario/${userId}?${params.toString()}`);
     },
     [api]
   );
@@ -91,7 +91,7 @@ export const useHorariosApi = (requireAuth?: boolean) => {
       if (diaSemana) params.append("dia_semana", diaSemana);
       if (hora) params.append("hora", hora);
 
-      return api.get<HorarioDetails>(`${BACKEND_ROUTES.urlHorarios}/usuario/${userId}/turno-activo?${params.toString()}`);
+      return api.GET<HorarioDetails>(`${BACKEND_ROUTES.urlHorarios}/usuario/${userId}/turno-activo?${params.toString()}`);
     },
     [api]
   );
@@ -101,7 +101,7 @@ export const useHorariosApi = (requireAuth?: boolean) => {
    */
   const create = useCallback(
     async (data: CrearHorario): Promise<ApiResponse<HorarioDetails>> => {
-      return api.post<HorarioDetails>(`${BACKEND_ROUTES.urlHorarios}`, data);
+      return api.POST<HorarioDetails>(`${BACKEND_ROUTES.urlHorarios}`, data);
     },
     [api]
   );
@@ -111,7 +111,7 @@ export const useHorariosApi = (requireAuth?: boolean) => {
    */
   const createBulk = useCallback(
     async (horarios: CrearHorario[]): Promise<ApiResponse<{ records: HorarioDetails[]; total: number }>> => {
-      return api.post<{ records: HorarioDetails[]; total: number }>(`${BACKEND_ROUTES.urlHorarios}/bulk`, horarios);
+      return api.POST<{ records: HorarioDetails[]; total: number }>(`${BACKEND_ROUTES.urlHorarios}/bulk`, horarios);
     },
     [api]
   );
@@ -121,7 +121,7 @@ export const useHorariosApi = (requireAuth?: boolean) => {
    */
   const update = useCallback(
     async (id: number, data: Partial<ActualizarHorario>): Promise<ApiResponse<HorarioDetails>> => {
-      return api.put<HorarioDetails>(`${BACKEND_ROUTES.urlHorarios}/${id}`, data);
+      return api.PUT<HorarioDetails>(`${BACKEND_ROUTES.urlHorarios}/${id}`, data);
     },
     [api]
   );
@@ -131,7 +131,7 @@ export const useHorariosApi = (requireAuth?: boolean) => {
    */
   const delete_ = useCallback(
     async (id: number): Promise<ApiResponse> => {
-      return api.del(`${BACKEND_ROUTES.urlHorarios}/${id}`);
+      return api.DELETE(`${BACKEND_ROUTES.urlHorarios}/${id}`);
     },
     [api]
   );
@@ -141,7 +141,7 @@ export const useHorariosApi = (requireAuth?: boolean) => {
    */
   const deleteByUser = useCallback(
     async (userId: number): Promise<ApiResponse> => {
-      return api.del(`${BACKEND_ROUTES.urlHorarios}/usuario/${userId}`);
+      return api.DELETE(`${BACKEND_ROUTES.urlHorarios}/usuario/${userId}`);
     },
     [api]
   );

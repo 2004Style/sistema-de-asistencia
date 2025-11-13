@@ -1,6 +1,7 @@
 "use client";
 
 import { BACKEND_ROUTES } from "@/routes/backend.routes";
+import { useSession } from "next-auth/react";
 import { useState, useCallback } from "react";
 
 // ============================================
@@ -118,24 +119,14 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 };
 
 /**
- * Obtiene tokens de Next-Auth Session
+ * Obtiene tokens directamente desde la sesión de Next-Auth
+ * Sin necesidad de hacer fetch a la API
  */
-const getSessionTokens = async (): Promise<BackendTokens | null> => {
-  try {
-    const response = await fetch("/api/auth/session");
-    if (!response.ok) {
-      return null;
-    }
-
-    const session = await response.json();
-    if (session?.backendTokens) {
-      return session.backendTokens;
-    }
-
-    return null;
-  } catch {
-    return null;
+const getSessionTokensFromSession = (session: any): BackendTokens | null => {
+  if (session?.backendTokens) {
+    return session.backendTokens;
   }
+  return null;
 };
 
 /**
@@ -167,12 +158,14 @@ const handleRefreshFailure = async <T = unknown>(baseURL: string): Promise<void>
 
 /**
  * Refresca el token de autenticación usando Next-Auth
+ * Nota: Esta función es un placeholder ya que Next-Auth maneja el refresh automáticamente
+ * Los tokens se obtienen directamente de la sesión mediante useSession()
  */
-const refreshAuthToken = async (refreshToken: string, baseURL: string): Promise<string | null> => {
+const refreshAuthToken = async (refreshToken: string, baseURL: string, session: any): Promise<string | null> => {
   try {
     // Next-Auth maneja el refresh automáticamente
     // Solo obtenemos los nuevos tokens de la sesión
-    const tokens = await getSessionTokens();
+    const tokens = getSessionTokensFromSession(session);
     return tokens?.accessToken || null;
   } catch {
     return null;
@@ -182,13 +175,13 @@ const refreshAuthToken = async (refreshToken: string, baseURL: string): Promise<
 /**
  * Crea headers para la petición
  */
-const createHeaders = (contentType: ContentType, customHeaders?: Record<string, string>, accessToken?: string): HeadersInit => {
+const createHeaders = (contentType: ContentType, customHeaders?: Record<string, string>, accessToken?: string, method?: HttpMethod): HeadersInit => {
   const headers: Record<string, string> = {
     ...customHeaders,
   };
 
-  // No establecer Content-Type para FormData
-  if (contentType === "json") {
+  // No establecer Content-Type para FormData o para DELETE sin body
+  if (contentType === "json" && method !== "DELETE") {
     headers["Content-Type"] = "application/json";
   }
 
@@ -355,6 +348,7 @@ const createTimeoutSignal = (timeout: number, signal?: AbortSignal): AbortSignal
  * ```
  */
 export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BACKEND_ROUTES.urlHttpBase || "") => {
+  const { data: session } = useSession();
   const [state, setState] = useState<ApiState<unknown>>({
     data: null,
     loading: false,
@@ -377,7 +371,7 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
         let refreshToken: string | undefined;
 
         if (requiresAuth) {
-          const tokens = await getSessionTokens();
+          const tokens = getSessionTokensFromSession(session);
           if (!tokens) {
             const errorResponse: ApiResponse<T> = {
               alert: "error",
@@ -407,7 +401,7 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
         // Preparar opciones de fetch
         const fetchOptions: RequestInit = {
           method,
-          headers: createHeaders(contentType, customHeaders, accessToken),
+          headers: createHeaders(contentType, customHeaders, accessToken, method),
           signal,
         };
 
@@ -429,7 +423,7 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
               });
 
               // Reintentar con nuevo token
-              fetchOptions.headers = createHeaders(contentType, customHeaders, newToken);
+              fetchOptions.headers = createHeaders(contentType, customHeaders, newToken, method);
               response = await fetch(fullUrl, fetchOptions);
             } catch {
               // Si falla el refresh en cola, hacer logout
@@ -444,13 +438,13 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
             isRefreshing = true;
 
             try {
-              const newAccessToken = await refreshAuthToken(refreshToken, baseURL);
+              const newAccessToken = await refreshAuthToken(refreshToken, baseURL, session);
 
               if (newAccessToken) {
                 processQueue(null, newAccessToken);
 
                 // Reintentar con nuevo token
-                fetchOptions.headers = createHeaders(contentType, customHeaders, newAccessToken);
+                fetchOptions.headers = createHeaders(contentType, customHeaders, newAccessToken, method);
                 response = await fetch(fullUrl, fetchOptions);
               } else {
                 processQueue(new Error("No se pudo refrescar el token"), null);
@@ -473,7 +467,7 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
 
                 return errorResponse;
               }
-            } catch (error){
+            } catch (error) {
               processQueue(error as Error, null);
 
               // Hacer logout
@@ -542,7 +536,7 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
         });
 
         return result;
-      } catch (error){
+      } catch (error) {
         const errorResponse = handleApiError(error);
 
         setState({
@@ -561,7 +555,7 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
   /**
    * Realiza una petición GET
    */
-  const get = useCallback(
+  const GET = useCallback(
     <T = unknown>(url: string, config?: RequestConfig): Promise<ApiResponse<T>> => {
       return request<T>("GET", url, undefined, config);
     },
@@ -571,7 +565,7 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
   /**
    * Realiza una petición POST
    */
-  const post = useCallback(
+  const POST = useCallback(
     <T = unknown>(url: string, body?: unknown, config?: RequestConfig): Promise<ApiResponse<T>> => {
       return request<T>("POST", url, body, config);
     },
@@ -581,7 +575,7 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
   /**
    * Realiza una petición PUT
    */
-  const put = useCallback(
+  const PUT = useCallback(
     <T = unknown>(url: string, body?: unknown, config?: RequestConfig): Promise<ApiResponse<T>> => {
       return request<T>("PUT", url, body, config);
     },
@@ -591,7 +585,7 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
   /**
    * Realiza una petición PATCH
    */
-  const patch = useCallback(
+  const PATCH = useCallback(
     <T = unknown>(url: string, body?: unknown, config?: RequestConfig): Promise<ApiResponse<T>> => {
       return request<T>("PATCH", url, body, config);
     },
@@ -601,7 +595,7 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
   /**
    * Realiza una petición DELETE
    */
-  const del = useCallback(
+  const DELETE = useCallback(
     <T = unknown>(url: string, config?: RequestConfig): Promise<ApiResponse<T>> => {
       return request<T>("DELETE", url, undefined, config);
     },
@@ -623,11 +617,11 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
   return {
     // Métodos de petición
     request,
-    get,
-    post,
-    put,
-    patch,
-    del,
+    GET,
+    POST,
+    PUT,
+    PATCH,
+    DELETE,
 
     // Estado
     data: state.data,
@@ -639,7 +633,7 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
     reset,
 
     // Helpers de autenticación
-    getTokens: getSessionTokens,
+    getTokens: () => getSessionTokensFromSession(session),
     saveTokens,
     clearSession,
   };

@@ -28,13 +28,13 @@ interface UserResponse {
 }
 
 export function useUserProfileApi() {
-  const { get, put, data, loading, error, alert } = useClientApi(true, BACKEND_ROUTES.urlHttpBase);
+  const { GET, PUT, data, loading, error, alert } = useClientApi(true, BACKEND_ROUTES.urlHttpBase);
 
   /**
    * Obtener perfil del usuario actual
    */
   const getProfile = async () => {
-    const response = await get<UserResponse>(`${BACKEND_ROUTES.urlUsuarios}/me`);
+    const response = await GET<UserResponse>(`${BACKEND_ROUTES.urlUsuarios}/me`);
     return response;
   };
 
@@ -42,7 +42,7 @@ export function useUserProfileApi() {
    * Actualizar datos del usuario
    */
   const updateProfile = async (userData: UserUpdateData) => {
-    const response = await put<UserResponse>(`${BACKEND_ROUTES.urlUsuarios}/profile`, userData);
+    const response = await PUT<UserResponse>(`${BACKEND_ROUTES.urlUsuarios}/profile`, userData);
     return response;
   };
 
@@ -56,7 +56,7 @@ export function useUserProfileApi() {
     formData.append("new_password", passwordData.new_password);
     formData.append("confirm_password", passwordData.confirm_password);
 
-    const response = await put(`${BACKEND_ROUTES.urlUsuarios}/change-password`, formData, { contentType: "form-data" });
+    const response = await PUT(`${BACKEND_ROUTES.urlUsuarios}/change-password`, formData, { contentType: "form-data" });
     return response;
   };
 

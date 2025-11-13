@@ -204,13 +204,16 @@ class TurnoService(BaseService):
         
         # Usar transacción segura del BaseService
         return self.update_with_transaction(db, turno, "Error al actualizar turno")
-    def eliminar_turno(self, db: Session, turno_id: int) -> None:
+    def desactivar_turno(self, db: Session, turno_id: int) -> Turno:
         """
         Desactiva un turno (soft delete).
         
         Args:
             db: Sesión de base de datos
             turno_id: ID del turno a desactivar
+            
+        Returns:
+            Turno desactivado
             
         Raises:
             HTTPException: Si turno no existe o tiene horarios activos
@@ -224,12 +227,40 @@ class TurnoService(BaseService):
             if horarios_activos:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"No se puede eliminar: tiene {len(horarios_activos)} horarios activos"
+                    detail=f"No se puede desactivar: tiene {len(horarios_activos)} horarios activos"
                 )
         
         # Desactivar turno
         turno.activo = False
-        self.update_with_transaction(db, turno, "Error al desactivar turno")
+        return self.update_with_transaction(db, turno, "Error al desactivar turno")
+    
+    def eliminar_turno(self, db: Session, turno_id: int) -> bool:
+        """
+        Elimina físicamente un turno de la base de datos.
+        
+        Args:
+            db: Sesión de base de datos
+            turno_id: ID del turno a eliminar
+            
+        Returns:
+            True si se eliminó correctamente
+            
+        Raises:
+            HTTPException: Si turno no existe o tiene horarios asociados
+        """
+        # Obtener turno
+        turno = self.obtener_turno(db, turno_id)
+        
+        # Verificar si tiene horarios asociados (activos o inactivos)
+        if turno.horarios:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"No se puede eliminar: tiene {len(turno.horarios)} horarios asociados"
+            )
+        
+        # Eliminar turno físicamente
+        self.delete_with_transaction(db, turno, "Error al eliminar turno")
+        return True
     
     def activar_turno(self, db: Session, turno_id: int) -> Turno:
         """Activa un turno previamente desactivado."""

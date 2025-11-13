@@ -5,7 +5,7 @@ import { useClientApi } from "./useClientApi.hook";
 import { ReportesListResponse, ReporteGenerado } from "@/interfaces";
 
 export function useReportesApi() {
-  const { get, del, data, loading, error, alert } = useClientApi(true, BACKEND_ROUTES.urlHttpBase);
+  const { GET, DELETE, data, loading, error, alert } = useClientApi(true, BACKEND_ROUTES.urlHttpBase);
 
   /**
    * Listar reportes generados
@@ -16,7 +16,7 @@ export function useReportesApi() {
       limite: limite.toString(),
     });
 
-    const response = await get<ReportesListResponse>(`${BACKEND_ROUTES.urlHttpBase}/reportes/listar?${params}`);
+    const response = await GET<ReportesListResponse>(`${BACKEND_ROUTES.urlHttpBase}/reportes/listar?${params}`);
 
     return response;
   };
@@ -36,7 +36,7 @@ export function useReportesApi() {
     });
     if (user_id) params.append("user_id", user_id.toString());
 
-    const response = await get<ReporteGenerado>(`${BACKEND_ROUTES.urlHttpBase}/reportes/diario?${params}`);
+    const response = await GET<ReporteGenerado>(`${BACKEND_ROUTES.urlHttpBase}/reportes/diario?${params}`);
     return response;
   };
 
@@ -57,7 +57,7 @@ export function useReportesApi() {
     });
     if (user_id) params.append("user_id", user_id.toString());
 
-    const response = await get<ReporteGenerado>(`${BACKEND_ROUTES.urlHttpBase}/reportes/semanal?${params}`);
+    const response = await GET<ReporteGenerado>(`${BACKEND_ROUTES.urlHttpBase}/reportes/semanal?${params}`);
     return response;
   };
 
@@ -78,7 +78,7 @@ export function useReportesApi() {
     });
     if (user_id) params.append("user_id", user_id.toString());
 
-    const response = await get<ReporteGenerado>(`${BACKEND_ROUTES.urlHttpBase}/reportes/mensual?${params}`);
+    const response = await GET<ReporteGenerado>(`${BACKEND_ROUTES.urlHttpBase}/reportes/mensual?${params}`);
     return response;
   };
 
@@ -99,7 +99,7 @@ export function useReportesApi() {
     });
     if (user_id) params.append("user_id", user_id.toString());
 
-    const response = await get<ReporteGenerado>(`${BACKEND_ROUTES.urlHttpBase}/reportes/tardanzas?${params}`);
+    const response = await GET<ReporteGenerado>(`${BACKEND_ROUTES.urlHttpBase}/reportes/tardanzas?${params}`);
     return response;
   };
 
@@ -120,7 +120,7 @@ export function useReportesApi() {
     });
     if (user_id) params.append("user_id", user_id.toString());
 
-    const response = await get<ReporteGenerado>(`${BACKEND_ROUTES.urlHttpBase}/reportes/inasistencias?${params}`);
+    const response = await GET<ReporteGenerado>(`${BACKEND_ROUTES.urlHttpBase}/reportes/inasistencias?${params}`);
     return response;
   };
 
@@ -159,7 +159,7 @@ export function useReportesApi() {
    * Eliminar reporte
    */
   const eliminar = async (ruta: string) => {
-    const response = await del(`${BACKEND_ROUTES.urlHttpBase}/reportes/eliminar/${ruta}`);
+    const response = await DELETE(`${BACKEND_ROUTES.urlHttpBase}/reportes/eliminar/${ruta}`);
     return response;
   };
 
@@ -174,7 +174,7 @@ export function useReportesApi() {
     if (fecha_fin) params.append("fecha_fin", fecha_fin);
 
     const query = params.toString() ? `?${params.toString()}` : "";
-    const response = await get(`${BACKEND_ROUTES.urlHttpBase}/reportes/estadisticas${query}`);
+    const response = await GET(`${BACKEND_ROUTES.urlHttpBase}/reportes/estadisticas${query}`);
     return response;
   };
 

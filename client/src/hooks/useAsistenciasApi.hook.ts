@@ -35,7 +35,7 @@ export const useAsistenciasApi = () => {
         if (filters.estado) params.append("estado", filters.estado);
       }
 
-      return api.get<{ records: AsistenciaList[]; total: number }>(`${BACKEND_ROUTES.urlAsistencias}/?${params.toString()}`);
+      return api.GET<{ records: AsistenciaList[]; total: number }>(`${BACKEND_ROUTES.urlAsistencias}/?${params.toString()}`);
     },
     [api]
   );
@@ -65,7 +65,7 @@ export const useAsistenciasApi = () => {
         if (filters.estado) params.append("estado", filters.estado);
       }
 
-      return api.get<{ records: AsistenciaList[]; total: number }>(`${BACKEND_ROUTES.urlAsistencias}/admin/todas?${params.toString()}`);
+      return api.GET<{ records: AsistenciaList[]; total: number }>(`${BACKEND_ROUTES.urlAsistencias}/admin/todas?${params.toString()}`);
     },
     [api]
   );
@@ -75,7 +75,7 @@ export const useAsistenciasApi = () => {
    */
   const getDetail = useCallback(
     async (id: number): Promise<ApiResponse<AsistenciaDetails>> => {
-      return api.get<AsistenciaDetails>(`${BACKEND_ROUTES.urlAsistencias}/${id}`);
+      return api.GET<AsistenciaDetails>(`${BACKEND_ROUTES.urlAsistencias}/${id}`);
     },
     [api]
   );
@@ -102,7 +102,7 @@ export const useAsistenciasApi = () => {
         if (filters.fecha_fin) params.append("fecha_fin", filters.fecha_fin);
       }
 
-      return api.get<{ records: AsistenciaList[]; total: number }>(`${BACKEND_ROUTES.urlAsistencias}/usuario/${userId}?${params.toString()}`);
+      return api.GET<{ records: AsistenciaList[]; total: number }>(`${BACKEND_ROUTES.urlAsistencias}/usuario/${userId}?${params.toString()}`);
     },
     [api]
   );
@@ -112,7 +112,7 @@ export const useAsistenciasApi = () => {
    */
   const update = useCallback(
     async (id: number, data: Partial<AsistenciaUpdate>): Promise<ApiResponse<AsistenciaUpdateResponse>> => {
-      return api.put<AsistenciaUpdateResponse>(`${BACKEND_ROUTES.urlAsistencias}/${id}`, data);
+      return api.PUT<AsistenciaUpdateResponse>(`${BACKEND_ROUTES.urlAsistencias}/${id}`, data);
     },
     [api]
   );
@@ -122,7 +122,7 @@ export const useAsistenciasApi = () => {
    */
   const delete_ = useCallback(
     async (id: number): Promise<ApiResponse> => {
-      return api.del(`${BACKEND_ROUTES.urlAsistencias}/${id}`);
+      return api.DELETE(`${BACKEND_ROUTES.urlAsistencias}/${id}`);
     },
     [api]
   );

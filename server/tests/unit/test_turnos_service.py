@@ -138,7 +138,7 @@ class TestTurnoServiceActualizar:
 
 
 class TestTurnoServiceEliminar:
-    """Tests para eliminar_turno."""
+    """Tests para eliminar_turno y desactivar_turno."""
     
     @pytest.fixture
     def turno_service(self):
@@ -156,5 +156,21 @@ class TestTurnoServiceEliminar:
             with patch.object(turno_service, 'delete_with_transaction') as mock_delete:
                 mock_delete.return_value = True
                 
-                turno_service.eliminar_turno(mock_db, 1)
+                resultado = turno_service.eliminar_turno(mock_db, 1)
                 assert mock_get.called
+                assert resultado is True
+    
+    def test_desactivar_turno_obtiene_primero(self, turno_service):
+        """Test: desactivar_turno obtiene turno primero."""
+        mock_db = MagicMock()
+        
+        with patch.object(turno_service, 'get_by_id') as mock_get:
+            mock_turno = Mock(id=1, horarios=[], activo=True)  # horarios vacío para evitar iteración
+            mock_get.return_value = mock_turno
+            
+            with patch.object(turno_service, 'update_with_transaction') as mock_update:
+                mock_update.return_value = mock_turno
+                
+                resultado = turno_service.desactivar_turno(mock_db, 1)
+                assert mock_get.called
+                assert mock_update.called

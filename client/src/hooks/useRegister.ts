@@ -41,7 +41,7 @@ interface UseRegisterReturn {
 }
 
 export function useRegister() {
-  const { post, del } = useClientApi(false);
+  const { POST, DELETE } = useClientApi(false);
   const [capturedPhotos, setCapturedPhotos] = useState<CapturedPhoto[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -99,7 +99,7 @@ export function useRegister() {
         formData.append("images", blob, `image${i + 1}.png`);
       }
 
-      const response = await post<UseRegisterReturn>(BACKEND_ROUTES.urlUsersRegister, formData, { contentType: "form-data" });
+      const response = await POST<UseRegisterReturn>(BACKEND_ROUTES.urlUsersRegister, formData, { contentType: "form-data" });
 
       if (response.alert === "error") {
         toast.error(response.message || "Error al registrar usuario", { position: "top-center" });
@@ -119,7 +119,7 @@ export function useRegister() {
   };
 
   const onDelete = async (id: number) => {
-    const { alert, message } = await del(`${BACKEND_ROUTES.urlUsuarios}/${id}`);
+    const { alert, message } = await DELETE(`${BACKEND_ROUTES.urlUsuarios}/${id}`);
     if (alert === "error") {
       toast.error(message || "Error al eliminar usuario", { position: "top-center" });
       return false;

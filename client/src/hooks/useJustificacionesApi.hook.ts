@@ -17,7 +17,7 @@ export const useJustificacionesApi = () => {
    */
   const create = useCallback(
     async (data: CrearJustificacion): Promise<ApiResponse<JustificacionDetails>> => {
-      return api.post<JustificacionDetails>(BACKEND_ROUTES.urlJustificaciones, data);
+      return api.POST<JustificacionDetails>(BACKEND_ROUTES.urlJustificaciones, data);
     },
     [api]
   );
@@ -48,7 +48,7 @@ export const useJustificacionesApi = () => {
         if (filters.fecha_hasta) params.append("fecha_hasta", filters.fecha_hasta);
       }
 
-      return api.get<{ records: JustificacionList[]; total: number }>(`${BACKEND_ROUTES.urlJustificaciones}?${params.toString()}`);
+      return api.GET<{ records: JustificacionList[]; total: number }>(`${BACKEND_ROUTES.urlJustificaciones}?${params.toString()}`);
     },
     [api]
   );
@@ -80,7 +80,7 @@ export const useJustificacionesApi = () => {
         if (filters.fecha_hasta) params.append("fecha_hasta", filters.fecha_hasta);
       }
 
-      return api.get<{ records: JustificacionList[]; total: number }>(`${BACKEND_ROUTES.urlJustificaciones}/admin/todas?${params.toString()}`);
+      return api.GET<{ records: JustificacionList[]; total: number }>(`${BACKEND_ROUTES.urlJustificaciones}/admin/todas?${params.toString()}`);
     },
     [api]
   );
@@ -90,7 +90,7 @@ export const useJustificacionesApi = () => {
    */
   const getDetail = useCallback(
     async (id: number): Promise<ApiResponse<JustificacionDetails>> => {
-      return api.get<JustificacionDetails>(`${BACKEND_ROUTES.urlJustificaciones}/${id}`);
+      return api.GET<JustificacionDetails>(`${BACKEND_ROUTES.urlJustificaciones}/${id}`);
     },
     [api]
   );
@@ -100,7 +100,7 @@ export const useJustificacionesApi = () => {
    */
   const getByUser = useCallback(
     async (userId: number): Promise<ApiResponse<JustificacionList[]>> => {
-      return api.get<JustificacionList[]>(`${BACKEND_ROUTES.urlJustificaciones}/usuario/${userId}`);
+      return api.GET<JustificacionList[]>(`${BACKEND_ROUTES.urlJustificaciones}/usuario/${userId}`);
     },
     [api]
   );
@@ -110,7 +110,7 @@ export const useJustificacionesApi = () => {
    */
   const getPendientesByUser = useCallback(
     async (userId: number): Promise<ApiResponse<JustificacionPendientesList[]>> => {
-      return api.get<JustificacionPendientesList[]>(`${BACKEND_ROUTES.urlJustificaciones}/pendientes/usuario/${userId}`);
+      return api.GET<JustificacionPendientesList[]>(`${BACKEND_ROUTES.urlJustificaciones}/pendientes/usuario/${userId}`);
     },
     [api]
   );
@@ -119,7 +119,7 @@ export const useJustificacionesApi = () => {
    * 🔐 PUEDE APROBAR - Obtener TODAS las justificaciones pendientes del sistema
    */
   const getPendientesAll = useCallback(async (): Promise<ApiResponse<JustificacionPendientesList[]>> => {
-    return api.get<JustificacionPendientesList[]>(`${BACKEND_ROUTES.urlJustificaciones}/pendientes/todas`);
+    return api.GET<JustificacionPendientesList[]>(`${BACKEND_ROUTES.urlJustificaciones}/pendientes/todas`);
   }, [api]);
 
   /**
@@ -127,7 +127,7 @@ export const useJustificacionesApi = () => {
    */
   const update = useCallback(
     async (id: number, data: Partial<JustificacionUpdate>): Promise<ApiResponse<JustificacionUpdateResponse>> => {
-      return api.put<JustificacionUpdateResponse>(`${BACKEND_ROUTES.urlJustificaciones}/${id}`, data);
+      return api.PUT<JustificacionUpdateResponse>(`${BACKEND_ROUTES.urlJustificaciones}/${id}`, data);
     },
     [api]
   );
@@ -141,7 +141,7 @@ export const useJustificacionesApi = () => {
       params.append("revisor_id", revisorId.toString());
       if (comentario) params.append("comentario", comentario);
 
-      return api.post<JustificacionDetails>(`${BACKEND_ROUTES.urlJustificaciones}/${justificacionId}/aprobar?${params.toString()}`);
+      return api.POST<JustificacionDetails>(`${BACKEND_ROUTES.urlJustificaciones}/${justificacionId}/aprobar?${params.toString()}`);
     },
     [api]
   );
@@ -155,7 +155,7 @@ export const useJustificacionesApi = () => {
       params.append("revisor_id", revisorId.toString());
       params.append("comentario", comentario);
 
-      return api.post<JustificacionDetails>(`${BACKEND_ROUTES.urlJustificaciones}/${justificacionId}/rechazar?${params.toString()}`);
+      return api.POST<JustificacionDetails>(`${BACKEND_ROUTES.urlJustificaciones}/${justificacionId}/rechazar?${params.toString()}`);
     },
     [api]
   );
@@ -165,7 +165,7 @@ export const useJustificacionesApi = () => {
    */
   const delete_ = useCallback(
     async (id: number): Promise<ApiResponse> => {
-      return api.del(`${BACKEND_ROUTES.urlJustificaciones}/${id}`);
+      return api.DELETE(`${BACKEND_ROUTES.urlJustificaciones}/${id}`);
     },
     [api]
   );
@@ -182,7 +182,7 @@ export const useJustificacionesApi = () => {
         if (filters.fecha_hasta) params.append("fecha_hasta", filters.fecha_hasta);
       }
 
-      return api.get<JustificacionesEstadisticas>(`${BACKEND_ROUTES.urlJustificaciones}/estadisticas/general?${params.toString()}`);
+      return api.GET<JustificacionesEstadisticas>(`${BACKEND_ROUTES.urlJustificaciones}/estadisticas/general?${params.toString()}`);
     },
     [api]
   );

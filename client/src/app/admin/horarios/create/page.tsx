@@ -115,7 +115,7 @@ type HorarioFormData = z.infer<typeof horarioSchema>
 
 export default function HorarioCreatePage() {
     const router = useRouter()
-    const { post, get } = useClientApi(false)
+    const { POST, GET } = useClientApi(false)
     const [tiempoUnidad, setTiempoUnidad] = useState<"horas" | "minutos">("horas")
     const [turnos, setTurnos] = useState<TurnosList[]>([])
 
@@ -138,7 +138,7 @@ export default function HorarioCreatePage() {
         let mounted = true
             ; (async () => {
                 try {
-                    const { data, alert } = await get<PaginatedResponse<TurnosList>>("/turnos")
+                    const { data, alert } = await GET<PaginatedResponse<TurnosList>>("/turnos")
                     if (alert === "success" && data) {
                         // resp.data puede ser { turnos: [...] } o un array según backend
                         setTurnos(data.records)
@@ -151,7 +151,7 @@ export default function HorarioCreatePage() {
         return () => {
             mounted = false
         }
-    }, [get])
+    }, [GET])
 
     const onSubmit = async (values: HorarioFormData) => {
         try {
@@ -168,7 +168,7 @@ export default function HorarioCreatePage() {
                 activo: values.activo,
             }
 
-            const response = await post(BACKEND_ROUTES.urlHorarios, payload)
+            const response = await POST(BACKEND_ROUTES.urlHorarios, payload)
 
             if (response.alert === "success") {
                 toast.success("Horario creado exitosamente", {

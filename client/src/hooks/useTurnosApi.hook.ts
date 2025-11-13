@@ -12,7 +12,7 @@ interface PaginatedResponse<T> {
 }
 
 export function useTurnosApi() {
-  const { get, post, put, del, data, loading, error, alert } = useClientApi(true, BACKEND_ROUTES.urlHttpBase);
+  const { GET, POST, PUT, DELETE, data, loading, error, alert } = useClientApi(true, BACKEND_ROUTES.urlHttpBase);
 
   /**
    * Listar todos los turnos con paginación
@@ -24,7 +24,7 @@ export function useTurnosApi() {
       ...(search && { search }),
     });
 
-    const response = await get<PaginatedResponse<TurnosList>>(`${BACKEND_ROUTES.urlTurnos}?${params}`);
+    const response = await GET<PaginatedResponse<TurnosList>>(`${BACKEND_ROUTES.urlTurnos}?${params}`);
 
     return response;
   };
@@ -33,7 +33,7 @@ export function useTurnosApi() {
    * Obtener turno por ID
    */
   const getDetail = async (id: number) => {
-    const response = await get<TurnoDetails>(`${BACKEND_ROUTES.urlTurnos}/${id}`);
+    const response = await GET<TurnoDetails>(`${BACKEND_ROUTES.urlTurnos}/${id}`);
     return response;
   };
 
@@ -41,7 +41,7 @@ export function useTurnosApi() {
    * Crear nuevo turno
    */
   const create = async (data: CrearTurno) => {
-    const response = await post<CrearTurnoResponse>(BACKEND_ROUTES.urlTurnos, data);
+    const response = await POST<CrearTurnoResponse>(BACKEND_ROUTES.urlTurnos, data);
     return response;
   };
 
@@ -49,7 +49,7 @@ export function useTurnosApi() {
    * Actualizar turno
    */
   const update = async (id: number, data: ActualizarTurno) => {
-    const response = await put<ActualizarTurnoResponse>(`${BACKEND_ROUTES.urlTurnos}/${id}`, data);
+    const response = await PUT<ActualizarTurnoResponse>(`${BACKEND_ROUTES.urlTurnos}/${id}`, data);
     return response;
   };
 
@@ -57,7 +57,7 @@ export function useTurnosApi() {
    * Eliminar turno
    */
   const delete_ = async (id: number) => {
-    const response = await del(`${BACKEND_ROUTES.urlTurnos}/${id}`);
+    const response = await DELETE(`${BACKEND_ROUTES.urlTurnos}/${id}`);
     return response;
   };
 
@@ -65,7 +65,7 @@ export function useTurnosApi() {
    * Obtener turnos activos
    */
   const getActivos = async () => {
-    const response = await get<TurnosActivos[]>(`${BACKEND_ROUTES.urlTurnos}/activos`);
+    const response = await GET<TurnosActivos[]>(`${BACKEND_ROUTES.urlTurnos}/activos`);
     return response;
   };
 

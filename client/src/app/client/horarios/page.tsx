@@ -27,6 +27,7 @@ import { useHorariosApi } from "@/hooks/useHorariosApi.hook";
 import { HorariosList } from "@/interfaces";
 import BtnLink from "@/components/btn-link";
 import { CLIENT_ROUTES } from "@/routes/client.routes";
+import { toast } from "sonner";
 
 type DiaSemanaType = "lunes" | "martes" | "miercoles" | "jueves" | "viernes" | "sabado" | "domingo";
 
@@ -42,7 +43,7 @@ const DIAS_SEMANA: { value: DiaSemanaType; label: string }[] = [
 
 export default function HorariosPage() {
     const router = useRouter();
-    const { list } = useHorariosApi();
+    const { list, delete_ } = useHorariosApi();
 
     const [horarios, setHorarios] = useState<HorariosList[]>([]);
     const [loading, setLoading] = useState(true);
@@ -50,44 +51,52 @@ export default function HorariosPage() {
     const [diaSemana, setDiaSemana] = useState<DiaSemanaType | "">("");
     const [activo, setActivo] = useState<"true" | "false">("true");
 
-    useEffect(() => {
-        const fetchHorarios = async () => {
-            try {
-                setLoading(true);
-                setError(null);
+    const fetchHorarios = async () => {
+        try {
+            setLoading(true);
+            setError(null);
 
-                const filters: { dia_semana?: DiaSemanaType; activo?: boolean } = {};
+            const filters: { dia_semana?: DiaSemanaType; activo?: boolean } = {};
 
-                if (diaSemana) {
-                    filters.dia_semana = diaSemana;
-                }
-
-                if (activo) {
-                    filters.activo = activo === "true";
-                }
-
-                const response = await list(filters);
-
-                if (response.alert === "success" && response.data) {
-                    // response.data puede ser un array o un objeto con records
-                    let data: HorariosList[] = [];
-
-                    if (Array.isArray(response.data)) {
-                        data = response.data;
-                    } else if (response.data && typeof response.data === 'object' && 'records' in response.data) {
-                        data = ((response.data as unknown as Record<string, unknown>).records as HorariosList[]) || [];
-                    }
-
-                    setHorarios(data);
-                } else {
-                    setError(response.message || "Error al cargar horarios");
-                }
-            } catch (err) {
-                setError("Error al cargar horarios");
-            } finally {
-                setLoading(false);
+            if (diaSemana) {
+                filters.dia_semana = diaSemana;
             }
-        };
+
+            if (activo) {
+                filters.activo = activo === "true";
+            }
+
+            const response = await list(filters);
+
+            if (response.alert === "success" && response.data) {
+                // response.data puede ser un array o un objeto con records
+                let data: HorariosList[] = [];
+
+                if (Array.isArray(response.data)) {
+                    data = response.data;
+                } else if (response.data && typeof response.data === 'object' && 'records' in response.data) {
+                    data = ((response.data as unknown as Record<string, unknown>).records as HorariosList[]) || [];
+                }
+
+                setHorarios(data);
+            } else {
+                setError(response.message || "Error al cargar horarios");
+            }
+        } catch (err) {
+            setError("Error al cargar horarios");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDelete = async (id: number) => {
+        const { alert } = await delete_(id);
+        alert === "success" ? toast.success("Horario eliminado correctamente") : toast.error("Error al eliminar el horario");
+        fetchHorarios();
+    }
+
+    useEffect(() => {
+
 
         fetchHorarios();
     }, [diaSemana, activo]);
@@ -229,7 +238,7 @@ export default function HorariosPage() {
                                                     {horario.activo ? "Activo" : "Inactivo"}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell className="text-right">
+                                            <TableCell className="text-right space-x-2">
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
@@ -237,6 +246,14 @@ export default function HorariosPage() {
                                                 >
                                                     Ver Detalle
                                                 </Button>
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={() => handleDelete(horario.id)}
+                                                >
+                                                    Eliminar
+                                                </Button>
+
                                             </TableCell>
                                         </TableRow>
                                     ))}

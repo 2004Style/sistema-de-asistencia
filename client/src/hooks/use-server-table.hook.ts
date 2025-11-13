@@ -35,7 +35,7 @@ interface UseServerTableReturn<T> {
 export function useServerTable<T>(options: UseServerTableOptions, isPrivate: boolean = true): UseServerTableReturn<T> {
   const { endpoint, initialPageSize = 10, initialSearch = "", debounceMs = 500 } = options;
 
-  const { get } = useClientApi(isPrivate);
+  const { GET } = useClientApi(isPrivate);
 
   const [data, setData] = useState<T[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -76,7 +76,7 @@ export function useServerTable<T>(options: UseServerTableOptions, isPrivate: boo
       ).toString();
 
       const url = `${endpoint}?${queryString}`;
-      const { data, alert } = await get<PaginatedResponse<T>>(url);
+      const { data, alert } = await GET<PaginatedResponse<T>>(url);
 
       if (alert === "error" || !data) {
         throw new Error("Error al obtener los datos");
@@ -93,7 +93,7 @@ export function useServerTable<T>(options: UseServerTableOptions, isPrivate: boo
     } finally {
       setIsLoading(false);
     }
-  }, [endpoint, tableState, get]);
+  }, [endpoint, tableState, GET]);
 
   useEffect(() => {
     fetchData();

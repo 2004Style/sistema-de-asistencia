@@ -44,7 +44,7 @@ export function ClientHorarioCreate({ id_user }: { id_user?: number }) {
     const router = useRouter();
     const { data: session } = useSession();
     const { create } = useHorariosApi(id_user ? false : true);
-    const { get } = useClientApi(id_user ? false : true);
+    const { GET } = useClientApi(id_user ? false : true);
 
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -71,7 +71,7 @@ export function ClientHorarioCreate({ id_user }: { id_user?: number }) {
         const fetchTurnos = async () => {
             try {
                 setTurnosLoading(true);
-                const response = await get<{ records: TurnosList[] }>("/turnos");
+                const response = await GET<{ records: TurnosList[] }>("/turnos");
 
                 if (response.alert === "success" && response.data) {
                     setTurnos(response.data.records || []);
@@ -83,7 +83,7 @@ export function ClientHorarioCreate({ id_user }: { id_user?: number }) {
         };
 
         fetchTurnos();
-    }, [get]);
+    }, [GET]);
 
     const validateForm = () => {
         const errors: Record<string, string> = {};

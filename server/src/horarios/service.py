@@ -309,7 +309,9 @@ class HorarioService(BaseService):
         Raises:
             HTTPException: Si el horario no existe
         """
-        return self.delete_with_transaction(db, horario_id)
+        horario = self.get_horario(db, horario_id)
+        self.delete_with_transaction(db, horario)
+        return True
     
     def delete_horarios_by_user(self, db: Session, user_id: int) -> bool:
         """
