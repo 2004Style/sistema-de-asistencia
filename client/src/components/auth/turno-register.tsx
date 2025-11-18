@@ -178,7 +178,7 @@ export function ClientHorarioCreate({ id_user }: { id_user?: number }) {
             if (response.alert === "success") {
                 setSuccessMessage("¡Horario creado exitosamente!");
                 setTimeout(() => {
-                    router.push("/client/horarios");
+                    router.replace("/client/horarios");
                 }, 1500);
             } else {
                 setError(response.message || "Error al crear el horario");

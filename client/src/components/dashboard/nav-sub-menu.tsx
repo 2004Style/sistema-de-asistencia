@@ -6,6 +6,7 @@ import {
     Copy,
     CornerUpLeft,
     FileText,
+    Home,
     LineChart,
     Link,
     LogOutIcon,
@@ -34,12 +35,21 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { useRouter } from "next/navigation"
 import { CLIENT_ROUTES } from "@/routes/client.routes"
 import { useSession } from "next-auth/react";
+import { useIsMobile } from "@/hooks/use-mobile"
 
 const data_nav = [
     {
         label: "Perfil",
         icon: UserCogIcon,
         url: CLIENT_ROUTES.urlPerfil
+    },
+]
+
+const data_nav_public = [
+    {
+        label: "Registrar Asistencia",
+        icon: FileText,
+        url: CLIENT_ROUTES.urlPublicAsistencia
     },
 ]
 
@@ -52,6 +62,7 @@ type User = {
 export function NavSubMenu() {
     const [isOpen, setIsOpen] = useState(false)
     const { data } = useSession();
+    const isMobile = useIsMobile();
 
     const router = useRouter()
 
@@ -96,9 +107,23 @@ export function NavSubMenu() {
                             <SidebarGroup className="border-b last:border-none">
                                 <SidebarGroupContent className="gap-0">
                                     <SidebarMenu>
+                                        {isMobile &&
+                                            <SidebarMenuItem >
+                                                <SidebarMenuButton onClick={() => { router.replace(CLIENT_ROUTES.urlHome) }} className="hover:text-secondary-foreground/80 hover:bg-transparent">
+                                                    <Home /> <span>Home</span>
+                                                </SidebarMenuButton>
+                                            </SidebarMenuItem>
+                                        }
                                         {data_nav.map((item, index) => (
                                             <SidebarMenuItem key={index}>
-                                                <SidebarMenuButton onClick={() => { router.push(item.url) }} className="hover:text-secondary-foreground/80 hover:bg-transparent">
+                                                <SidebarMenuButton onClick={() => { router.replace(item.url) }} className="hover:text-secondary-foreground/80 hover:bg-transparent">
+                                                    <item.icon /> <span>{item.label}</span>
+                                                </SidebarMenuButton>
+                                            </SidebarMenuItem>
+                                        ))}
+                                        {data_nav_public.map((item, index) => (
+                                            <SidebarMenuItem key={index}>
+                                                <SidebarMenuButton onClick={() => { router.replace(item.url) }} className="hover:text-secondary-foreground/80 hover:bg-transparent">
                                                     <item.icon /> <span>{item.label}</span>
                                                 </SidebarMenuButton>
                                             </SidebarMenuItem>
@@ -111,7 +136,7 @@ export function NavSubMenu() {
                                     <SidebarMenu>
                                         {data?.user ? (
                                             <SidebarMenuItem >
-                                                <SidebarMenuButton onClick={() => { router.push(CLIENT_ROUTES.urlSignOut) }} className="text-red-400 hover:text-red-400/80 hover:bg-transparent">
+                                                <SidebarMenuButton onClick={() => { router.replace(CLIENT_ROUTES.urlSignOut) }} className="text-red-400 hover:text-red-400/80 hover:bg-transparent">
                                                     <LogOutIcon /> <span>Cerrar Sesion</span>
                                                 </SidebarMenuButton>
                                             </SidebarMenuItem>
@@ -119,12 +144,12 @@ export function NavSubMenu() {
                                             (
                                                 <>
                                                     <SidebarMenuItem >
-                                                        <SidebarMenuButton onClick={() => { router.push(CLIENT_ROUTES.urlLogin) }} className="hover:text-secondary-foreground/80 hover:bg-transparent">
+                                                        <SidebarMenuButton onClick={() => { router.replace(CLIENT_ROUTES.urlLogin) }} className="hover:text-secondary-foreground/80 hover:bg-transparent">
                                                             <ArrowUp /> <span>Iniciar Sesion</span>
                                                         </SidebarMenuButton>
                                                     </SidebarMenuItem>
                                                     <SidebarMenuItem >
-                                                        <SidebarMenuButton onClick={() => { router.push(CLIENT_ROUTES.urlRegister) }} className="hover:text-secondary-foreground/80 hover:bg-transparent">
+                                                        <SidebarMenuButton onClick={() => { router.replace(CLIENT_ROUTES.urlRegister) }} className="hover:text-secondary-foreground/80 hover:bg-transparent">
                                                             <ArrowDown /> <span>Registrar</span>
                                                         </SidebarMenuButton>
                                                     </SidebarMenuItem>

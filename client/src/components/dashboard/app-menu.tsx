@@ -1,13 +1,10 @@
 "use client"
 
 import {
-    Frame,
-    LifeBuoy,
     ScanSearch,
     Send,
     ShieldUser,
     User,
-    View,
 } from "lucide-react"
 
 import { SubMenu } from "./sub-menu"
@@ -31,11 +28,6 @@ const data = {
         {
             title: "Support",
             url: "#",
-            icon: LifeBuoy,
-        },
-        {
-            title: "Feedback",
-            url: "#",
             icon: Send,
         },
     ],
@@ -47,10 +39,6 @@ const clientRoutes = {
     icon: User,
     isActive: false,
     items: [
-        {
-            title: "Dashboard",
-            url: CLIENT_ROUTES.urlDashboardClient,
-        },
         {
             title: "Asistencias",
             url: CLIENT_ROUTES.urlUserAsistencias,
@@ -66,18 +54,18 @@ const clientRoutes = {
     ],
 }
 
-const publicRoutes = {
-    title: "Public",
-    url: "#",
-    icon: View,
-    isActive: false,
-    items: [
-        {
-            title: "testing",
-            url: CLIENT_ROUTES.urlDashboardClient,
-        },
-    ],
-}
+// const publicRoutes = {
+//     title: "Public",
+//     url: "#",
+//     icon: View,
+//     isActive: false,
+//     items: [
+//         {
+//             title: "testing",
+//             url: CLIENT_ROUTES.urlDashboardClient,
+//         },
+//     ],
+// }
 
 const adminRoutes = {
     title: "Adminitrador",
@@ -126,23 +114,31 @@ const adminRoutes = {
 
 
 export function AppMenu({ ...props }: React.ComponentProps<typeof Sidebar>) {
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
 
     // Determinar rutas basado en autenticación y rol
     const navItems = (() => {
         if (!session?.user) {
             // Si no está autenticado, mostrar solo rutas públicas
-            return [publicRoutes];
+            // return [publicRoutes];
+            return [];
         }
 
         if ((session.user as Record<string, unknown>).isAdmin) {
             // Si es admin, mostrar admin, client Y public
-            return [adminRoutes, clientRoutes, publicRoutes];
+            // return [adminRoutes, clientRoutes, publicRoutes];
+            return [adminRoutes, clientRoutes];
         }
 
         // Si es client, mostrar client Y public
-        return [clientRoutes, publicRoutes];
+        // return [clientRoutes, publicRoutes];
+        return [clientRoutes];
     })();
+
+    if (status !== "authenticated") {
+        return null
+    }
+
 
     return (
         <Sidebar

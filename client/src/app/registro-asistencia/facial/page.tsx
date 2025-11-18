@@ -68,7 +68,7 @@ function ReconocimientoFacialContent() {
     const capturarRostro = async () => {
         if (!videoRef.current || !canvasRef.current) return;
 
-        
+
 
         // Capturar imagen
         const canvas = canvasRef.current;
@@ -133,7 +133,7 @@ function ReconocimientoFacialContent() {
 
             // Redirigir después de 3 segundos
             setTimeout(() => {
-                router.push("/registro-asistencia");
+                router.replace("/registro-asistencia");
             }, 3000);
         } catch (err) {
             setError("Error al procesar la asistencia");
@@ -148,7 +148,7 @@ function ReconocimientoFacialContent() {
 
     const volver = () => {
         detenerCamara();
-        router.push("/registro-asistencia");
+        router.replace("/registro-asistencia");
     };
 
     return (

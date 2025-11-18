@@ -67,7 +67,7 @@ export default function AdminHorarioDetailPage() {
             const response = await delete_(horarioId);
 
             if (response.alert === "success") {
-                router.push("/admin/horarios");
+                router.replace("/admin/horarios");
             } else {
                 setError(response.message || "Error al eliminar el horario");
             }
@@ -150,7 +150,7 @@ export default function AdminHorarioDetailPage() {
             {/* Acciones */}
             <div className="flex gap-2">
                 <Button
-                    onClick={() => router.push(`/admin/horarios/${horario.id}/edit`)}
+                    onClick={() => router.replace(`/admin/horarios/${horario.id}/edit`)}
                 >
                     <Edit className="h-4 w-4 mr-2" />
                     Editar

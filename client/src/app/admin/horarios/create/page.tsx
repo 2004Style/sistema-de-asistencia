@@ -176,7 +176,7 @@ export default function HorarioCreatePage() {
                 })
                 reset()
                 // Opcional: redirigir a lista de horarios
-                // router.push("/admin/horarios")
+                // router.replace("/admin/horarios")
             } else {
                 toast.error("Error al crear horario", {
                     description: response.message || "Ocurrió un error inesperado.",

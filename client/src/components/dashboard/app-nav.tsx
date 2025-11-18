@@ -14,10 +14,12 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { useSidebar } from "@/components/ui/sidebar"
 import { usePathname } from "next/navigation"
+import { useSession } from "next-auth/react"
 
 export function AppNav() {
     const { toggleSidebar } = useSidebar()
     const pathname = usePathname()
+    const { status } = useSession();
 
     // Dividir ruta en segmentos
     const segments = pathname.split("/").filter(Boolean)
@@ -26,14 +28,16 @@ export function AppNav() {
         <header className="bg-sidebar-primary sticky top-0 z-50 flex w-full items-center border-b">
             <div className="flex h-8 w-full items-center gap-2 px-4 justify-between">
                 <div className="flex items-center gap-2">
-                    <Button
-                        className="h-8 w-8 text-sidebar-foreground"
-                        variant="ghost"
-                        size="icon"
-                        onClick={toggleSidebar}
-                    >
-                        <SidebarIcon />
-                    </Button>
+                    {status === "authenticated" &&
+                        <Button
+                            className="h-8 w-8 text-sidebar-foreground"
+                            variant="ghost"
+                            size="icon"
+                            onClick={toggleSidebar}
+                        >
+                            <SidebarIcon />
+                        </Button>
+                    }
                     <Separator orientation="vertical" className="mr-2 h-4" />
 
                     <Breadcrumb className="hidden sm:block">

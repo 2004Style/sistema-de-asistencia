@@ -155,8 +155,8 @@ export function HuellaVerificationModal({
                         ? "✓ Huella registrada exitosamente"
                         : "✓ Asistencia registrada exitosamente"
                 );
-                if(AuthRedirect){
-                    router.push(AuthRedirect);
+                if (AuthRedirect) {
+                    router.replace(AuthRedirect);
                 }
                 onStatusChange?.("exitoso");
                 setRespuestaServidor(data);

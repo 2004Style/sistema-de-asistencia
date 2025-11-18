@@ -11,6 +11,7 @@ import { Fingerprint, Scan, XCircle, Clock, Edit } from "lucide-react";
 import { ResponseVerifyUserCode, useVerifyUserCode } from "@/hooks/verifye-user-code.hook";
 import { HuellaVerificationModal, MetodoVerificacion } from "@/components/huella/HuellaVerificationModal";
 import { RegistroManualModal } from "@/components/registro-manual/RegistroManualModal";
+import "./registro-asistencia.css"
 
 const CODE_LENGTH = 3;
 
@@ -78,7 +79,7 @@ export default function RegistroAsistenciaPage() {
 
     const handleSeleccionMetodo = (metodo: MetodoVerificacion) => {
         if (metodo === "facial") {
-            router.push(`/registro-asistencia/facial?codigo=${codigo}`);
+            router.replace(`/registro-asistencia/facial?codigo=${codigo}`);
             return;
         }
         setModalType(metodo);
@@ -90,26 +91,26 @@ export default function RegistroAsistenciaPage() {
 
     return (
         <div className="min-h-screen bg-base flex items-center justify-center p-4">
-            <Card className="w-full max-w-md shadow-2xl">
+            <Card className="w-full max-w-md rounded-[5px] border-none card_asistencia">
                 <CardHeader className="space-y-2 text-center">
                     <div className="mx-auto w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-2">
                         <Clock className="w-8 h-8 text-blue-600 dark:text-blue-300" />
                     </div>
-                    <CardTitle className="text-3xl font-bold">Registro de Asistencia</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-3xl card_asistencia_title">Registro de Asistencia</CardTitle>
+                    <CardDescription className="card_asistencia_description">
                         Ingrese su código y seleccione el tipo de registro
                     </CardDescription>
                 </CardHeader>
 
                 <CardContent className="space-y-6">
                     <div className="space-y-2">
-                        <Label htmlFor="codigo">Código de Usuario</Label>
+                        <Label htmlFor="codigo" className="card_asistencia_label">Código de Usuario</Label>
                         <Input
                             id="codigo"
                             placeholder="Ingrese su código"
                             value={codigo}
                             onChange={(e) => setCodigo(e.target.value)}
-                            className="text-lg"
+                            className="card_asistencia_input"
                             autoFocus
                         />
                     </div>
@@ -123,33 +124,33 @@ export default function RegistroAsistenciaPage() {
 
                     {showMethods && user && (
                         <>
-                            <p>Bienvenido, <strong>{user.name}</strong>. Seleccione el método de verificación.</p>
+                            <p className="card_asistencia_bienvenida">Bienvenido, <strong>{user.name}</strong>. Seleccione el método de verificación.</p>
                             <div className="relative overflow-hidden flex gap-4 py-4">
                                 <Button
                                     onClick={() => handleSeleccionMetodo("facial")}
-                                    className="h-32 flex-col flex-1 gap-3"
+                                    className="card_asistencia_option_button"
                                     variant="outline"
                                 >
                                     <Scan className="w-12 h-12" />
-                                    <span className="text-base text-wrap">Reconocimiento Facial</span>
+                                    <span className="text-wrap">Reconocimiento Facial</span>
                                 </Button>
                                 {!user.huella || user.huella !== "" &&
                                     <Button
                                         onClick={() => handleSeleccionMetodo("dactilar")}
-                                        className="h-32 flex-col flex-1 gap-3"
+                                        className="card_asistencia_option_button"
                                         variant="outline"
                                     >
                                         <Fingerprint className="w-12 h-12" />
-                                        <span className="text-base text-wrap">Huella Dactilar</span>
+                                        <span className="text-wrap">Huella Dactilar</span>
                                     </Button>
                                 }
                                 <Button
                                     onClick={() => handleSeleccionMetodo("manual")}
-                                    className="h-32 flex-col flex-1 gap-3"
+                                    className="card_asistencia_option_button"
                                     variant="outline"
                                 >
                                     <Edit className="w-12 h-12" />
-                                    <span className="text-base text-wrap">Registro Manual</span>
+                                    <span className="text-wrap">Registro Manual</span>
                                 </Button>
                             </div>
                         </>

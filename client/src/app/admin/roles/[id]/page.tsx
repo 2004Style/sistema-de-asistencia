@@ -58,7 +58,7 @@ export default function RolDetailPage() {
         if (response.alert === "success") {
             setIsDeleteDialogOpen(false);
             setTimeout(() => {
-                router.push("/admin/roles");
+                router.replace("/admin/roles");
             }, 1000);
         } else {
             setError(response.message || "Error al eliminar el rol");
@@ -121,7 +121,7 @@ export default function RolDetailPage() {
                 <div className="flex gap-2">
                     <Button
                         variant="outline"
-                        onClick={() => router.push(`/admin/roles/${rol.id}/edit`)}
+                        onClick={() => router.replace(`/admin/roles/${rol.id}/edit`)}
                     >
                         Editar
                     </Button>

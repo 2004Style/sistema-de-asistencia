@@ -133,7 +133,7 @@ export default function EditJustificacionPage({
             if (response.alert === "success") {
                 setSuccess(true);
                 setTimeout(() => {
-                    router.push(`/admin/justificaciones/${id}`);
+                    router.replace(`/admin/justificaciones/${id}`);
                 }, 1500);
             } else {
                 setError(response.message || "Error al actualizar");

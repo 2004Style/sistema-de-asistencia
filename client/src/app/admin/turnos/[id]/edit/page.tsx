@@ -105,7 +105,7 @@ export default function EditTurnoPage() {
         if (response.alert === "success") {
             setSuccess(true);
             setTimeout(() => {
-                router.push(`/admin/turnos/${id}`);
+                router.replace(`/admin/turnos/${id}`);
             }, 1500);
         } else {
             setError(response.message || "Error al actualizar el turno");

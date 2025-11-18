@@ -129,7 +129,7 @@ export default function AdminHorarioEditPage() {
             if (response.alert === "success") {
                 setSuccessMessage("Horario actualizado exitosamente");
                 setTimeout(() => {
-                    router.push(`/admin/horarios/${horarioId}`);
+                    router.replace(`/admin/horarios/${horarioId}`);
                 }, 1000);
             } else {
                 setError(response.message || "Error al actualizar el horario");

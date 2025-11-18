@@ -108,7 +108,7 @@ export default function CreateJustificacionPage() {
             if (response.alert === "success") {
                 setSuccess(true);
                 setTimeout(() => {
-                    router.push("/client/justificaciones");
+                    router.replace("/client/justificaciones");
                 }, 2000);
             } else {
                 setError(response.message || "Error al crear justificación");

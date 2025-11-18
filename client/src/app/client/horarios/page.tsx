@@ -243,7 +243,7 @@ export default function HorariosPage() {
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={() => router.push(`/client/horarios/${horario.id}`)}
+                                                    onClick={() => router.replace(`/client/horarios/${horario.id}`)}
                                                 >
                                                     Ver Detalle
                                                 </Button>

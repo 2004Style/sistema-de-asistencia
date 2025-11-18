@@ -447,28 +447,28 @@ function ProfilePageContent() {
                                         <Button
                                             variant="outline"
                                             className="h-12 rounded-lg border-none bg-purple-500 text-white hover:bg-purple-700 hover:text-white dark:bg-purple-500 dark:text-white dark:hover:bg-purple-700 dark:hover:text-white"
-                                            onClick={() => router.push("/client/asistencias")}
+                                            onClick={() => router.replace("/client/asistencias")}
                                         >
                                             Mis Asistencias
                                         </Button>
                                         <Button
                                             variant="outline"
                                             className="h-12 rounded-lg border-none bg-purple-500 text-white hover:bg-purple-700 hover:text-white dark:bg-purple-500 dark:text-white dark:hover:bg-purple-700 dark:hover:text-white"
-                                            onClick={() => router.push("/client/horarios")}
+                                            onClick={() => router.replace("/client/horarios")}
                                         >
                                             Mis Horarios
                                         </Button>
                                         <Button
                                             variant="outline"
                                             className="h-12 rounded-lg border-none bg-purple-500 text-white hover:bg-purple-700 hover:text-white dark:bg-purple-500 dark:text-white dark:hover:bg-purple-700 dark:hover:text-white"
-                                            onClick={() => router.push("/client/justificaciones")}
+                                            onClick={() => router.replace("/client/justificaciones")}
                                         >
                                             Mis Justificaciones
                                         </Button>
                                         <Button
                                             variant="outline"
                                             className="h-12 rounded-lg border-none bg-purple-500 text-white hover:bg-purple-700 hover:text-white dark:bg-purple-500 dark:text-white dark:hover:bg-purple-700 dark:hover:text-white"
-                                            onClick={() => router.push("/client")}
+                                            onClick={() => router.replace("/client")}
                                         >
                                             Volver al Inicio
                                         </Button>

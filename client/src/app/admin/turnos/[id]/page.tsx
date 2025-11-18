@@ -58,7 +58,7 @@ export default function TurnoDetailPage() {
         if (response.alert === "success") {
             setIsDeleteDialogOpen(false);
             setTimeout(() => {
-                router.push("/admin/turnos");
+                router.replace("/admin/turnos");
             }, 1000);
         } else {
             setError(response.message || "Error al eliminar el turno");
@@ -114,7 +114,7 @@ export default function TurnoDetailPage() {
                 <div className="flex gap-2">
                     <Button
                         variant="outline"
-                        onClick={() => router.push(`/admin/turnos/${turno.id}/edit`)}
+                        onClick={() => router.replace(`/admin/turnos/${turno.id}/edit`)}
                     >
                         Editar
                     </Button>

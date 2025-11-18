@@ -249,7 +249,7 @@ export default function NotificacionesPage() {
                                             variant="ghost"
                                             size="sm"
                                             onClick={() =>
-                                                router.push(`/admin/notificaciones/${notif.id}`)
+                                                router.replace(`/admin/notificaciones/${notif.id}`)
                                             }
                                         >
                                             Ver

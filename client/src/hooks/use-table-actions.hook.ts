@@ -65,14 +65,14 @@ export function useTableActions<T extends { id: string | number }>({ resourceNam
   // Navegar a edición
   const handleEdit = (item: T) => {
     if (editRoute) {
-      router.push(editRoute(item.id));
+      router.replace(editRoute(item.id));
     }
   };
 
   // Navegar a detalles
   const handleViewDetails = (item: T) => {
     if (detailRoute) {
-      router.push(detailRoute(item.id));
+      router.replace(detailRoute(item.id));
     }
   };
 
@@ -87,7 +87,7 @@ export function useTableActions<T extends { id: string | number }>({ resourceNam
   // Crear función de navegación personalizada
   const createNavigateAction = (routeFactory: (item: T) => string) => {
     return (item: T) => {
-      router.push(routeFactory(item));
+      router.replace(routeFactory(item));
     };
   };
 

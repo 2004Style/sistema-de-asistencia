@@ -62,7 +62,7 @@ export default function AsistenciaDetailAdminPage() {
 
         if (response.alert === "success") {
             setIsDeleteDialogOpen(false);
-            router.push("/admin/asistencias");
+            router.replace("/admin/asistencias");
         } else {
             setError(response.message || "Error al eliminar la asistencia");
             setIsDeleting(false);

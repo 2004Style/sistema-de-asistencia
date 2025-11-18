@@ -93,7 +93,7 @@ export default function AsistenciaEditPage() {
         const response = await update(id, formData);
 
         if (response.alert === "success") {
-            router.push(`/admin/asistencias/${id}`);
+            router.replace(`/admin/asistencias/${id}`);
         } else {
             setError(response.message || "Error al actualizar la asistencia");
         }

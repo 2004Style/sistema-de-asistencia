@@ -1,0 +1,96 @@
+:root {
+    --card-bg-color: linear-gradient(135deg, rgba(253, 186, 48, 0.3) 0%, rgba(253, 186, 48, 0.2) 100%);
+    --card-asistencia-title-color: #1a1a1a;
+    --card-asistencia-description-color: #333333;
+    --card-asistencia-label-color: #1a1a1a;
+    --card-asistencia-input-bg-color: rgba(255, 255, 255, 0.96);
+    --card-asistencia-input-text-color: #000000;
+    --card-asistencia-input-placeholder-color: #666666;
+    --card-asistencia-input-focus-bg-color: rgba(253, 186, 48, 0.15);
+    --card-asistencia-input-focus-shadow: 0 0 0 2px rgba(253, 186, 48, 0.5);
+    --card-asistencia-bienvenida-color: #1a1a1a;
+    --card-asistencia-bienvenida-strong-color: #fdba30;
+    --card-asistencia-option-button-bg-color: rgba(253, 186, 48, 0.18);
+    --card-asistencia-option-button-text-color: #1a1a1a;
+    --card-asistencia-option-button-hover-bg-color: rgba(253, 186, 48, 0.32);
+    --card-asistencia-option-button-hover-text-color: #1a1a1a;
+}
+
+.dark {
+    --card-bg-color: linear-gradient(170deg, rgba(58, 56, 56, 0.623) 0%, rgb(31, 31, 31) 100%);
+    --card-asistencia-title-color: #f0f0f0;
+    --card-asistencia-description-color: #cccccc;
+    --card-asistencia-label-color: #f0f0f0;
+    --card-asistencia-input-bg-color: rgba(0, 0, 0, 0.8);
+    --card-asistencia-input-text-color: #ffffff;
+    --card-asistencia-input-placeholder-color: #999999;
+    --card-asistencia-input-focus-bg-color: #333333;
+    --card-asistencia-input-focus-shadow: 0 0 0 2px rgba(0, 255, 0, 0.25);
+    --card-asistencia-bienvenida-color: #f0f0f0;
+    --card-asistencia-bienvenida-strong-color: #00ff00;
+    --card-asistencia-option-button-bg-color: rgba(0, 0, 0, 0.3);
+    --card-asistencia-option-button-text-color: #ffffff;
+    --card-asistencia-option-button-hover-bg-color: rgba(0, 0, 0, 0.5);
+    --card-asistencia-option-button-hover-text-color: #00ff00;
+}
+
+.card_asistencia {
+    background: var(--card-bg-color);
+    box-shadow: 0 1vh 1.5vh rgba(0, 0, 0, 0.872);
+}
+
+.card_asistencia_title {
+    font-weight: bold;
+    color: var(--card-asistencia-title-color);
+}
+
+.card_asistencia_description {
+    color: var(--card-asistencia-description-color);
+}
+
+.card_asistencia_label {
+    color: var(--card-asistencia-label-color);
+}
+
+.card_asistencia_input {
+    text-align: center;
+    font-size: 1.125rem;
+    letter-spacing: 0.1em;
+    background-color: var(--card-asistencia-input-bg-color);
+    color: var(--card-asistencia-input-text-color);
+    border: none;
+    font-weight: bold;
+}
+
+.card_asistencia_input::placeholder {
+    color: var(--card-asistencia-input-placeholder-color);
+}
+
+.card_asistencia_input:focus {
+    background-color: var(--card-asistencia-input-focus-bg-color);
+    box-shadow: var(--card-asistencia-input-focus-shadow);
+}
+
+.card_asistencia_bienvenida {
+    color: var(--card-asistencia-bienvenida-color);
+}
+
+.card_asistencia_bienvenida strong {
+    color: var(--card-asistencia-bienvenida-strong-color);
+}
+
+.card_asistencia_option_button {
+    display: flex;
+    cursor: pointer;
+    height: 8rem;
+    flex: 1;
+    gap: 0.75rem;
+    flex-direction: column;
+    background-color: var(--card-asistencia-option-button-bg-color);
+    color: var(--card-asistencia-option-button-text-color);
+}
+
+.card_asistencia_option_button:hover {
+    background-color: var(--card-asistencia-option-button-hover-bg-color);
+    color: var(--card-asistencia-option-button-hover-text-color);
+}

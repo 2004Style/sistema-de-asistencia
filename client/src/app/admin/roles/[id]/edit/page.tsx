@@ -94,7 +94,7 @@ export default function EditRolPage() {
         if (response.alert === "success") {
             setSuccess(true);
             setTimeout(() => {
-                router.push(`/admin/roles/${id}`);
+                router.replace(`/admin/roles/${id}`);
             }, 1500);
         } else {
             setError(response.message || "Error al actualizar el rol");

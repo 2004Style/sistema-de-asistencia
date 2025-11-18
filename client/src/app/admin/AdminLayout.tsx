@@ -58,7 +58,7 @@ export default function AdminLayout({
 
     // Si está autorizado, mostrar contenido
     if (isAuthorized) {
-        return <>{children}</>;
+        return <div className="p-4 md:py-10">{children}</div>;
     }
 
     // No autorizado - no renderizar nada (ya fue redirigido)

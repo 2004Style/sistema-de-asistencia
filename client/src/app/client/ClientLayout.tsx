@@ -44,7 +44,7 @@ export default function ClientLayout({
 
     // Si está autorizado, mostrar contenido
     if (isAuthorized) {
-        return <>{children}</>;
+        return <div className="p-4 md:py-10">{children}</div>;
     }
 
     // Fallback (no debería llegar aquí por las redirecciones)

@@ -273,7 +273,7 @@ export default function DashboardPage() {
                         {tendenciaDiaria.length > 0 ? (
                             <ResponsiveContainer width="100%" height={300}>
                                 <LineChart data={tendenciaDiaria}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                                     <XAxis
                                         dataKey="fecha"
                                         tick={{ fontSize: 12 }}
@@ -282,8 +282,8 @@ export default function DashboardPage() {
                                     <YAxis tick={{ fontSize: 12 }} />
                                     <Tooltip
                                         contentStyle={{
-                                            backgroundColor: "hsl(var(--background))",
-                                            border: "1px solid hsl(var(--border))",
+                                            backgroundColor: "var(--background)",
+                                            border: "1px solid var(--border)",
                                         }}
                                         formatter={(value) => [value, "Asistencias"]}
                                     />
@@ -318,13 +318,13 @@ export default function DashboardPage() {
                         {porRol.length > 0 ? (
                             <ResponsiveContainer width="100%" height={300}>
                                 <BarChart data={porRol}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                                     <XAxis dataKey="rol" tick={{ fontSize: 12 }} />
                                     <YAxis tick={{ fontSize: 12 }} />
                                     <Tooltip
                                         contentStyle={{
-                                            backgroundColor: "hsl(var(--background))",
-                                            border: "1px solid hsl(var(--border))",
+                                            backgroundColor: "var(--background)",
+                                            border: "1px solid var(--border)",
                                         }}
                                         formatter={(value) => [value, "Cantidad"]}
                                     />
@@ -371,8 +371,8 @@ export default function DashboardPage() {
                                     </Pie>
                                     <Tooltip
                                         contentStyle={{
-                                            backgroundColor: "hsl(var(--background))",
-                                            border: "1px solid hsl(var(--border))",
+                                            backgroundColor: "var(--background)",
+                                            border: "1px solid var(--border)",
                                         }}
                                         formatter={(value) => [value, "Cantidad"]}
                                     />
