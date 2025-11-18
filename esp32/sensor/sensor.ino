@@ -697,9 +697,26 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
             int user_id = doc["user_id"];
             String codigo = doc["codigo"];
             String client_sid = doc["client_sid"];
+            String message_id = doc["message_id"] | "";  // ID único del mensaje
             
-            Serial.printf("[WS] ✓ Comando: %s | user_id: %d | client: %.8s\n", 
-                          tipo.c_str(), user_id, client_sid.c_str());
+            Serial.printf("[WS] ✓ Comando: %s | user_id: %d | client: %.8s | msg_id: %s\n", 
+                          tipo.c_str(), user_id, client_sid.c_str(), message_id.c_str());
+            
+            // ✅ ENVIAR ACK INMEDIATO AL SERVIDOR (confirmación de recepción)
+            if (wsConnected && !message_id.isEmpty()) {
+                DynamicJsonDocument ackDoc(256);
+                ackDoc["tipo"] = "sensor-ack";
+                ackDoc["message_id"] = message_id;
+                ackDoc["client_sid"] = client_sid;
+                ackDoc["status"] = "recibido";
+                ackDoc["timestamp"] = millis();
+                
+                char ackBuf[256];
+                serializeJson(ackDoc, ackBuf);
+                String ackFrame = "42[\"sensor-ack\"," + String(ackBuf) + "]";
+                webSocket.sendTXT(ackFrame);
+                Serial.printf("[ACK] ✓ Confirmación enviada al servidor - message_id: %s\n", message_id.c_str());
+            }
             
             // ========== REGISTRO ==========
             if (tipo == "registro") {

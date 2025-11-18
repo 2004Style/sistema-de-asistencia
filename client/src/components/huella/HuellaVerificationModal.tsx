@@ -100,6 +100,9 @@ export function HuellaVerificationModal({
                 : "Iniciando verificación de asistencia..."
         );
 
+        // Informar que se está esperando confirmación del sensor
+        actualizarDetalles("⏳ Esperando confirmación del sensor...");
+
         // Limpiar listener anterior si existe
         if (huellaListenerRef.current) {
             socket.off("client-response", huellaListenerRef.current);

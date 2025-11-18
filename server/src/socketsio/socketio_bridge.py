@@ -5,6 +5,15 @@ from src.asistencias.service import asistencia_service
 from fastapi import HTTPException
 import json
 from datetime import datetime
+import uuid
+import asyncio
+
+# ============================================================
+# REGISTRO DE ACKs PENDIENTES (message_id -> Future)
+# ============================================================
+pending_acks = {}  # message_id -> {event: asyncio.Event, received_at: timestamp}
+ACK_TIMEOUT = 5  # segundos para esperar ACK del sensor
+MAX_RETRIES = 3  # máximo de reintentos
 
 
 @sio.event
@@ -85,6 +94,43 @@ async def identify(sid, data):
             print(f"[identify] Cliente identificado sin rol sensor. SID: {sid}")
     except Exception as e:
         print(f"Error en identify: {e}")
+
+
+@sio.on("sensor-ack")
+@sio.event
+async def sensor_ack(sid, data):
+    """
+    Evento de ACK (confirmación de recepción) del ESP32.
+    El sensor confirma que recibió la solicitud.
+    
+    data expected: {tipo: "sensor-ack", message_id: str, client_sid: str, status: "recibido"}
+    """
+    try:
+        if not isinstance(data, dict):
+            return
+        
+        message_id = data.get("message_id")
+        client_sid = data.get("client_sid")
+        status = data.get("status")
+        
+        if not message_id:
+            return
+        
+        print(f"\n[sensor-ack] ✓ ACK RECIBIDO DEL SENSOR")
+        print(f"  Sensor SID: {sid}")
+        print(f"  Message ID: {message_id}")
+        print(f"  Cliente: {client_sid}")
+        print(f"  Status: {status}")
+        
+        # Marcar como recibido y desbloquear espera
+        if message_id in pending_acks:
+            pending_acks[message_id]["event"].set()
+            print(f"[sensor-ack] ✓ ACK registrado - desbloqueando espera")
+        else:
+            print(f"[sensor-ack] ⚠️ ACK recibido pero message_id no está en espera")
+    
+    except Exception as e:
+        print(f"Error en sensor_ack: {e}")
 
 
 @sio.on("sensor-cancel-request")
@@ -345,30 +391,65 @@ async def client_asistencia(sid, data):
             }, to=sid)
             return
 
-        # REGISTRO O ASISTENCIA: enviar al sensor
-        print(f"[client-asistencia] Reenviando a sensores: {tipo}")
-        if sensor_id:
-            print(f"[client-asistencia] Sensor específico: sensor:{sensor_id}")
-            await sio.emit("sensor-huella", sensor_data, room=f"sensor:{sensor_id}")
-        else:
-            print(f"[client-asistencia] Broadcast a todos los sensores en room 'sensors'")
-            # DEBUG: mostrar miembros actuales
+        # ========== REGISTRO O ASISTENCIA: ENVIAR CON ACK Y REINTENTOS ==========
+        print(f"[client-asistencia] Reenviando a sensores: {tipo} (con confirmación de recepción)")
+        
+        # Generar ID único para este mensaje
+        message_id = str(uuid.uuid4())
+        sensor_data["message_id"] = message_id
+        
+        # Crear evento de sincronización para esperar ACK
+        ack_event = asyncio.Event()
+        pending_acks[message_id] = {
+            "event": ack_event,
+            "received_at": datetime.now().isoformat()
+        }
+        
+        # Enviar con reintentos
+        ack_received = False
+        for attempt in range(1, MAX_RETRIES + 1):
+            print(f"[client-asistencia] Intento {attempt}/{MAX_RETRIES} de enviar a sensor (message_id: {message_id})")
+            
+            # Enviar sensor-huella
+            if sensor_id:
+                print(f"[client-asistencia] Sensor específico: sensor:{sensor_id}")
+                await sio.emit("sensor-huella", sensor_data, room=f"sensor:{sensor_id}")
+            else:
+                print(f"[client-asistencia] Broadcast a todos los sensores en room 'sensors'")
+                await sio.emit("sensor-huella", sensor_data, room="sensors")
+            
+            # Esperar ACK del sensor (máximo ACK_TIMEOUT segundos)
             try:
-                mgr = getattr(sio, "manager", None)
-                if mgr:
-                    try:
-                        ns_rooms = getattr(mgr, "rooms", None) or mgr.rooms
-                        if isinstance(ns_rooms, dict):
-                            members = ns_rooms.get("/", {}).get("sensors")
-                            print(f"[client-asistencia][DEBUG] Miembros en room 'sensors': {members}")
-                    except Exception as e:
-                        print(f"[client-asistencia][DEBUG] Error al leer rooms: {e}")
-            except Exception:
-                pass
-
-            await sio.emit("sensor-huella", sensor_data, room="sensors")
-
-        print(f"[client-asistencia] ✓ Datos reenviados al sensor, esperando respuesta...")
+                await asyncio.wait_for(ack_event.wait(), timeout=ACK_TIMEOUT)
+                ack_received = True
+                print(f"[client-asistencia] ✓ ACK recibido del sensor en intento {attempt}")
+                break
+            except asyncio.TimeoutError:
+                print(f"[client-asistencia] ⚠️ Timeout esperando ACK (intento {attempt}/{MAX_RETRIES})")
+                if attempt < MAX_RETRIES:
+                    print(f"[client-asistencia] Reintentando en 1 segundo...")
+                    await asyncio.sleep(1)
+                else:
+                    print(f"[client-asistencia] ✗ FALLO: No se recibió ACK después de {MAX_RETRIES} intentos")
+        
+        # Limpiar registro de ACK pendiente
+        if message_id in pending_acks:
+            del pending_acks[message_id]
+        
+        # Si no se recibió ACK después de todos los intentos
+        if not ack_received:
+            await sio.emit("client-response", {
+                "tipo": tipo,
+                "user_id": user_id,
+                "codigo": codigo,
+                "asistencia": "error",
+                "message": "No se pudo comunicar con el sensor. Intente nuevamente.",
+                "error": "sensor_no_ack",
+                "timestamp": datetime.now().isoformat()
+            }, to=sid)
+            return
+        
+        print(f"[client-asistencia] ✓ Sensor confirmó recepción, esperando respuesta de procesamiento...")
 
     except Exception as e:
         print(f"Error en client_asistencia: {e}")
@@ -592,21 +673,59 @@ async def sensor_response(sid, data):
 
 
 # ============================================================
-# CANALES SOCKET.IO:
+# CANALES SOCKET.IO CON CONFIRMACIÓN DE RECEPCIÓN:
 # ============================================================
 # 🔄 CLIENTE → SERVIDOR → ESP32:
-#    client-asistencia  (cliente al servidor para iniciar registro/asistencia)
-#         ↓
-#    sensor-huella      (servidor al ESP32)
-#
-# 📡 ESP32 → SERVIDOR → CLIENTE:
-#    sensor-progress    (ESP32 al servidor con progreso, servidor al cliente sin modificar)
-#    sensor-response    (ESP32 al servidor con resultado, servidor lo procesa y envía al cliente)
-#         ↓
-#    client-response    (servidor al cliente con resultado final o progreso)
-# ============================================================# 2. Servidor: recibe, valida y emite('sensor-huella', {...}, room='sensors')
-# 3. ESP32: recibe 'sensor-huella' y procesa
-# 4. ESP32: socket.emit('sensor-response', {...})
-# 5. Servidor: recibe 'sensor-response', procesa BD y emite('client-response', {...})
-# 6. Cliente: recibe 'client-response' y muestra resultado
+#    1. Cliente emite 'client-asistencia' con (tipo, user_id, codigo, etc)
+#    2. Servidor emite 'sensor-huella' con MENSAJE_ID al ESP32
+#    3. ESP32 recibe y ENVÍA INMEDIATO ACK: 'sensor-ack' con MENSAJE_ID
+#    4. Servidor recibe 'sensor-ack' y desbloquea espera
+#    5. Si NO hay ACK en 5s: REINTENTAR (máx 3 intentos)
+#    6. Si ACK OK: Esperar 'sensor-response' con resultado final
+#    7. ESP32 procesa y emite 'sensor-response'
+#    8. Servidor valida BD y emite 'client-response' al cliente
 # ============================================================
+# 📡 FLUJO DETALLADO:
+#
+# ✅ ÉXITO (con ACK):
+#    Cliente            Servidor                ESP32
+#      │                  │                       │
+#      ├─ client-asistencia ──────────────────────►
+#      │  (tipo, id, etc)  │                       │
+#      │                  ├─ sensor-huella ──────►│ (con message_id)
+#      │                  │  (message_id: uuid)  │
+#      │                  │◄────── sensor-ack ───┤
+#      │                  │  (message_id)         │
+#      │                  │  [CAPTURANDO...]      │
+#      │                  │◄── sensor-response ───┤
+#      │◄─── client-response ─────────────────────┤
+#      │  (success/denied)  │                       │
+#
+# ❌ FALLO (sin ACK):
+#    Cliente            Servidor                ESP32
+#      │                  │                       │
+#      ├─ client-asistencia ──────────────────────►
+#      │  (tipo, id, etc)  │                       │
+#      │                  ├─ sensor-huella ──────►│ (Intento 1)
+#      │                  │  [5s sin ACK]        │
+#      │                  ├─ sensor-huella ──────►│ (Intento 2)
+#      │                  │  [5s sin ACK]        │
+#      │                  ├─ sensor-huella ──────►│ (Intento 3)
+#      │                  │  [5s sin ACK]        │
+#      │◄─ client-response ──────────────────────────┤
+#      │  (error: sensor_no_ack)                  │
+# ============================================================
+# 🔄 CANCELACIÓN (CON O SIN ACK):
+#    client-asistencia   (con tipo="cancelar")
+#    │
+#    └─ sensor-huella     (broadcast inmediato sin esperar ACK)
+#       │
+#       └─ sensor-cancel  (si ya está capturando)
+# ============================================================
+# 📡 ESP32 → SERVIDOR → CLIENTE:
+#    sensor-progress    (progreso de REGISTRO en tiempo real)
+#    sensor-response    (resultado final: success/denied/error)
+#    sensor-ack        (confirmación de recepción de sensor-huella)
+#    sensor-cancel-ack (confirmación de cancelación)
+#         ↓
+#    client-response    (servidor al cliente con resultado o progreso)
