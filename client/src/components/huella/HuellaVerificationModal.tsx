@@ -77,6 +77,9 @@ export function HuellaVerificationModal({
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const MAX_ESPERA_RESPUESTA = 35000; // 35 segundos máximo (suficiente para captura + comparación)
 
+    // 🔑 ID único de la operación actual (para filtrar respuestas cruzadas)
+    const operationIdRef = useRef<string>("");
+
     const actualizarDetalles = useCallback((nuevoDetalle: string) => {
         setDetalles((prev) => [...prev, `${new Date().toLocaleTimeString()}: ${nuevoDetalle}`]);
     }, []);
@@ -87,6 +90,11 @@ export function HuellaVerificationModal({
             setMensaje("Error: Socket no disponible");
             return;
         }
+
+        // 🔑 Generar ID único para esta operación
+        const operationId = `${tipo}-${userId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        operationIdRef.current = operationId;
+        console.log(`[OPERATION] 🆔 Nueva operación iniciada: ${operationId}`);
 
         setEstado("esperando");
         setMensaje("");
@@ -121,11 +129,29 @@ export function HuellaVerificationModal({
 
         }, MAX_ESPERA_RESPUESTA);
 
-        // Escuchar respuesta del servidor#00d9ff
+        // Escuchar respuesta del servidor
         const handleHuellaResponse = (data: HuellaResponse) => {
 
             // ✅ Validar estructura de datos
             if (!data || typeof data !== "object") {
+                return;
+            }
+
+            // 🔒 FILTRAR POR OPERATION_ID: Ignorar respuestas de operaciones anteriores
+            const responseOperationId = (data as any).operation_id;
+            if (responseOperationId && responseOperationId !== operationIdRef.current) {
+                console.log(`[FILTER] ⚠️ Ignorando respuesta de operación diferente:`);
+                console.log(`  Esperado: ${operationIdRef.current}`);
+                console.log(`  Recibido: ${responseOperationId}`);
+                actualizarDetalles(`⚠️ Respuesta de operación anterior ignorada (${responseOperationId.substring(0, 12)}...)`);
+                return;
+            }
+
+            // 🔒 FILTRAR POR CLIENT_SID: Ignorar respuestas de otras sesiones
+            // Si la respuesta tiene client_sid y no coincide con socket.id actual, ignorarla
+            const responseClientSid = (data as any).client_sid;
+            if (responseClientSid && responseClientSid !== socket?.id) {
+                console.log(`[FILTER] ⚠️ Ignorando respuesta de sesión anterior: ${responseClientSid} (actual: ${socket?.id})`);
                 return;
             }
 
@@ -214,10 +240,13 @@ export function HuellaVerificationModal({
             client_sid: socket.id,  // ✅ Incluir client_sid para tracking
         };
 
-        actualizarDetalles(`Solicitud enviada al servidor`);
+        // 🔑 Incluir operation_id en la solicitud
+        (requestData as any).operation_id = operationId;
+
+        actualizarDetalles(`Solicitud enviada al servidor (ID: ${operationId.substring(0, 12)}...)`);
         setEstado("procesando");
         socket.emit("client-asistencia", requestData);
-    }, [socket, codigo, userId, onSuccess, onError, onStatusChange, tipo, huella, showInternalSuccessModal, actualizarDetalles]);
+    }, [socket, codigo, userId, onSuccess, onError, onStatusChange, tipo, huella, showInternalSuccessModal, actualizarDetalles, router, AuthRedirect, onOpenChange]);
 
     const reintentar = useCallback(() => {
         setEstado("esperando");
@@ -233,6 +262,7 @@ export function HuellaVerificationModal({
                 client_sid: socket.id,
                 user_id: userId,
                 codigo: codigo,
+                operation_id: operationIdRef.current,  // 🔑 Incluir operation_id actual
                 timestamp: new Date().toISOString(),
             };
 

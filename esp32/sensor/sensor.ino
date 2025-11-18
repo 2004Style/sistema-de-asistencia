@@ -20,6 +20,8 @@ const uint16_t WS_PORT = 8000;
 
 #define LED_REGISTRO_PIN 2
 #define LED_ASISTENCIA_PIN 4
+// Pin opcional para RESET del módulo de huella (conectar al pin RST del sensor si está disponible)
+#define FINGER_RESET_PIN 15
 
 #define MAX_TEMPLATE_SIZE 2048
 #define GCM_TAG_LEN 16
@@ -80,6 +82,25 @@ const unsigned long CANCEL_CHECK_INTERVAL = 20; // ✅ Verificar cancelación ca
 // === TASK HANDLES PARA DUAL-CORE ===
 TaskHandle_t webSocketTaskHandle = NULL;
 TaskHandle_t sensorTaskHandle = NULL;
+// Worker task handle (persistente)
+TaskHandle_t sensorWorkerHandle = NULL;
+
+// Job struct para pasar datos al worker (tamaño fijo para evitar problemas de heap dinámico excesivo)
+typedef struct {
+    char tipo[16];
+    int user_id;
+    char codigo[64];
+    char huella[2800];
+    char client_sid[64];
+    char message_id[64];
+    char operation_id[128];  // 🔑 ID único de operación del cliente
+} SensorJob;
+
+// Cola de jobs para el worker (capacidad 1: solo un job a la vez)
+QueueHandle_t jobQueue = NULL;
+
+// Prototipo del worker
+void sensorWorker(void* pvParameters);
 
 // ============================================================================
 // FUNCIONES DE LED
@@ -167,13 +188,26 @@ void detenerCaptura() {
     capturaEnProgreso = false;
     cancelarCaptura = false;
     clientSidActual[0] = '\0';
-    Serial.println("[CANCEL] Captura detenida");
+    Serial.println("[CANCEL] Captura detenida - estado limpiado");
 }
 
 void solicitarCancelacion(const String& motivo) {
     if (capturaEnProgreso) {
         cancelarCaptura = true;
         Serial.printf("[CANCEL] ⚠️ CANCELACIÓN SOLICITADA: %s\n", motivo.c_str());
+        // Intentar resetear el módulo de huella para abortar llamadas bloqueantes
+        // (requiere cablear el pin RST del sensor al FINGER_RESET_PIN)
+        Serial.println("[CANCEL] Pulsando RESET del módulo de huella para abortar operaciones bloqueantes...");
+        digitalWrite(FINGER_RESET_PIN, LOW);
+        delay(50);
+        digitalWrite(FINGER_RESET_PIN, HIGH);
+        delay(200);
+        // Re-inicializar la comunicación con el sensor
+        if (initFingerprint()) {
+            Serial.println("[CANCEL] ✓ Módulo de huella reiniciado");
+        } else {
+            Serial.println("[CANCEL] ⚠️ Falló reinicio del módulo de huella");
+        }
     }
 }
 
@@ -482,6 +516,12 @@ bool captureAndStore(int &slot, String &huellaB64, String client_sid = "") {
                 }
             }
         }
+        // Small delay to yield — comprobar cancelación para abortar rápidamente
+        if (verificarCancelacion()) {
+            Serial.println("[FINGER] ✗ CANCELACIÓN detectada durante descarga de template");
+            detenerCaptura();
+            return false;
+        }
         delay(10);
     }
     
@@ -490,9 +530,23 @@ bool captureAndStore(int &slot, String &huellaB64, String client_sid = "") {
         generate_random_iv(iv, GCM_IV_LEN);
         uint8_t tag[GCM_TAG_LEN];
         
+        // Antes de cifrar, comprobar si hubo una solicitud de cancelación
+        if (verificarCancelacion()) {
+            Serial.println("[FINGER] ✗ CANCELACIÓN detectada antes de cifrado");
+            detenerCaptura();
+            return false;
+        }
+
         if (aes_gcm_encrypt(DEVICE_KEY, iv, templateBuf, idx, cipherBuf, tag)) {
             memcpy(cipherBuf + idx, tag, GCM_TAG_LEN);
             
+            // Tras cifrar, volver a comprobar cancelación (cifrado puede tardar algo)
+            if (verificarCancelacion()) {
+                Serial.println("[FINGER] ✗ CANCELACIÓN detectada tras cifrado");
+                detenerCaptura();
+                return false;
+            }
+
             if (base64_encode(cipherBuf, idx + GCM_TAG_LEN, b64Buf, 2732)) {
                 char slotAndData[2800];
                 snprintf(slotAndData, sizeof(slotAndData), "%d|%s", slot, b64Buf);
@@ -631,9 +685,10 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
                     
                     if (!deserializeJson(cancelDoc, jsonStr)) {
                         String cancel_client_sid = cancelDoc["client_sid"] | "";
+                        String cancel_operation_id = cancelDoc["operation_id"] | "";  // 🔑 Extraer operation_id
                         
-                        Serial.printf("[CANCEL] DEBUG - clientSidActual: '%s' | Recibido: '%s' | EnProgreso: %d\n", 
-                                    clientSidActual, cancel_client_sid.c_str(), capturaEnProgreso);
+                        Serial.printf("[CANCEL] DEBUG - clientSidActual: '%s' | Recibido: '%s' | EnProgreso: %d | op_id: %.12s...\n", 
+                                    clientSidActual, cancel_client_sid.c_str(), capturaEnProgreso, cancel_operation_id.c_str());
                         
                         // Validar que el client_sid no esté vacío y comparar
                         if (!cancel_client_sid.isEmpty() && capturaEnProgreso) {
@@ -646,6 +701,7 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
                                     DynamicJsonDocument ack(256);
                                     ack["tipo"] = "cancelacion_ack";
                                     ack["client_sid"] = cancel_client_sid;
+                                    ack["operation_id"] = cancel_operation_id;  // 🔑 Incluir operation_id
                                     ack["status"] = "procesada";
                                     ack["timestamp"] = millis();
                                     char buf[256];
@@ -698,9 +754,10 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
             String codigo = doc["codigo"];
             String client_sid = doc["client_sid"];
             String message_id = doc["message_id"] | "";  // ID único del mensaje
+            String operation_id = doc["operation_id"] | "";  // 🔑 ID único de operación del cliente
             
-            Serial.printf("[WS] ✓ Comando: %s | user_id: %d | client: %.8s | msg_id: %s\n", 
-                          tipo.c_str(), user_id, client_sid.c_str(), message_id.c_str());
+            Serial.printf("[WS] ✓ Comando: %s | user_id: %d | client: %.8s | msg_id: %s | op_id: %.12s...\n", 
+                          tipo.c_str(), user_id, client_sid.c_str(), message_id.c_str(), operation_id.c_str());
             
             // ✅ ENVIAR ACK INMEDIATO AL SERVIDOR (confirmación de recepción)
             if (wsConnected && !message_id.isEmpty()) {
@@ -718,106 +775,53 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
                 Serial.printf("[ACK] ✓ Confirmación enviada al servidor - message_id: %s\n", message_id.c_str());
             }
             
-            // ========== REGISTRO ==========
-            if (tipo == "registro") {
-                encenderLEDRegistro();
-                int slotUsed = -1;
-                String huellaB64;
-                
-                if (captureAndStore(slotUsed, huellaB64, client_sid)) {
-                    DynamicJsonDocument resp(1024);
-                    resp["tipo"] = "registro";
-                    resp["user_id"] = user_id;
-                    resp["codigo"] = codigo;
-                    resp["asistencia"] = "success";
-                    resp["huella"] = huellaB64;
-                    resp["client_sid"] = client_sid;
-                    
-                    char buf[1024];
-                    serializeJson(resp, buf);
-                    String frame = "42[\"sensor-response\"," + String(buf) + "]";
-                    
-                    if (wsConnected) {
-                        webSocket.sendTXT(frame);
-                        Serial.printf("[SENSOR] ✓ REGISTRO exitoso (slot: %d)\n", slotUsed);
-                    } else {
-                        bufferMessage(frame);
-                    }
-                } else {
-                    DynamicJsonDocument resp(512);
-                    resp["tipo"] = "registro";
+            // ========== REGISTRO / ASISTENCIA: delegar a worker en Core 1 ==========
+            if (tipo == String("registro") || tipo == String("asistencia")) {
+                // Si ya hay una captura en progreso, rechazar inmediatamente
+                if (capturaEnProgreso) {
+                    Serial.println("[WS] ✗ Ya hay captura en progreso, rechazando nueva solicitud");
+                    DynamicJsonDocument resp(256);
+                    resp["tipo"] = tipo;
                     resp["user_id"] = user_id;
                     resp["codigo"] = codigo;
                     resp["asistencia"] = "denied";
-                    resp["error"] = "capture_failed";
-                    resp["client_sid"] = client_sid;
-                    
-                    char buf[512];
+                    resp["message"] = "Sensor ocupado";
+                    resp["timestamp"] = millis();
+                    char buf[256];
                     serializeJson(resp, buf);
                     String frame = "42[\"sensor-response\"," + String(buf) + "]";
-                    
-                    if (wsConnected) {
-                        webSocket.sendTXT(frame);
-                    } else {
-                        bufferMessage(frame);
-                    }
-                }
-                apagarTodosLEDs();
-            }
-            
-            // ========== ASISTENCIA ==========
-            else if (tipo == "asistencia") {
-                encenderLEDAsistencia();
-                String huellaStr = doc["huella"];
-                int slotIdx = huellaStr.indexOf('|');
-                
-                if (slotIdx < 0) {
-                    apagarTodosLEDs();
-                    break;
-                }
-                
-                int slot = huellaStr.substring(0, slotIdx).toInt();
-                bool matched = false;
-                
-                if (captureAndMatch(slot, matched, client_sid)) {  // ✅ PASAR client_sid
-                    DynamicJsonDocument resp(512);
-                    resp["tipo"] = "asistencia";
-                    resp["user_id"] = user_id;
-                    resp["codigo"] = codigo;
-                    resp["huella"] = huellaStr;
-                    resp["asistencia"] = matched ? "success" : "denied";
-                    resp["client_sid"] = client_sid;
-                    
-                    char buf[512];
-                    serializeJson(resp, buf);
-                    String frame = "42[\"sensor-response\"," + String(buf) + "]";
-                    
-                    if (wsConnected) {
-                        webSocket.sendTXT(frame);
-                    } else {
-                        bufferMessage(frame);
-                    }
+                    if (wsConnected) webSocket.sendTXT(frame); else bufferMessage(frame);
                 } else {
-                    DynamicJsonDocument resp(512);
-                    resp["tipo"] = "asistencia";
-                    resp["user_id"] = user_id;
-                    resp["codigo"] = codigo;
-                    resp["huella"] = huellaStr;
-                    resp["asistencia"] = "denied";
-                    resp["error"] = "capture_failed";
-                    resp["client_sid"] = client_sid;
-                    
-                    char buf[512];
-                    serializeJson(resp, buf);
-                    String frame = "42[\"sensor-response\"," + String(buf) + "]";
-                    
-                    if (wsConnected) {
-                        webSocket.sendTXT(frame);
+                    // Crear job y enviarlo a la cola del worker
+                    SensorJob job;
+                    memset(&job, 0, sizeof(SensorJob));
+                    strncpy(job.tipo, tipo.c_str(), sizeof(job.tipo)-1);
+                    job.user_id = user_id;
+                    strncpy(job.codigo, codigo.c_str(), sizeof(job.codigo)-1);
+                    String huellaStr = doc["huella"];
+                    strncpy(job.huella, huellaStr.c_str(), sizeof(job.huella)-1);
+                    strncpy(job.client_sid, client_sid.c_str(), sizeof(job.client_sid)-1);
+                    strncpy(job.message_id, message_id.c_str(), sizeof(job.message_id)-1);
+                    strncpy(job.operation_id, operation_id.c_str(), sizeof(job.operation_id)-1);  // 🔑 Copiar operation_id
+
+                    // Enviar job a la cola (sin bloqueo, si está llena rechazar)
+                    if (xQueueSend(jobQueue, &job, 0) != pdTRUE) {
+                        Serial.println("[WS] ✗ Cola de jobs llena, rechazando solicitud");
+                        DynamicJsonDocument resp(256);
+                        resp["tipo"] = tipo;
+                        resp["user_id"] = user_id;
+                        resp["codigo"] = codigo;
+                        resp["asistencia"] = "denied";
+                        resp["message"] = "Sensor ocupado (cola llena)";
+                        resp["timestamp"] = millis();
+                        char buf[256];
+                        serializeJson(resp, buf);
+                        String frame = "42[\"sensor-response\"," + String(buf) + "]";
+                        if (wsConnected) webSocket.sendTXT(frame); else bufferMessage(frame);
                     } else {
-                        bufferMessage(frame);
+                        Serial.println("[WS] ✓ Job enviado al worker en Core 1");
                     }
                 }
-                apagarTodosLEDs();
             }
             
             break;
@@ -881,6 +885,177 @@ void sensorTask(void *pvParameters) {
     }
 }
 
+// Worker que procesa una solicitud de captura en Core 1
+// Este worker es PERSISTENTE: espera jobs en la cola en lugar de destruirse
+void sensorWorker(void* pvParameters) {
+    Serial.println("[WORKER] Iniciado en Core 1 (persistente)");
+    
+    for(;;) {
+        SensorJob job;
+        // Esperar job de la cola (bloqueante)
+        if (xQueueReceive(jobQueue, &job, portMAX_DELAY) != pdTRUE) {
+            vTaskDelay(pdMS_TO_TICKS(10));
+            continue;
+        }
+
+        String tipo(job.tipo);
+        int user_id = job.user_id;
+        String codigo(job.codigo);
+        String huellaStr(job.huella);
+        String client_sid(job.client_sid);
+        String message_id(job.message_id);
+        String operation_id(job.operation_id);  // 🔑 ID de operación del cliente
+
+        Serial.printf("[WORKER] Procesando job tipo=%s user_id=%d client=%s op_id=%.12s...\n", 
+                      tipo.c_str(), user_id, client_sid.c_str(), operation_id.c_str());
+
+        if (tipo == "registro") {
+            encenderLEDRegistro();
+            int slotUsed = -1;
+            String huellaB64;
+            
+            bool success = captureAndStore(slotUsed, huellaB64, client_sid);
+            
+            // Verificar si fue cancelado
+            if (cancelarCaptura) {
+                Serial.println("[WORKER] Job fue cancelado durante registro");
+                DynamicJsonDocument resp(512);
+                resp["tipo"] = "registro";
+                resp["user_id"] = user_id;
+                resp["codigo"] = codigo;
+                resp["asistencia"] = "cancelled";
+                resp["message"] = "Registro cancelado por usuario";
+                resp["client_sid"] = client_sid;
+                resp["operation_id"] = operation_id;  // 🔑 Incluir operation_id
+
+                char buf[512];
+                serializeJson(resp, buf);
+                String frame = "42[\"sensor-response\"," + String(buf) + "]";
+                if (wsConnected) {
+                    webSocket.sendTXT(frame);
+                } else {
+                    bufferMessage(frame);
+                }
+            } else if (success) {
+                DynamicJsonDocument resp(1024);
+                resp["tipo"] = "registro";
+                resp["user_id"] = user_id;
+                resp["codigo"] = codigo;
+                resp["asistencia"] = "success";
+                resp["huella"] = huellaB64;
+                resp["client_sid"] = client_sid;
+                resp["operation_id"] = operation_id;  // 🔑 Incluir operation_id
+
+                char buf[1024];
+                serializeJson(resp, buf);
+                String frame = "42[\"sensor-response\"," + String(buf) + "]";
+                if (wsConnected) {
+                    webSocket.sendTXT(frame);
+                    Serial.printf("[WORKER] ✓ REGISTRO exitoso (slot: %d)\n", slotUsed);
+                } else {
+                    bufferMessage(frame);
+                }
+            } else {
+                DynamicJsonDocument resp(512);
+                resp["tipo"] = "registro";
+                resp["user_id"] = user_id;
+                resp["codigo"] = codigo;
+                resp["asistencia"] = "denied";
+                resp["error"] = "capture_failed";
+                resp["client_sid"] = client_sid;
+                resp["operation_id"] = operation_id;  // 🔑 Incluir operation_id
+
+                char buf[512];
+                serializeJson(resp, buf);
+                String frame = "42[\"sensor-response\"," + String(buf) + "]";
+                if (wsConnected) {
+                    webSocket.sendTXT(frame);
+                } else {
+                    bufferMessage(frame);
+                }
+            }
+            apagarTodosLEDs();
+        }
+        else if (tipo == "asistencia") {
+            encenderLEDAsistencia();
+            int slotIdx = huellaStr.indexOf('|');
+            if (slotIdx < 0) {
+                apagarTodosLEDs();
+                Serial.println("[WORKER] ✗ Formato de huella inválido");
+                continue;
+            }
+            
+            int slot = huellaStr.substring(0, slotIdx).toInt();
+            bool matched = false;
+            
+            bool success = captureAndMatch(slot, matched, client_sid);
+            
+            // Verificar si fue cancelado
+            if (cancelarCaptura) {
+                Serial.println("[WORKER] Job fue cancelado durante asistencia");
+                DynamicJsonDocument resp(512);
+                resp["tipo"] = "asistencia";
+                resp["user_id"] = user_id;
+                resp["codigo"] = codigo;
+                resp["huella"] = huellaStr;
+                resp["asistencia"] = "cancelled";
+                resp["message"] = "Verificación cancelada por usuario";
+                resp["client_sid"] = client_sid;
+                resp["operation_id"] = operation_id;  // 🔑 Incluir operation_id
+
+                char buf[512];
+                serializeJson(resp, buf);
+                String frame = "42[\"sensor-response\"," + String(buf) + "]";
+                if (wsConnected) {
+                    webSocket.sendTXT(frame);
+                } else {
+                    bufferMessage(frame);
+                }
+            } else if (success) {
+                DynamicJsonDocument resp(512);
+                resp["tipo"] = "asistencia";
+                resp["user_id"] = user_id;
+                resp["codigo"] = codigo;
+                resp["huella"] = huellaStr;
+                resp["asistencia"] = matched ? "success" : "denied";
+                resp["client_sid"] = client_sid;
+                resp["operation_id"] = operation_id;  // 🔑 Incluir operation_id
+
+                char buf[512];
+                serializeJson(resp, buf);
+                String frame = "42[\"sensor-response\"," + String(buf) + "]";
+                if (wsConnected) {
+                    webSocket.sendTXT(frame);
+                } else {
+                    bufferMessage(frame);
+                }
+            } else {
+                DynamicJsonDocument resp(512);
+                resp["tipo"] = "asistencia";
+                resp["user_id"] = user_id;
+                resp["codigo"] = codigo;
+                resp["huella"] = huellaStr;
+                resp["asistencia"] = "denied";
+                resp["error"] = "capture_failed";
+                resp["client_sid"] = client_sid;
+                resp["operation_id"] = operation_id;  // 🔑 Incluir operation_id
+
+                char buf[512];
+                serializeJson(resp, buf);
+                String frame = "42[\"sensor-response\"," + String(buf) + "]";
+                if (wsConnected) {
+                    webSocket.sendTXT(frame);
+                } else {
+                    bufferMessage(frame);
+                }
+            }
+            apagarTodosLEDs();
+        }
+
+        Serial.println("[WORKER] Job completado, esperando siguiente...");
+    }
+}
+
 // ============================================================================
 // SETUP
 // ============================================================================
@@ -895,6 +1070,9 @@ void setup() {
     // === INICIALIZAR LEDS ===
     pinMode(LED_REGISTRO_PIN, OUTPUT);
     pinMode(LED_ASISTENCIA_PIN, OUTPUT);
+    // Inicializar pin de reset del sensor (si está cableado)
+    pinMode(FINGER_RESET_PIN, OUTPUT);
+    digitalWrite(FINGER_RESET_PIN, HIGH);
     apagarTodosLEDs();
     Serial.println("[LED] ✓ LEDs inicializados\n");
     
@@ -927,6 +1105,14 @@ void setup() {
     webSocket.begin(WS_HOST, WS_PORT, "/socket.io/?EIO=4&transport=websocket");
     delay(1000);
     
+    // === CREAR COLA DE JOBS ===
+    jobQueue = xQueueCreate(1, sizeof(SensorJob));
+    if (jobQueue == NULL) {
+        Serial.println("[SETUP] ✗ Error creando cola de jobs");
+        ESP.restart();
+    }
+    Serial.println("[SETUP] ✓ Cola de jobs creada");
+    
     // === CREAR TASKS DUAL-CORE ===
     Serial.println("[DUAL-CORE] Creando tasks...\n");
     
@@ -947,6 +1133,17 @@ void setup() {
         NULL,                 // Parámetro
         1,                    // Prioridad
         &sensorTaskHandle,    // Handle
+        1                     // Core 1
+    );
+    
+    // Crear worker persistente
+    xTaskCreatePinnedToCore(
+        sensorWorker,         // Función
+        "SensorWorker",       // Nombre
+        16384,                // Stack size (grande para procesamiento)
+        NULL,                 // Parámetro
+        1,                    // Prioridad
+        &sensorWorkerHandle,  // Handle
         1                     // Core 1
     );
     

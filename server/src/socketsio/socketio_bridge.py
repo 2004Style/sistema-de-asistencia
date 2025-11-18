@@ -149,11 +149,13 @@ async def sensor_cancel_request(sid, data):
         client_sid = data.get("client_sid")
         user_id = data.get("user_id")
         codigo = data.get("codigo")
+        operation_id = data.get("operation_id")  # 🔑 ID de operación
         
         print(f"\n[sensor-cancel-request] ⚠️ CANCELACIÓN SOLICITADA")
         print(f"  Cliente Web SID: {sid}")
         print(f"  Client SID (para ESP32): {client_sid}")
         print(f"  Usuario: {user_id} | Código: {codigo}")
+        print(f"  Operation ID: {operation_id}")
         
         # Preparar mensaje de cancelación para el ESP32
         cancel_data = {
@@ -161,6 +163,7 @@ async def sensor_cancel_request(sid, data):
             "user_id": user_id,
             "codigo": codigo,
             "client_sid": client_sid,
+            "operation_id": operation_id,  # 🔑 Propagar operation_id
             "timestamp": datetime.now().isoformat()
         }
         
@@ -212,6 +215,8 @@ async def sensor_cancel_ack(sid, data):
     """
     ACK del ESP32 confirmando que procesó la cancelación.
     Esto permite confirmar al cliente que la cancelación fue procesada.
+    
+    ⚠️ IMPORTANTE: Solo reenviar si el operation_id coincide con la operación actual del cliente.
     """
     try:
         if not isinstance(data, dict):
@@ -219,21 +224,25 @@ async def sensor_cancel_ack(sid, data):
         
         client_sid = data.get("client_sid")
         status = data.get("status")
+        operation_id = data.get("operation_id")  # 🔑 ID de operación
         
         print(f"\n[sensor-cancel-ack] ✓ ESP32 confirmó cancelación")
         print(f"  Client SID: {client_sid}")
         print(f"  Status: {status}")
+        print(f"  Operation ID: {operation_id}")
         
         # Reenviar confirmación al cliente web si tenemos su SID
+        # ✅ Incluir operation_id para que el cliente pueda filtrar si no corresponde
         if client_sid:
             await sio.emit("client-response", {
                 "tipo": "cancelacion_confirmada",
                 "client_sid": client_sid,
+                "operation_id": operation_id,  # 🔑 Propagar operation_id
                 "asistencia": "cancelled",
                 "message": "Cancelación confirmada por sensor",
                 "timestamp": datetime.now().isoformat()
             }, to=client_sid)
-            print(f"[sensor-cancel-ack] ✓ Confirmación enviada al cliente {client_sid}")
+            print(f"[sensor-cancel-ack] ✓ Confirmación enviada al cliente {client_sid} (operation: {operation_id})")
         
     except Exception as e:
         print(f"Error en sensor_cancel_ack: {e}")
@@ -277,6 +286,7 @@ async def client_asistencia(sid, data):
         codigo = data.get("codigo")
         huella = data.get("huella")  # Campo huella contiene: "<slot>|<datos_encriptados>"
         sensor_id = data.get("sensor_id")
+        operation_id = data.get("operation_id")  # 🔑 ID único de operación del cliente
 
         # Validaciones básicas
         if not tipo or not user_id or not codigo:
@@ -370,12 +380,13 @@ async def client_asistencia(sid, data):
             "tipo": tipo,
             "user_id": user_id,
             "codigo": codigo,
-            "huella": huella,  # Contiene: "<slot>|<datos_encriptados>" en ASISTENCIA o vacío en REGISTRO
-            "client_sid": sid,  # Para que el sensor sepa a quién responder
+            "huella": huella,  # Para registro: None, para asistencia: "<slot>|datos"
+            "client_sid": sid,  # SID del cliente para rastrear respuestas
+            "operation_id": operation_id,  # 🔑 Propagar operation_id al ESP32
             "timestamp": datetime.now().isoformat()
         }
         
-        print(f"[client-asistencia] Datos para sensor: tipo={tipo}, huella={len(huella) if huella else 0} chars")
+        print(f"[client-asistencia] Datos para sensor: tipo={tipo}, huella={len(huella) if huella else 0} chars, operation_id={operation_id}")
 
         # CANCELAR: enviar directamente sin validar sensor
         if tipo == "cancelar":
@@ -523,6 +534,7 @@ async def sensor_response(sid, data):
         huella = data.get("huella")  # Contiene: "<slot>|<datos_encriptados>" para REGISTRO y ASISTENCIA
         asistencia_status = data.get("asistencia")
         client_sid = data.get("client_sid")
+        operation_id = data.get("operation_id")  # 🔑 ID de operación del cliente
 
         # ✅ Validar campos requeridos
         if not all([tipo, user_id, codigo]):
@@ -548,6 +560,7 @@ async def sensor_response(sid, data):
             "codigo": codigo,
             "huella": huella,
             "asistencia": asistencia_status,
+            "operation_id": operation_id,  # 🔑 Propagar operation_id
             "timestamp": datetime.now().isoformat()
         }
         
