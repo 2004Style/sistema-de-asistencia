@@ -156,6 +156,25 @@ async def eliminar_rol(
         message="Rol eliminado exitosamente"
     )
 
+@router.post("/inabilitar/{role_id}", status_code=status.HTTP_200_OK)
+async def inabilitar_rol(
+    role_id: int,
+    current_user: "User" = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    🔐 ADMIN ONLY - Inabilitar un rol (marcar como inactivo)
+    
+    - **role_id**: ID del rol a inabilitar
+    - No se puede inabilitar si tiene usuarios activos asociados
+    """
+    role_service.inabilitar_rol(db, role_id)
+    
+    return create_single_response(
+        data={"id": role_id},
+        message="Rol inhabilitado exitosamente"
+    )
+
 
 # ============================================================================
 # ENDPOINT PARA LISTAR ROLES ACTIVOS (PUBLIC)

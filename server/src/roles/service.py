@@ -150,29 +150,52 @@ class RoleService(BaseService):
     
     def eliminar_rol(self, db: Session, role_id: int) -> None:
         """
-        Eliminación lógica de un rol (marcar como inactivo).
+        Eliminación física de un rol de la base de datos.
+        
+        Reasigna todos los usuarios del rol a eliminar al rol por defecto (COLABORADOR)
+        antes de eliminar el rol.
         
         Args:
             db: Sesión de base de datos
-            role_id: ID del rol
+            role_id: ID del rol a eliminar
             
         Raises:
-            HTTPException: Si tiene usuarios activos asociados
+            HTTPException: Si no existe el rol o hay error en la reasignación
         """
         role = self.obtener_rol(db, role_id)
         
-        # Validar que no tenga usuarios activos
+        # Si el rol tiene usuarios, reasignarlos al rol por defecto
+        if role.users:
+            from .service import role_service as self_service
+            rol_default = self_service.obtener_rol_default(db)
+            
+            if not rol_default:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="No se encontró el rol por defecto (COLABORADOR) para reasignar usuarios"
+                )
+            
+            # Reasignar todos los usuarios del rol a eliminar al rol por defecto
+            for usuario in role.users:
+                usuario.role_id = rol_default.id
+            
+            # Hacer commit de los cambios en usuarios
+            db.commit()
+        
+        # Eliminación física del rol
+        self.delete_with_transaction(db, role, "Error al eliminar rol")
+
+    def inabilitar_rol(self, db: Session, role_id: int) -> None:
+        role = self.obtener_rol(db, role_id)
         if role.users:
             usuarios_activos = [u for u in role.users if u.is_active]
             if usuarios_activos:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"No se puede eliminar: tiene {len(usuarios_activos)} usuario(s) activo(s)"
+                    detail=f"No se puede inhabilitar: tiene {len(usuarios_activos)} usuario(s) activo(s)"
                 )
-        
-        # Eliminación lógica
         role.activo = False
-        self.update_with_transaction(db, role, "Error al eliminar rol")
+        self.update_with_transaction(db, role, "Error al inhabilitar rol")
     
     def obtener_roles_activos(self, db: Session) -> List[Role]:
         """Obtiene todos los roles activos."""

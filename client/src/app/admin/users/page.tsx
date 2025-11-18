@@ -134,8 +134,6 @@ const createColumns = (
                             {
                                 label: "Registrar Huella",
                                 icon: <Fingerprint className="h-4 w-4" />,
-                                // Si se pasó onRegisterFingerprint, llamarla para abrir el modal;
-                                // en caso contrario, mantener el comportamiento por defecto (navegar).
                                 onClick: (u: User) => {
                                     if (onRegisterFingerprint) return onRegisterFingerprint(u);
                                     return tableActions.createNavigateAction(
