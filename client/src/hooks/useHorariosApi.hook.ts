@@ -9,8 +9,8 @@ import { HorariosList, HorarioDetails, ActualizarHorario, CrearHorario } from "@
  * Hook para gestionar todas las operaciones de horarios
  * Incluye listado, consulta, actualización, eliminación y creación masiva
  */
-export const useHorariosApi = (requireAuth?: boolean) => {
-  const api = useClientApi(requireAuth || true);
+export const useHorariosApi = (requireAuth: boolean = true) => {
+  const api = useClientApi(requireAuth);
 
   /**
    * 🔒 PROTECTED - Listar mis horarios con filtros

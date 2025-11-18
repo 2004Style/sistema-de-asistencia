@@ -12,6 +12,7 @@ import { ResponseVerifyUserCode, useVerifyUserCode } from "@/hooks/verifye-user-
 import { HuellaVerificationModal, MetodoVerificacion } from "@/components/huella/HuellaVerificationModal";
 import { RegistroManualModal } from "@/components/registro-manual/RegistroManualModal";
 import "./registro-asistencia.css"
+import { CLIENT_ROUTES } from "@/routes/client.routes";
 
 const CODE_LENGTH = 3;
 
@@ -25,44 +26,42 @@ export default function RegistroAsistenciaPage() {
     const [showMethods, setShowMethods] = useState(false);
     const [modalType, setModalType] = useState<MetodoVerificacion | null>(null);
 
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const consultadoRef = useRef("");
+    const [consultado, setConsultado] = useState(false);
+
+    const consultarUser = async (_codigo: string) => {
+        setConsultado(true)
+        setError("");
+
+        console.log("validando codigo:", _codigo);
+
+        const { user: foundUser } = await verifyUserCode({ codigo_user: _codigo });
+
+        if (!foundUser) {
+            setError("Código no encontrado");
+            setUser(null);
+            setShowMethods(false);
+            return;
+        }
+
+        setUser(foundUser);
+        setShowMethods(true);
+    }
 
     useEffect(() => {
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-
         if (codigo.length !== CODE_LENGTH) {
             setUser(null);
+            setConsultado(false);
             setShowMethods(false);
             setError("");
             return;
         }
 
-        if (consultadoRef.current === codigo) return;
+        if (consultado === true) {
+            return;
+        }
 
-        timeoutRef.current = setTimeout(async () => {
-            if (codigo.length !== CODE_LENGTH) return;
-
-            consultadoRef.current = codigo;
-            setError("");
-
-            const { user: foundUser } = await verifyUserCode({ codigo_user: codigo });
-
-            if (!foundUser) {
-                setError("Código no encontrado");
-                setUser(null);
-                setShowMethods(false);
-                return;
-            }
-
-            setUser(foundUser);
-            setShowMethods(true);
-        }, 300);
-
-        return () => {
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        };
-    }, [codigo, verifyUserCode]);
+        consultarUser(codigo);
+    }, [codigo]);
 
     const limpiarFormulario = () => {
         setCodigo("");
@@ -70,7 +69,7 @@ export default function RegistroAsistenciaPage() {
         setShowMethods(false);
         setError("");
         setModalType(null);
-        consultadoRef.current = "";
+        setConsultado(false);
     };
 
     const registrarAsistencia = async () => {
@@ -79,7 +78,7 @@ export default function RegistroAsistenciaPage() {
 
     const handleSeleccionMetodo = (metodo: MetodoVerificacion) => {
         if (metodo === "facial") {
-            router.replace(`/registro-asistencia/facial?codigo=${codigo}`);
+            router.replace(`${CLIENT_ROUTES.urlPublicAsistencia}/facial?codigo=${codigo}`);
             return;
         }
         setModalType(metodo);

@@ -53,21 +53,20 @@ export function SignupForm({
         form.reset();
         clearCapturedPhotos();
         // Aquí puedes redirigir a login o mostrar un mensaje de éxito
-        setTimeout(() => {
-            window.location.href = "/auth";
-        }, 2000);
+        // setTimeout(() => {
+        //     window.location.href = "/auth";
+        // }, 2000);
     };
 
     // Usar el onSubmit del hook pero con lógica adicional
     const handleFormSubmit = form.handleSubmit(async (data) => {
-        try {
-            const result = await submitRegister(data);
-            if (result) {
-                // Usuario registrado exitosamente, mostrar modal de huella
-                setRegisteredUser(result);
-                setHuellaRegister(true);
-            }
-        } catch (error) {
+        const result = await submitRegister(data);
+        console.log("resultado registro:", result);
+        if (result) {
+            // Usuario registrado exitosamente, mostrar modal de huella
+            console.log("resultado registro:", result);
+            setRegisteredUser(result);
+            setHuellaRegister(true);
         }
     });
 

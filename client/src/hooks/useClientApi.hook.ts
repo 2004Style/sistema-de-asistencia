@@ -362,7 +362,7 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
    */
   const request = useCallback(
     async <T = unknown>(method: HttpMethod, url: string, body?: unknown, config: RequestConfig = {}): Promise<ApiResponse<T>> => {
-      const { headers: customHeaders = {}, contentType = "json", timeout = 30000, signal: externalSignal } = config;
+      const { headers: customHeaders = {}, contentType = "json", signal: externalSignal } = config;
 
       setState((prev) => ({ ...prev, loading: true, error: null, alert: null }));
 
@@ -393,9 +393,6 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
           refreshToken = tokens.refreshToken;
         }
 
-        // Crear signal con timeout
-        const signal = timeout ? createTimeoutSignal(timeout, externalSignal) : externalSignal;
-
         // Construir URL completa
         const fullUrl = url.startsWith("http") ? url : `${baseURL}${url}`;
 
@@ -403,7 +400,6 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
         const fetchOptions: RequestInit = {
           method,
           headers: createHeaders(contentType, customHeaders, accessToken, method),
-          signal,
         };
 
         // Agregar body si existe y el método lo permite

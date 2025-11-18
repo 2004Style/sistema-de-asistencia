@@ -62,9 +62,9 @@ export function LoginForm({
                 </Field>
                 <Field>
                     <FieldDescription className="text-center">
-                        Don&apos;t have an account?{" "}
+                        Aun no tienes una cuenta?{" "}
                         <a href="/auth/register" className="underline underline-offset-4">
-                            Sign up
+                            Regístrate
                         </a>
                     </FieldDescription>
                 </Field>

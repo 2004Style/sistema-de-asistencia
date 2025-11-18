@@ -41,6 +41,7 @@ interface TurnosList {
 }
 
 export function ClientHorarioCreate({ id_user }: { id_user?: number }) {
+
     const router = useRouter();
     const { data: session } = useSession();
     const { create } = useHorariosApi(id_user ? false : true);
@@ -142,7 +143,14 @@ export function ClientHorarioCreate({ id_user }: { id_user?: number }) {
             return;
         }
 
-        if (!session?.user?.id) {
+        if (!session?.user?.id && !id_user) {
+            setError("No se pudo obtener tu información de usuario");
+            return;
+        }
+
+        const userId = session?.user.id ?? id_user;
+
+        if (userId === undefined) {
             setError("No se pudo obtener tu información de usuario");
             return;
         }
@@ -151,8 +159,6 @@ export function ClientHorarioCreate({ id_user }: { id_user?: number }) {
             setSaving(true);
             setError(null);
             setSuccessMessage(null);
-
-            const userId = id_user ? id_user : session.user.id;
 
             // Calcular horas requeridas considerando minutos
             const [horaEntrada, minEntrada] = formData.hora_entrada.split(":").map(Number);
