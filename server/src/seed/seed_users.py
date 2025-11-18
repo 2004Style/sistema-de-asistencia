@@ -39,7 +39,7 @@ def seed_users():
             usuarios_iniciales.append({
                 "name": "Administrador Sistema",
                 "email": "rubencithochavez036@gmail.com",
-                "codigo_user": "ADM001",
+                "codigo_user": "ADM",
                 "password": "Admini@123",
                 "role_id": admin_role.id,
                 "is_active": True,
@@ -52,7 +52,7 @@ def seed_users():
             usuarios_iniciales.append({
                 "name": "Supervisor Equipo",
                 "email": "supervisor@sistema-asistencia.com",
-                "codigo_user": "SUP001",
+                "codigo_user": "SUP",
                 "password": "Supervisor@2024",
                 "role_id": supervisor_role.id,
                 "is_active": True,
@@ -65,7 +65,7 @@ def seed_users():
             usuarios_iniciales.append({
                 "name": "Colaborador Empresa",
                 "email": "colaborador@sistema-asistencia.com",
-                "codigo_user": "COL001",
+                "codigo_user": "COL",
                 "password": "Colaborador@2024",
                 "role_id": colaborador_role.id,
                 "is_active": True,
