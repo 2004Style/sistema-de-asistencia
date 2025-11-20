@@ -4,6 +4,7 @@ import { JWT } from "next-auth/jwt";
 import { AuthorizeResponse } from "./next-auth";
 import { BACKEND_ROUTES } from "@/routes/backend.routes";
 import { CLIENT_ROUTES } from "@/routes/client.routes";
+import https from "https";
 
 async function refreshToken(token: JWT): Promise<JWT> {
   try {
@@ -18,12 +19,19 @@ async function refreshToken(token: JWT): Promise<JWT> {
       };
     }
 
+    // Crear un agente HTTPS que ignore certificados autofirmados
+    const httpsAgent = new https.Agent({
+      rejectUnauthorized: false,
+    });
+
     const res = await fetch(BACKEND_ROUTES.urlRefreshToken, {
       method: "POST",
       headers: {
         authorization: `Refresh ${token.backendTokens.refreshToken}`,
         "Content-Type": "application/json",
       },
+      // @ts-ignore - Necesario para desactivar validación de certificado
+      agent: BACKEND_ROUTES.urlRefreshToken.startsWith("https") ? httpsAgent : undefined,
     });
 
     if (!res.ok) {
@@ -78,6 +86,11 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null;
 
         try {
+          // Crear un agente HTTPS que ignore certificados autofirmados
+          const httpsAgent = new https.Agent({
+            rejectUnauthorized: false,
+          });
+
           const res = await fetch(BACKEND_ROUTES.urlLogin, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -85,6 +98,8 @@ export const authOptions: NextAuthOptions = {
               email: credentials.email,
               password: credentials.password,
             }),
+            // @ts-ignore - Necesario para desactivar validación de certificado
+            agent: BACKEND_ROUTES.urlLogin.startsWith("https") ? httpsAgent : undefined,
           });
 
           if (!res.ok) {
