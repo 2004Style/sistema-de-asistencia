@@ -394,7 +394,7 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
         }
 
         // Construir URL completa
-        const fullUrl = url.startsWith("http://") || url.startsWith("https://") ? url : `${baseURL}${url}`;
+        const fullUrl = url.startsWith("http") || url.startsWith("https") ? url : `${baseURL}${url}`;
 
         // Preparar opciones de fetch
         const fetchOptions: RequestInit = {
