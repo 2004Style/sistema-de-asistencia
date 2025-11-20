@@ -3,21 +3,21 @@
 // the socket client uses the same scheme (http/https -> ws/wss). This
 // prevents mixed-protocol issues where the page is served over HTTPS but
 // the socket tries to connect with ws://.
-const urlBase = process.env.NEXT_PUBLIC_URL_BACKEND!
+const urlBase = process.env.NEXT_PUBLIC_URL_BACKEND ?? (typeof window !== "undefined" ? window.location.origin : "http://localhost:8000");
 export const BACKEND_ROUTES = {
   urlSockets: urlBase,
-  urlHttpBase: `/api`,
-  urlUsuarios: `/users`,
-  urlUsersRegister: `/users/register`,
-  urlVerifyCode: `/users/codigo`,
-  urlRoles: `/roles`,
-  urlAsistencias: `/asistencia`,
-  urlJustificaciones: `/justificaciones`,
-  urlHorarios: `/horarios`,
-  urlTurnos: `/turnos`,
+  urlHttpBase: `${urlBase}/api`,
+  urlUsuarios: `${urlBase}/api/users`,
+  urlUsersRegister: `${urlBase}/api/users/register`,
+  urlVerifyCode: `${urlBase}/api/users/codigo`,
+  urlRoles: `${urlBase}/api/roles`,
+  urlAsistencias: `${urlBase}/api/asistencia`,
+  urlJustificaciones: `${urlBase}/api/justificaciones`,
+  urlHorarios: `${urlBase}/api/horarios`,
+  urlTurnos: `${urlBase}/api/turnos`,
   urlLogin: `${urlBase}/api/users/login/credentials`,
   urlRefreshToken: `${urlBase}/api/auth/refresh-token`,
-  urlReportesList: `/reportes/listar`,
-  urlAsistenciaFacial: `/asistencia/registro-facial`,
-  urlNotificaciones: `/notificaciones`,
+  urlReportesList: `${urlBase}/api/reportes/listar`,
+  urlAsistenciaFacial: `${urlBase}/api/asistencia/registro-facial`,
+  urlNotificaciones: `${urlBase}/api/notificaciones`,
 };
