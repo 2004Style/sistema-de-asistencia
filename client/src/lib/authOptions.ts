@@ -30,7 +30,7 @@ async function refreshToken(token: JWT): Promise<JWT> {
         authorization: `Refresh ${token.backendTokens.refreshToken}`,
         "Content-Type": "application/json",
       },
-      // @ts-ignore - Necesario para desactivar validación de certificado
+      // @ts-expect-error - Necesario para desactivar validación de certificado
       agent: BACKEND_ROUTES.urlRefreshToken.startsWith("https") ? httpsAgent : undefined,
     });
 
@@ -98,7 +98,7 @@ export const authOptions: NextAuthOptions = {
               email: credentials.email,
               password: credentials.password,
             }),
-            // @ts-ignore - Necesario para desactivar validación de certificado
+            // @ts-expect-error - Necesario para desactivar validación de certificado
             agent: BACKEND_ROUTES.urlLogin.startsWith("https") ? httpsAgent : undefined,
           });
 

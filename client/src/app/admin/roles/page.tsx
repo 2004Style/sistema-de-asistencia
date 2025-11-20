@@ -160,6 +160,7 @@ export default function RolesPage() {
 
     const inabilotarRole = async (id: number) => {
         const { alert } = await POST(`${BACKEND_ROUTES.urlRoles}/inabilitar/${id}`);
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
         alert === "success" ? toast.success("Rol inhabilitado correctamente") : toast.error("Error al inhabilitar el rol");
     }
 
