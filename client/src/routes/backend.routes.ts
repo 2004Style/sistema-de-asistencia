@@ -3,7 +3,7 @@
 // the socket client uses the same scheme (http/https -> ws/wss). This
 // prevents mixed-protocol issues where the page is served over HTTPS but
 // the socket tries to connect with ws://.
-const urlBase = process.env.NEXT_PUBLIC_URL_BACKEND ?? (typeof window !== "undefined" ? window.location.origin : "http://localhost:8000");
+const urlBase = process.env.NEXT_PUBLIC_URL_BACKEND || (typeof window !== "undefined" ? window.location.origin : "http://localhost:8000");
 export const BACKEND_ROUTES = {
   urlSockets: urlBase,
   urlHttpBase: `${urlBase}/api`,
