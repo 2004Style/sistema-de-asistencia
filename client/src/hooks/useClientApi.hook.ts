@@ -274,22 +274,22 @@ const handleApiError = (error: unknown): ApiResponse => {
   if (error instanceof Error) {
     if (error.name === "AbortError") {
       return {
-        alert: "warning",
-        message: "La petición fue cancelada",
+        alert: "error",
+        message: "La petición excedió el tiempo máximo permitido. Intenta con otra consulta más simple o espera unos momentos.",
       };
     }
 
     if (error.message.includes("timeout")) {
       return {
         alert: "error",
-        message: "Tiempo de espera agotado. Verifica tu conexión.",
+        message: "Tiempo de espera agotado. Intenta con otra consulta más simple o espera unos momentos.",
       };
     }
 
     if (error.message.includes("Failed to fetch")) {
       return {
         alert: "error",
-        message: "Error de conexión. Verifica tu conexión a internet.",
+        message: "No se pudo conectar con el servidor. Verifica tu conexión a internet e intenta nuevamente.",
       };
     }
 
@@ -307,8 +307,14 @@ const handleApiError = (error: unknown): ApiResponse => {
 
 /**
  * Crea un timeout signal
+ * Por defecto: 30 minutos (1800000 ms) para permitir consultas largas con conexión lenta
  */
-const createTimeoutSignal = (timeout: number, signal?: AbortSignal): AbortSignal => {
+const createTimeoutSignal = (timeout: number = 1800000, signal?: AbortSignal): AbortSignal => {
+  // Si timeout es -1, no aplicar timeout
+  if (timeout === -1) {
+    return signal || new AbortController().signal;
+  }
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
@@ -346,6 +352,12 @@ const createTimeoutSignal = (timeout: number, signal?: AbortSignal): AbortSignal
  * const formData = new FormData();
  * formData.append('file', file);
  * const result = await api.post('/api/upload', formData, { contentType: 'form-data' });
+ *
+ * // Petición con timeout personalizado (en milisegundos)
+ * const result = await api.get('/api/long-query', { timeout: 1200000 }); // 20 minutos
+ *
+ * // Petición sin timeout (timeout: -1)
+ * const result = await api.get('/api/very-long-query', { timeout: -1 });
  * ```
  */
 export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BACKEND_ROUTES.urlHttpBase || "") => {
@@ -362,7 +374,7 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
    */
   const request = useCallback(
     async <T = unknown>(method: HttpMethod, url: string, body?: unknown, config: RequestConfig = {}): Promise<ApiResponse<T>> => {
-      const { headers: customHeaders = {}, contentType = "json", signal: externalSignal } = config;
+      const { headers: customHeaders = {}, contentType = "json", signal: externalSignal, timeout = 1800000 } = config;
 
       setState((prev) => ({ ...prev, loading: true, error: null, alert: null }));
 
@@ -396,10 +408,12 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
         // Construir URL completa
         const fullUrl = url.startsWith("http://") || url.startsWith("https://") ? url : `${baseURL}${url}`;
 
-        // Preparar opciones de fetch
+        // Preparar opciones de fetch con timeout
+        const abortSignal = createTimeoutSignal(timeout, externalSignal);
         const fetchOptions: RequestInit = {
           method,
           headers: createHeaders(contentType, customHeaders, accessToken, method),
+          signal: abortSignal,
         };
 
         // Agregar body si existe y el método lo permite
@@ -420,7 +434,9 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
               });
 
               // Reintentar con nuevo token
+              const retrySignal = createTimeoutSignal(timeout, externalSignal);
               fetchOptions.headers = createHeaders(contentType, customHeaders, newToken, method);
+              fetchOptions.signal = retrySignal;
               response = await fetch(fullUrl, fetchOptions);
             } catch {
               // Si falla el refresh en cola, hacer logout
@@ -441,7 +457,9 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
                 processQueue(null, newAccessToken);
 
                 // Reintentar con nuevo token
+                const retrySignal = createTimeoutSignal(timeout, externalSignal);
                 fetchOptions.headers = createHeaders(contentType, customHeaders, newAccessToken, method);
+                fetchOptions.signal = retrySignal;
                 response = await fetch(fullUrl, fetchOptions);
               } else {
                 processQueue(new Error("No se pudo refrescar el token"), null);
@@ -546,7 +564,7 @@ export const useClientApi = (requiresAuth: boolean = true, baseURL: string = BAC
         return errorResponse as ApiResponse<T>;
       }
     },
-    [baseURL, requiresAuth]
+    [baseURL, requiresAuth, session]
   );
 
   /**

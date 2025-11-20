@@ -98,7 +98,10 @@ export function useRegister() {
         formData.append("images", blob, `image${i + 1}.png`);
       }
 
-      const response = await POST<UseRegisterReturn>(BACKEND_ROUTES.urlUsersRegister, formData, { contentType: "form-data" });
+      const response = await POST<UseRegisterReturn>(BACKEND_ROUTES.urlUsersRegister, formData, {
+        contentType: "form-data",
+        timeout: 900000, // 15 minutos para procesar las 10 imágenes y extraer embeddings
+      });
 
       if (response.alert === "error") {
         toast.error(response.message || "Error al registrar usuario", { position: "top-center" });
