@@ -123,9 +123,6 @@ export function WebcamCapture({
 
         if (!context) return;
 
-        // Improve output resolution by accounting for devicePixelRatio.
-        // This creates a higher-resolution canvas and scales the drawing so
-        // the resulting image is sharper when saved (especially as PNG).
         const scale = window.devicePixelRatio || 1;
 
         // Set canvas logical size to device pixels and CSS size to video size
@@ -197,7 +194,7 @@ export function WebcamCapture({
 
     return (
         <div className="space-y-4">
-            {!isAvatar && (
+            {/*!isAvatar && (
                 <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                     <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
                         💡 Instrucciones para captura facial
@@ -211,7 +208,7 @@ export function WebcamCapture({
                         <li>✓ No uses lentes oscuros ni gorras</li>
                     </ul>
                 </div>
-            )}
+            )*/}
 
             <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
                 <video

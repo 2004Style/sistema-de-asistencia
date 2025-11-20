@@ -6,7 +6,6 @@ import { BACKEND_ROUTES } from "@/routes/backend.routes";
 import { useClientApi } from "./useClientApi.hook";
 import { toast } from "sonner";
 
-// Schema de validación
 export const registerSchema = z
   .object({
     name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),

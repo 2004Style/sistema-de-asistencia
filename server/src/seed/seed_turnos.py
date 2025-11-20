@@ -24,27 +24,34 @@ def seed_turnos():
         
         # Define basic turnos
         turnos_basicos = [
+            # {
+            #     "nombre": "Turno Mañana",
+            #     "descripcion": "Turno de trabajo en horario de mañana",
+            #     "hora_inicio": time(8, 0),  # 08:00
+            #     "hora_fin": time(12, 0),    # 12:00
+            #     "activo": True
+            # },
+            # {
+            #     "nombre": "Turno Tarde",
+            #     "descripcion": "Turno de trabajo en horario de tarde",
+            #     "hora_inicio": time(15, 0),  # 15:00
+            #     "hora_fin": time(18, 0),     # 18:00
+            #     "activo": True
+            # },
+            # {
+            #     "nombre": "Turno Noche",
+            #     "descripcion": "Turno de trabajo en horario nocturno",
+            #     "hora_inicio": time(18, 0),  # 18:00
+            #     "hora_fin": time(22, 40),      # 22:40
+            #     "activo": True
+            # },
             {
-                "nombre": "Turno Mañana",
-                "descripcion": "Turno de trabajo en horario de mañana",
-                "hora_inicio": time(8, 0),  # 08:00
-                "hora_fin": time(12, 0),    # 12:00
+                "nombre": "Turno Completo",
+                "descripcion": "Turno de trabajo en horario completo",
+                "hora_inicio": time(7, 0),   # 07:00 am
+                "hora_fin": time(23, 59),     # 23:59 pm
                 "activo": True
-            },
-            {
-                "nombre": "Turno Tarde",
-                "descripcion": "Turno de trabajo en horario de tarde",
-                "hora_inicio": time(15, 0),  # 15:00
-                "hora_fin": time(18, 0),     # 18:00
-                "activo": True
-            },
-            {
-                "nombre": "Turno Noche",
-                "descripcion": "Turno de trabajo en horario nocturno",
-                "hora_inicio": time(18, 0),  # 18:00
-                "hora_fin": time(22, 40),      # 22:40
-                "activo": True
-            },
+            }
         ]
         
         print("🔄 Creando turnos básicos...")

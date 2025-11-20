@@ -47,30 +47,30 @@ def seed_users():
             })
         
         # Usuario SUPERVISOR
-        supervisor_role = next((r for r in roles if r.nombre == "SUPERVISOR"), None)
-        if supervisor_role:
-            usuarios_iniciales.append({
-                "name": "Supervisor Equipo",
-                "email": "supervisor@sistema-asistencia.com",
-                "codigo_user": "SUP",
-                "password": "Supervisor@2024",
-                "role_id": supervisor_role.id,
-                "is_active": True,
-                "rol_nombre": "SUPERVISOR"
-            })
+        # supervisor_role = next((r for r in roles if r.nombre == "SUPERVISOR"), None)
+        # if supervisor_role:
+        #     usuarios_iniciales.append({
+        #         "name": "Supervisor Equipo",
+        #         "email": "supervisor@sistema-asistencia.com",
+        #         "codigo_user": "SUP",
+        #         "password": "Supervisor@2024",
+        #         "role_id": supervisor_role.id,
+        #         "is_active": True,
+        #         "rol_nombre": "SUPERVISOR"
+        #     })
         
         # Usuario COLABORADOR
-        colaborador_role = next((r for r in roles if r.nombre == "COLABORADOR"), None)
-        if colaborador_role:
-            usuarios_iniciales.append({
-                "name": "Colaborador Empresa",
-                "email": "colaborador@sistema-asistencia.com",
-                "codigo_user": "COL",
-                "password": "Colaborador@2024",
-                "role_id": colaborador_role.id,
-                "is_active": True,
-                "rol_nombre": "COLABORADOR"
-            })
+        # colaborador_role = next((r for r in roles if r.nombre == "COLABORADOR"), None)
+        # if colaborador_role:
+        #     usuarios_iniciales.append({
+        #         "name": "Colaborador Empresa",
+        #         "email": "colaborador@sistema-asistencia.com",
+        #         "codigo_user": "COL",
+        #         "password": "Colaborador@2024",
+        #         "role_id": colaborador_role.id,
+        #         "is_active": True,
+        #         "rol_nombre": "COLABORADOR"
+        #     })
         
         if not usuarios_iniciales:
             print("❌ No se encontraron roles para crear usuarios.")

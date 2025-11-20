@@ -80,100 +80,102 @@ export function SignupForm({
                 <FieldGroup>
                     <div className="flex flex-col items-center gap-1 text-center">
                         <h1 className="text-2xl font-bold">Crear tu cuenta</h1>
-                        <p className="text-muted-foreground text-sm text-balance">
+                        {/* <p className="text-muted-foreground text-sm text-balance">
                             Completa todos los campos para registrarte en el sistema
-                        </p>
+                        </p> */}
                     </div>
 
-                    {/* Nombre */}
-                    <Field>
-                        <FieldLabel htmlFor="name">Nombre Completo</FieldLabel>
-                        <Input
-                            id="name"
-                            type="text"
-                            placeholder="nombre"
-                            {...register('name')}
-                        />
-                        {errors.name && (
-                            <p className="text-sm text-red-500 mt-1">{errors.name.message}</p>
-                        )}
-                    </Field>
+                    <div className="flex flex-wrap w-full gap-4">
+                        <div className="flex-1 flex flex-col gap-4 min-w-50 md:min-w-100">
+                            <Field>
+                                <FieldLabel htmlFor="name">Nombre Completo</FieldLabel>
+                                <Input
+                                    id="name"
+                                    type="text"
+                                    placeholder="nombre"
+                                    {...register('name')}
+                                />
+                                {errors.name && (
+                                    <p className="text-sm text-red-500 mt-1">{errors.name.message}</p>
+                                )}
+                            </Field>
 
-                    {/* Email */}
-                    <Field>
-                        <FieldLabel htmlFor="email">Email</FieldLabel>
-                        <Input
-                            id="email"
-                            type="email"
-                            placeholder="email@example.com"
-                            {...register('email')}
-                        />
-                        {errors.email && (
-                            <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>
-                        )}
-                    </Field>
+                            <Field>
+                                <FieldLabel htmlFor="email">Email</FieldLabel>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    placeholder="email@example.com"
+                                    {...register('email')}
+                                />
+                                {errors.email && (
+                                    <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>
+                                )}
+                            </Field>
 
-                    {/* Código de Usuario */}
-                    <Field>
-                        <FieldLabel htmlFor="codigo_user">Código de Usuario</FieldLabel>
-                        <Input
-                            id="codigo_user"
-                            type="text"
-                            placeholder="abc"
-                            {...register('codigo_user')}
-                        />
-                        <FieldDescription>
-                            Código único de identificación debe ser de 3 digitos
-                        </FieldDescription>
-                        {errors.codigo_user && (
-                            <p className="text-sm text-red-500 mt-1">{errors.codigo_user.message}</p>
-                        )}
-                    </Field>
+                            <Field>
+                                <FieldLabel htmlFor="codigo_user">Código de Usuario</FieldLabel>
+                                <Input
+                                    id="codigo_user"
+                                    type="text"
+                                    placeholder="abc"
+                                    {...register('codigo_user')}
+                                />
+                                <FieldDescription>
+                                    Código único de identificación debe ser de 3 digitos
+                                </FieldDescription>
+                                {errors.codigo_user && (
+                                    <p className="text-sm text-red-500 mt-1">{errors.codigo_user.message}</p>
+                                )}
+                            </Field>
 
-                    {/* Password */}
-                    <Field>
-                        <FieldLabel htmlFor="password">Contraseña</FieldLabel>
-                        <Input
-                            id="password"
-                            type="password"
-                            placeholder="password"
-                            {...register('password')}
-                        />
-                        <FieldDescription>
-                            Debe tener al menos 8 caracteres
-                        </FieldDescription>
-                        {errors.password && (
-                            <p className="text-sm text-red-500 mt-1">{errors.password.message}</p>
-                        )}
-                    </Field>
+                            <Field>
+                                <FieldLabel htmlFor="password">Contraseña</FieldLabel>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    placeholder="password"
+                                    {...register('password')}
+                                />
+                                <FieldDescription>
+                                    Debe tener al menos 8 caracteres
+                                </FieldDescription>
+                                {errors.password && (
+                                    <p className="text-sm text-red-500 mt-1">{errors.password.message}</p>
+                                )}
+                            </Field>
 
-                    {/* Confirmar Password */}
-                    <Field>
-                        <FieldLabel htmlFor="confirm_password">Confirmar Contraseña</FieldLabel>
-                        <Input
-                            id="confirm_password"
-                            type="password"
-                            placeholder="password"
-                            {...register('confirm_password')}
-                        />
-                        {errors.confirm_password && (
-                            <p className="text-sm text-red-500 mt-1">{errors.confirm_password.message}</p>
-                        )}
-                    </Field>
+                            <Field>
+                                <FieldLabel htmlFor="confirm_password">Confirmar Contraseña</FieldLabel>
+                                <Input
+                                    id="confirm_password"
+                                    type="password"
+                                    placeholder="password"
+                                    {...register('confirm_password')}
+                                />
+                                {errors.confirm_password && (
+                                    <p className="text-sm text-red-500 mt-1">{errors.confirm_password.message}</p>
+                                )}
+                            </Field>
+                        </div>
 
-                    {/* Captura Facial */}
-                    <Field>
-                        <FieldLabel>Captura Facial para Reconocimiento</FieldLabel>
-                        <FieldDescription className="mb-4">
-                            Se requieren 10 fotos de tu rostro (frontales y de perfil) para el sistema de reconocimiento facial
-                        </FieldDescription>
-                        <WebcamCapture
-                            onCapture={addCapturedPhoto}
-                            onRemove={removeCapturedPhoto}
-                            capturedPhotos={capturedPhotos}
-                            maxPhotos={10}
-                        />
-                    </Field>
+
+
+                        {/* Captura Facial */}
+                        <Field className="flex-1 min-w-50 md:min-w-100">
+                            <FieldLabel>Captura Facial para Reconocimiento (10 imagenes)</FieldLabel>
+                            {/* <FieldDescription className="mb-4">
+                                Se requieren 10 fotos de tu rostro (frontales y de perfil) para el sistema de reconocimiento facial
+                            </FieldDescription> */}
+                            <WebcamCapture
+                                onCapture={addCapturedPhoto}
+                                onRemove={removeCapturedPhoto}
+                                capturedPhotos={capturedPhotos}
+                                maxPhotos={10}
+                            />
+                        </Field>
+                    </div>
+
 
                     {/* Botón de Submit */}
                     <Field>

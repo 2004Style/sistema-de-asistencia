@@ -13,6 +13,7 @@ import { HuellaVerificationModal, MetodoVerificacion } from "@/components/huella
 import { RegistroManualModal } from "@/components/registro-manual/RegistroManualModal";
 import "./registro-asistencia.css"
 import { CLIENT_ROUTES } from "@/routes/client.routes";
+import ShinyText from "@/components/react-beats/ShinyText/ShinyText";
 
 const CODE_LENGTH = 3;
 
@@ -95,7 +96,13 @@ export default function RegistroAsistenciaPage() {
                     <div className="mx-auto w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-2">
                         <Clock className="w-8 h-8 text-blue-600 dark:text-blue-300" />
                     </div>
-                    <CardTitle className="text-3xl card_asistencia_title">Registro de Asistencia</CardTitle>
+                    {/* <CardTitle className="text-3xl card_asistencia_title">Registro de Asistencia</CardTitle> */}
+                    <ShinyText
+                        text="Registro de Asistencia"
+                        disabled={false}
+                        speed={3}
+                        className='text-3xl font-extrabold'
+                    />
                     <CardDescription className="card_asistencia_description">
                         Ingrese su código y seleccione el tipo de registro
                     </CardDescription>

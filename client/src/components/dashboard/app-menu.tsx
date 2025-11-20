@@ -20,8 +20,6 @@ import {
 } from "@/components/ui/sidebar"
 import { CLIENT_ROUTES } from "@/routes/client.routes"
 import { useSession } from "next-auth/react"
-import { Thememode } from "./theme-mode"
-import { url } from "inspector"
 
 const data = {
     navSecondary: [
@@ -166,7 +164,6 @@ export function AppMenu({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SubMenu items={navItems} />
             </SidebarContent>
             <SidebarFooter className="bg-secondary gap-0 text-secondary-foreground">
-                <Thememode />
                 <NavSecondary items={data.navSecondary} className="" />
             </SidebarFooter>
         </Sidebar>

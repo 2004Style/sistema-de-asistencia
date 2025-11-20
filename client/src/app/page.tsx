@@ -5,8 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { LogIn, UserPlus, Fingerprint } from "lucide-react";
 import { Footer } from "@/components/footer";
 import { useSession } from "next-auth/react";
-import { useEffect } from "react";
-
+import "./home.css"
+import BlurText from "@/components/react-beats/BlurText/ShinyText";
+import { SplitText } from "@/components/react-beats/SplitText/SplitText";
 export default function Home() {
   const { status } = useSession();
 
@@ -22,16 +23,27 @@ export default function Home() {
         <div className="max-w-6xl w-full flex flex-col gap-4">
           {/* Hero Section */}
           <div className="text-center flex flex-col gap-4">
-            <h2 className="text-5xl md:text-7xl font-bold text-foreground tracking-tight">
-              Bienvenido a{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-chart-1 to-chart-2">
-                Web Asistencia
-              </span>
-            </h2>
+            <BlurText
+              text="Bienvenido a Web Asistencia"
+              delay={150}
+              animateBy="words"
+              direction="top"
+              className="text-5xl md:text-7xl font-bold text-center flex justify-center items-center"
+            />
 
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Gestiona el registro de asistencia de manera inteligente y segura.
-            </p>
+            <SplitText
+              text="Gestiona el registro de asistencia de manera inteligente y segura."
+              className="text-2xl text-center"
+              delay={20}
+              duration={0.6}
+              ease="power3.out"
+              splitType="chars"
+              from={{ opacity: 0, y: 40 }}
+              to={{ opacity: 1, y: 0 }}
+              threshold={0.1}
+              rootMargin="-100px"
+              textAlign="center"
+            />
           </div>
 
           {/* Cards de opciones */}
@@ -39,7 +51,7 @@ export default function Home() {
             {status === "unauthenticated" &&
               <>
                 {/* Card Iniciar Sesión */}
-                <Card className="flex-1 min-w-[23rem] max-w-[24rem] group hover:shadow-2xl hover:scale-105 transition-all duration-300 border-2 hover:border-primary/50 bg-card/80 backdrop-blur-sm">
+              <Card className="flex-1 min-w-[23rem] max-w-[24rem] group card_home">
                   <CardContent className="p-8 text-center space-y-6">
                     <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                       <LogIn className="w-8 h-8 text-white" />
@@ -66,7 +78,7 @@ export default function Home() {
                 </Card>
 
                 {/* Card Registro */}
-                <Card className="flex-1 min-w-[23rem] max-w-[24rem] group hover:shadow-2xl hover:scale-105 transition-all duration-300 border-2 hover:border-chart-1/50 bg-card/80 backdrop-blur-sm">
+              <Card className="flex-1 min-w-[23rem] max-w-[24rem] group card_home">
                   <CardContent className="p-8 text-center space-y-6">
                     <div className="mx-auto w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                       <UserPlus className="w-8 h-8 text-white" />
@@ -97,7 +109,7 @@ export default function Home() {
 
 
             {/* Card Marcar Asistencia */}
-            <Card className="flex-1 min-w-[23rem] max-w-[24rem] group hover:shadow-2xl hover:scale-105 transition-all duration-300 border-2 hover:border-chart-2/50 bg-card/80 backdrop-blur-sm">
+            <Card className="flex-1 min-w-[23rem] max-w-[24rem] group card_home">
               <CardContent className="p-8 text-center space-y-6">
                 <div className="mx-auto w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                   <Fingerprint className="w-8 h-8 text-white" />

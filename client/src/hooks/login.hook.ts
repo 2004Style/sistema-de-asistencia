@@ -17,6 +17,7 @@ export default function useLoginForm() {
       password: "",
     },
   });
+  const loading = form.formState.isSubmitting;
 
   const onSubmit = async (data: z.infer<typeof schema>) => {
 
@@ -34,5 +35,5 @@ export default function useLoginForm() {
     }
   };
 
-  return { form, onSubmit };
+  return { form, onSubmit, loading };
 }

@@ -1,18 +1,13 @@
 "use client"
 
 import {
-    ArrowDown,
-    ArrowUp,
-    Copy,
-    CornerUpLeft,
+    DoorClosedLocked,
+    DoorOpen,
     FileText,
     Home,
-    LineChart,
-    Link,
-    LogOutIcon,
     MoreHorizontal,
-    Settings2,
     UserCogIcon,
+    UserRoundPlus,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -36,6 +31,7 @@ import { useRouter } from "next/navigation"
 import { CLIENT_ROUTES } from "@/routes/client.routes"
 import { useSession } from "next-auth/react";
 import { useIsMobile } from "@/hooks/use-mobile"
+import { Thememode } from "./theme-mode"
 
 const data_nav = [
     {
@@ -114,7 +110,7 @@ export function NavSubMenu() {
                                                 </SidebarMenuButton>
                                             </SidebarMenuItem>
                                         }
-                                        {data_nav.map((item, index) => (
+                                        {data?.user && data_nav.map((item, index) => (
                                             <SidebarMenuItem key={index}>
                                                 <SidebarMenuButton onClick={() => { router.replace(item.url) }} className="hover:text-secondary-foreground/80 hover:bg-transparent">
                                                     <item.icon /> <span>{item.label}</span>
@@ -128,6 +124,7 @@ export function NavSubMenu() {
                                                 </SidebarMenuButton>
                                             </SidebarMenuItem>
                                         ))}
+                                        <Thememode />
                                     </SidebarMenu>
                                 </SidebarGroupContent>
                             </SidebarGroup>
@@ -137,7 +134,7 @@ export function NavSubMenu() {
                                         {data?.user ? (
                                             <SidebarMenuItem >
                                                 <SidebarMenuButton onClick={() => { router.replace(CLIENT_ROUTES.urlSignOut) }} className="text-red-400 hover:text-red-400/80 hover:bg-transparent">
-                                                    <LogOutIcon /> <span>Cerrar Sesion</span>
+                                                    <DoorClosedLocked /> <span>Cerrar Sesion</span>
                                                 </SidebarMenuButton>
                                             </SidebarMenuItem>
                                         ) :
@@ -145,19 +142,17 @@ export function NavSubMenu() {
                                                 <>
                                                     <SidebarMenuItem >
                                                         <SidebarMenuButton onClick={() => { router.replace(CLIENT_ROUTES.urlLogin) }} className="hover:text-secondary-foreground/80 hover:bg-transparent">
-                                                            <ArrowUp /> <span>Iniciar Sesion</span>
+                                                            <DoorOpen /> <span>Iniciar Sesion</span>
                                                         </SidebarMenuButton>
                                                     </SidebarMenuItem>
                                                     <SidebarMenuItem >
                                                         <SidebarMenuButton onClick={() => { router.replace(CLIENT_ROUTES.urlRegister) }} className="hover:text-secondary-foreground/80 hover:bg-transparent">
-                                                            <ArrowDown /> <span>Registrar</span>
+                                                            <UserRoundPlus /> <span>Registrar</span>
                                                         </SidebarMenuButton>
                                                     </SidebarMenuItem>
                                                 </>
                                             )
                                         }
-
-
                                     </SidebarMenu>
                                 </SidebarGroupContent>
                             </SidebarGroup>

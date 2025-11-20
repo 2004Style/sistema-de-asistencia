@@ -1,0 +1,13 @@
+:root {
+    --card-home-bg-color: linear-gradient(135deg, rgba(253, 186, 48, 0.3) 0%, rgba(253, 186, 48, 0.2) 100%);
+}
+
+.dark {
+    --card-home-bg-color: linear-gradient(170deg, rgba(58, 56, 56, 0.623) 0%, rgb(31, 31, 31) 100%);
+}
+
+.card_home {
+    border: none;
+    background: var(--card-home-bg-color);
+    box-shadow: 0 1vh 1.5vh rgba(0, 0, 0, 0.872);
+}

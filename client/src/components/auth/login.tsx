@@ -13,23 +13,23 @@ export function LoginForm({
     className,
     ...props
 }: React.ComponentProps<"form">) {
-    const { form, onSubmit } = useLoginForm();
+    const { form, onSubmit, loading } = useLoginForm();
 
     return (
         <form onSubmit={form.handleSubmit(onSubmit)} className={cn("flex flex-col gap-6", className)} {...props}>
             <FieldGroup>
                 <div className="flex flex-col items-center gap-1 text-center">
-                    <h1 className="text-2xl font-bold">Login to your account</h1>
+                    <h1 className="text-2xl font-bold">Ingresa a tu cuenta</h1>
                     <p className="text-muted-foreground text-sm text-balance">
-                        Enter your email below to login to your account
+                        Ingresa tus credenciales para acceder a tu cuenta.
                     </p>
                 </div>
                 <Field>
-                    <FieldLabel htmlFor="email">Email</FieldLabel>
+                    <FieldLabel htmlFor="email">Correo</FieldLabel>
                     <Input
                         id="email"
                         type="email"
-                        placeholder="m@example.com"
+                        placeholder="user@cs.dev"
                         required
                         {...form.register("email")}
                     />
@@ -39,17 +39,18 @@ export function LoginForm({
                 </Field>
                 <Field>
                     <div className="flex items-center">
-                        <FieldLabel htmlFor="password">Password</FieldLabel>
+                        <FieldLabel htmlFor="password">Contraseña</FieldLabel>
                         <a
                             href="#"
                             className="ml-auto text-sm underline-offset-4 hover:underline"
                         >
-                            Forgot your password?
+                            Haz olvidado tu contraseña?
                         </a>
                     </div>
                     <Input
                         id="password"
                         type="password"
+                        placeholder="contraseña"
                         required
                         {...form.register("password")}
                     />
@@ -58,7 +59,7 @@ export function LoginForm({
                     )}
                 </Field>
                 <Field>
-                    <Button type="submit" disabled={!form.formState.isValid}>Login</Button>
+                    <Button type="submit" disabled={!form.formState.isValid}>{loading ? 'Iniciando sesión...' : 'Login'}</Button>
                 </Field>
                 <Field>
                     <FieldDescription className="text-center">
