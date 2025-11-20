@@ -70,7 +70,7 @@ install_node() {
 
 install_pnpm() {
     echo -e "${BLUE}→ Instalando pnpm global...${NC}"
-    sudo npm install -g pnpm
+    npm install -g pnpm
     echo -e "${GREEN}✓ pnpm instalado${NC}"
 }
 
@@ -159,6 +159,11 @@ setup_nginx_client() {
     esac
 
     sudo systemctl enable nginx || true
+    
+    # Desactivar configuración por defecto para evitar conflictos
+    sudo rm -f /etc/nginx/sites-enabled/default || true
+    
+    # Copiar configuración del cliente
     sudo cp "$NGINX_DIR/nginx-client.conf" /etc/nginx/conf.d/sistema-client.conf
     ensure_tls_certificates_client
     sudo nginx -t
