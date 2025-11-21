@@ -4,6 +4,8 @@ module.exports = {
             name: "server-asistencia",
             script: "./run.sh",
             interpreter: "bash",
+            instances: 1,
+            exec_mode: "fork",
             cwd: "./",
             watch: false,
             env: {

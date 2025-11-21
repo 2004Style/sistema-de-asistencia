@@ -9,10 +9,10 @@
 // ============================================================================
 // CONFIGURACIÓN
 // ============================================================================
-const char *WIFI_SSID = "UPN_ESTUDIANTES";
-const char *WIFI_PASSWORD = "H@zLoCorrectoUPN";
-const char *WS_HOST = "3.145.211.254";
-const uint16_t WS_PORT = 80;
+const char *WIFI_SSID = "ronald";
+const char *WIFI_PASSWORD = "ronald2004";
+const char *WS_HOST = "192.168.230.194";
+const uint16_t WS_PORT = 8000;
 
 #define FINGER_RX_PIN 16
 #define FINGER_TX_PIN 17
