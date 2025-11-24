@@ -152,65 +152,74 @@ function ReconocimientoFacialContent() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
-            <div className="container mx-auto max-w-4xl">
-                <Button
-                    onClick={volver}
-                    variant="ghost"
-                    className="mb-4"
-                >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Volver
-                </Button>
+        <div className="min-h-screen bg-linear-to-br from-purple-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-6 flex items-center justify-center">
+            <div className="w-full max-w-3xl">
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 className="text-2xl font-semibold">Registro — Reconocimiento Facial</h2>
+                        <p className="text-sm text-muted-foreground">{mensaje}</p>
+                    </div>
 
-                <Card className="shadow-2xl">
-                    <CardHeader className="text-center space-y-2">
-                        <CardDescription className="text-base">
-                            {mensaje}
-                        </CardDescription>
-                    </CardHeader>
+                    <Button onClick={volver} variant="ghost" className="ml-2">
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Volver
+                    </Button>
+                </div>
 
-                    <CardContent className="space-y-6">
+                <Card className="shadow-2xl rounded-2xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+                    <CardContent className="flex flex-col gap-3">
                         {/* Vista previa de la cámara */}
-                        <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
-                            <video
-                                ref={videoRef}
-                                autoPlay
-                                playsInline
-                                muted
-                                className="w-full h-full object-cover"
-                            />
+                        <div className="relative bg-gray-900 rounded-lg overflow-hidden shadow-inner">
+                            <div className="w-full aspect-video bg-black">
+                                <video
+                                    ref={videoRef}
+                                    autoPlay
+                                    playsInline
+                                    muted
+                                    aria-label="Vista de cámara"
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
 
-                            {/* Overlay con guía facial */}
+                            {/* Mensaje sutil indicando que el rostro debe ser visible (sin indicar posición) */}
                             {(estadoFacial === "listo" || estadoFacial === "capturando") && (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <div className="relative w-64 h-80 border-4 border-purple-500 rounded-full opacity-50">
-                                        {/* Puntos de referencia */}
-                                        <div className="absolute top-0 left-1/2 w-2 h-2 bg-purple-500 rounded-full -translate-x-1/2" />
-                                        <div className="absolute bottom-0 left-1/2 w-2 h-2 bg-purple-500 rounded-full -translate-x-1/2" />
-                                        <div className="absolute top-1/2 left-0 w-2 h-2 bg-purple-500 rounded-full -translate-y-1/2" />
-                                        <div className="absolute top-1/2 right-0 w-2 h-2 bg-purple-500 rounded-full -translate-y-1/2" />
-                                    </div>
+                                <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black bg-opacity-55 text-white px-3 py-1 rounded-full flex items-center gap-2" aria-live="polite">
+                                    <Camera className="w-4 h-4 text-white" />
+                                    <span className="text-sm">Asegúrese de que su rostro sea claramente visible en la cámara</span>
                                 </div>
                             )}
 
+                            {/* Botón de captura dentro del marco de la cámara (centrado, abajo) */}
+                            {estadoFacial === "listo" && (
+                                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
+                                    <Button
+                                        onClick={capturarRostro}
+                                        className="flex items-center gap-2 px-5 py-3 text-lg bg-linear-to-r from-purple-600 to-indigo-600 text-white hover:opacity-95 shadow-lg"
+                                        size="lg"
+                                        aria-label="Capturar rostro"
+                                    >
+                                        <Camera className="w-5 h-5" />
+                                        <span>Capturar</span>
+                                    </Button>
+                                </div>
+                            )}
 
                             {/* Estado de procesamiento */}
                             {estadoFacial === "procesando" && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70">
                                     <div className="text-center">
-                                        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mx-auto mb-4" />
-                                        <p className="text-white text-xl">Procesando...</p>
+                                        <div className="animate-spin rounded-full h-14 w-14 border-t-4 border-white mx-auto mb-3" />
+                                        <p className="text-white text-lg">Procesando...</p>
                                     </div>
                                 </div>
                             )}
 
                             {/* Estado de éxito */}
                             {estadoFacial === "exitoso" && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-green-500 bg-opacity-70">
+                                <div className="absolute inset-0 flex items-center justify-center bg-green-500 bg-opacity-80">
                                     <div className="text-center">
-                                        <CheckCircle2 className="w-24 h-24 text-white mx-auto mb-4" />
-                                        <p className="text-white text-2xl font-semibold">¡Reconocido!</p>
+                                        <CheckCircle2 className="w-20 h-20 text-white mx-auto mb-2" />
+                                        <p className="text-white text-xl font-semibold">¡Reconocido!</p>
                                     </div>
                                 </div>
                             )}
@@ -227,28 +236,17 @@ function ReconocimientoFacialContent() {
                             </Alert>
                         )}
 
-                        {/* Botones de acción */}
-                        <div className="flex gap-4">
-                            {estadoFacial === "listo" && (
-                                <Button
-                                    onClick={capturarRostro}
-                                    className="flex-1 text-lg py-6"
-                                    size="lg"
-                                >
-                                    <Camera className="w-5 h-5 mr-2" />
-                                    Capturar Rostro
-                                </Button>
-                            )}
-
+                        {/* Botones de acción fuera del marco (solo acciones secundarias) */}
+                        <div className="flex gap-4 justify-center">
                             {estadoFacial === "error" && (
                                 <Button
                                     onClick={reintentar}
-                                    className="flex-1 text-lg py-6"
+                                    className="flex items-center gap-2 px-6 py-4 text-lg"
                                     size="lg"
                                     variant="outline"
                                 >
-                                    <RefreshCw className="w-5 h-5 mr-2" />
-                                    Reintentar
+                                    <RefreshCw className="w-5 h-5" />
+                                    <span>Reintentar</span>
                                 </Button>
                             )}
                         </div>
@@ -260,11 +258,11 @@ function ReconocimientoFacialContent() {
                                 Consejos para un mejor reconocimiento:
                             </h4>
                             <ul className="text-sm space-y-1 text-muted-foreground">
-                                <li>• Asegúrese de tener buena iluminación</li>
-                                <li>• Posicione su rostro en el centro del cuadro</li>
-                                <li>• Mantenga una expresión neutral</li>
-                                <li>• Retire gafas o accesorios si es posible</li>
-                                <li>• Evite movimientos bruscos</li>
+                                <li>• Asegúrese de que su rostro sea claramente visible</li>
+                                <li>• Mantenga buena iluminación frontal y evite sombras</li>
+                                <li>• Mantenga una expresión neutral y evite movimientos bruscos</li>
+                                <li>• Retire accesorios que oculten el rostro (gorras, mascarillas, etc.)</li>
+                                <li>• Mantenga el dispositivo estable</li>
                             </ul>
                         </div>
                     </CardContent>
@@ -287,9 +285,7 @@ function ReconocimientoFacialContent() {
                         <p className="text-center text-lg font-medium">
                             Su asistencia de <strong>{tipoRegistro}</strong> ha sido registrada exitosamente
                         </p>
-                        <p className="text-center text-sm text-muted-foreground">
-                            Método: Reconocimiento Facial
-                        </p>
+                        <p className="text-center text-sm text-muted-foreground">Método: Reconocimiento Facial</p>
                         <p className="text-center text-sm text-muted-foreground">
                             {new Date().toLocaleString("es-ES", {
                                 dateStyle: "full",

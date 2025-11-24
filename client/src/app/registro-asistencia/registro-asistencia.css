@@ -76,3 +76,69 @@
     background-color: var(--card-asistencia-option-button-hover-bg-color);
     color: var(--card-asistencia-option-button-hover-text-color);
 }
+
+/* --- Animaciones y utilidades para UI de escaneo --- */
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.scan-welcome {
+    display: inline-block;
+    padding: 0.06rem 0.28rem;
+    border-radius: 6px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+    background-size: 200% 100%;
+    animation: shimmer 2.6s linear infinite;
+}
+
+.scan-icon,
+.fingerprint-icon,
+.edit-icon {
+    will-change: transform, opacity;
+}
+
+.animated-input {
+    transition: box-shadow .3s ease, transform .2s ease;
+    border-radius: 8px;
+}
+
+.card_asistencia_option_button {
+    position: relative;
+    overflow: hidden;
+}
+
+.card_asistencia_option_button::after {
+    content: '';
+    position: absolute;
+    left: -120%;
+    top: 0;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+    transform: skewX(-12deg);
+    transition: left .6s ease;
+    pointer-events: none;
+}
+
+.card_asistencia_option_button:hover::after {
+    left: 140%;
+}
+
+/* Fallback móvil: reducir animaciones pesadas */
+@media (prefers-reduced-motion: reduce) {
+    .scan-welcome {
+        animation: none;
+    }
+
+    .scan-icon,
+    .fingerprint-icon,
+    .edit-icon {
+        animation: none !important;
+    }
+}

@@ -3,9 +3,10 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Fingerprint, CheckCircle2, XCircle, AlertCircle, Info } from "lucide-react";
+import { Fingerprint, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import { useSocket } from "@/contexts/socketContext";
 import { useRouter } from "next/navigation";
+import "./huella.css";
 
 export type MetodoVerificacion = "facial" | "dactilar" | "manual";
 
@@ -46,6 +47,8 @@ interface HuellaVerificationModalProps {
     tipo?: "registro" | "asistencia";
     huella?: string | null;
     AuthRedirect?: string;
+    // Mostrar el panel de logs en tiempo real (útil solo para desarrollo)
+    showDebugLogs?: boolean;
 }
 
 type EstadoVerificacion = "esperando" | "procesando" | "exitoso" | "error" | "cancelado";
@@ -61,7 +64,8 @@ export function HuellaVerificationModal({
     showInternalSuccessModal = false,
     tipo = "asistencia",
     huella = null,
-    AuthRedirect
+    AuthRedirect,
+    showDebugLogs = false,
 }: HuellaVerificationModalProps) {
     const router = useRouter();
     const socket = useSocket();
@@ -295,6 +299,79 @@ export function HuellaVerificationModal({
         };
     }, [socket]);
 
+    // Animaciones solo para los iconos (sensor, circular-indicator)
+    useEffect(() => {
+
+        const instances: any[] = [];
+
+        const runAnimations = async () => {
+            try {
+                const { animate } = await import('animejs');
+
+                // Solo animar el icono del sensor cuando está esperando/procesando
+                if ((estado === 'esperando' || estado === 'procesando') && open) {
+                    instances.push(
+                        animate('.huella-sensor-icon svg', {
+                            scale: [0.8, 1],
+                            opacity: [0.3, 1],
+                            duration: 800,
+                            easing: 'easeOutElastic(1, 0.6)',
+                            delay: 300
+                        })
+                    );
+                }
+
+                // Animar el icono circular en estado exitoso
+                if (estado === 'exitoso') {
+                    instances.push(
+                        animate('.huella-circular-indicator', {
+                            opacity: [0, 1],
+                            scale: [0.5, 1],
+                            duration: 600,
+                            easing: 'easeOutElastic(1, 0.5)',
+                            delay: 200
+                        })
+                    );
+                }
+
+                // Animar el icono circular en estado error
+                if (estado === 'error') {
+                    instances.push(
+                        animate('.huella-circular-indicator', {
+                            opacity: [0, 1],
+                            scale: [0.3, 1],
+                            rotate: [15, 0],
+                            duration: 600,
+                            easing: 'easeOutBack',
+                            delay: 200
+                        })
+                    );
+                }
+
+                // Animar el icono circular en estado cancelado
+                if (estado === 'cancelado') {
+                    instances.push(
+                        animate('.huella-circular-indicator', {
+                            opacity: [0, 1],
+                            scale: [0.5, 1],
+                            duration: 600,
+                            easing: 'easeOutElastic(1, 0.5)',
+                            delay: 200
+                        })
+                    );
+                }
+            } catch (err) {
+                console.error('Error en animaciones:', err);
+            }
+        };
+
+        runAnimations();
+
+        return () => {
+            instances.forEach(i => i?.pause?.());
+        };
+    }, [open, estado, capturaActual]);
+
     // Iniciar verificación cuando se abre el modal
     useEffect(() => {
         if (open) {
@@ -337,53 +414,61 @@ export function HuellaVerificationModal({
                     onOpenChange(newOpen);
                 }}
             >
-                <DialogContent className="sm:max-w-lg bg-gradient-to-b from-slate-50 to-white border-0 shadow-2xl">
-                    <DialogHeader className="space-y-1 pb-2">
-                        <DialogTitle className="text-3xl font-bold text-center bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+                <DialogContent className="sm:max-w-xl p-6 border-0 bg-background huella-panel max-h-[90vh] overflow-y-auto">
+                    <DialogHeader className=" huella-header relative z-20">
+                        <DialogTitle className="text-3xl font-black text-center huella-title">
                             {getTitulo()}
                         </DialogTitle>
-                        <DialogDescription className="text-center text-base text-slate-600 pt-2">
+                        <DialogDescription className="text-center text-sm huella-description pt-2">
                             {getDescripcion()}
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="flex flex-col items-center justify-center py-12 space-y-8 px-4">
+                    <div className="flex flex-col items-center justify-center gap-4 px-6 relative z-20">
                         {/* ========== ESTADO: ESPERANDO / PROCESANDO ========== */}
                         {(estado === "esperando" || estado === "procesando") && (
                             <>
-                                {/* Animación principal del sensor */}
-                                <div className="relative w-40 h-40">
-                                    {/* Círculo exterior animado */}
-                                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 to-blue-500 animate-pulse opacity-30" />
+                                {/* Contenedor del sensor con animaciones avanzadas */}
+                                <div className="huella-sensor-container">
+                                    <div className="huella-sensor-ring-1" />
+                                    <div className="huella-sensor-ring-2" />
+                                    <div className="huella-sensor-ring-3" />
 
-                                    {/* Icono del sensor */}
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                        <div className="relative">
-                                            <div className="absolute inset-0 bg-blue-100 rounded-full blur-xl opacity-50 animate-pulse" />
-                                            <Fingerprint className="w-24 h-24 text-blue-600 relative z-10 animate-pulse" />
-                                        </div>
+                                    {/* Líneas de escaneo */}
+                                    <div className="huella-scan-lines">
+                                        <div className="scan-line" />
+                                        <div className="scan-line" />
+                                        <div className="scan-line" />
+                                        <div className="scan-line" />
                                     </div>
 
-                                    {/* Líneas de escaneo animadas */}
-                                    <div className="absolute top-1/4 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent animate-pulse" />
-                                    <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-500 to-transparent animate-pulse" style={{ animationDelay: '0.2s' }} />
-                                    <div className="absolute bottom-1/4 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent animate-pulse" style={{ animationDelay: '0.4s' }} />
+                                    {/* Partículas que flotan */}
+                                    <div className="huella-particles">
+                                        <div className="particle" />
+                                        <div className="particle" />
+                                        <div className="particle" />
+                                    </div>
+
+                                    {/* Icono del sensor */}
+                                    <div className="huella-sensor-icon">
+                                        <Fingerprint />
+                                    </div>
                                 </div>
 
                                 {/* Información de progreso REGISTRO */}
                                 {tipo === "registro" ? (
-                                    <div className="w-full space-y-6">
+                                    <div className="w-full space-y-8">
                                         {/* Indicador de pasos */}
-                                        <div className="flex justify-between items-center gap-2">
+                                        <div className="huella-progress-steps">
                                             {[1, 2, 3, 4].map((paso) => (
-                                                <div key={paso} className="flex-1">
-                                                    <div
-                                                        className={`h-2 rounded-full transition-all duration-300 ${paso <= capturaActual
-                                                            ? "bg-gradient-to-r from-blue-500 to-blue-600"
-                                                            : "bg-slate-200"
-                                                            }`}
-                                                    />
-                                                    <p className="text-xs text-center text-slate-600 mt-1">
+                                                <div key={paso} className={`progress-step ${paso <= capturaActual ? 'active' : ''}`}>
+                                                    <div className="progress-bar">
+                                                        <div
+                                                            className="progress-bar-fill"
+                                                            style={{ width: paso <= capturaActual ? '100%' : '0%' }}
+                                                        />
+                                                    </div>
+                                                    <p className="progress-label">
                                                         {paso === 1 && "Coloque"}
                                                         {paso === 2 && "Retire"}
                                                         {paso === 3 && "Vuelva"}
@@ -394,41 +479,44 @@ export function HuellaVerificationModal({
                                         </div>
 
                                         {/* Mensaje de estado actual */}
-                                        <div className="text-center space-y-2 bg-blue-50 rounded-lg p-4 border border-blue-100">
-                                            <p className="text-lg font-semibold text-blue-700">
-                                                {capturaActual === 0 && "⏳ Iniciando escaneo..."}
+                                        <div className="huella-status-card">
+                                            <p className="huella-status-title">
+                                                {capturaActual === 0 && "⏳ Iniciando escaneo"}
                                                 {capturaActual === 1 && "👆 Coloque el dedo"}
                                                 {capturaActual === 2 && "✋ Retire el dedo"}
                                                 {capturaActual === 3 && "👆 Coloque nuevamente"}
-                                                {capturaActual >= 4 && "⚙️ Procesando..."}
+                                                {capturaActual >= 4 && "⚙️ Procesando"}
                                             </p>
-                                            <p className="text-sm text-blue-600">
+                                            <p className="huella-status-subtitle">
                                                 Paso {capturaActual} de {totalCapturas}
                                             </p>
                                         </div>
                                     </div>
                                 ) : (
                                     /* Información ASISTENCIA */
-                                    <div className="w-full text-center space-y-3 bg-blue-50 rounded-lg p-6 border border-blue-100">
-                                        <p className="text-xl font-semibold text-blue-700">
-                                            Colocando dedo...
-                                        </p>
-                                        <p className="text-sm text-blue-600">
-                                            Verificando su identidad
-                                        </p>
-                                        <div className="flex justify-center gap-1 pt-2">
-                                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0s' }} />
-                                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0.2s' }} />
-                                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0.4s' }} />
+                                    <div className="w-full space-y-6">
+                                        <div className="huella-status-card">
+                                            <p className="huella-status-title">
+                                                Colocando dedo...
+                                            </p>
+                                            <p className="huella-status-subtitle">
+                                                Verificando su identidad
+                                            </p>
+                                            <div className="flex justify-center gap-2 pt-4">
+                                                <div className="w-2 h-2 rounded-full bg-accent-cyan animate-bounce" style={{ animationDelay: '0s' }} />
+                                                <div className="w-2 h-2 rounded-full bg-accent-cyan animate-bounce" style={{ animationDelay: '0.2s' }} />
+                                                <div className="w-2 h-2 rounded-full bg-accent-cyan animate-bounce" style={{ animationDelay: '0.4s' }} />
+                                            </div>
                                         </div>
                                     </div>
-                                )}                                {/* Botón Cancelar */}
+                                )}
+
+                                {/* Botón Cancelar */}
                                 <Button
                                     onClick={cancelarOperacion}
-                                    variant="outline"
-                                    className="w-full text-slate-600 hover:bg-red-50 hover:text-red-600 border-slate-300 hover:border-red-300"
+                                    className="huella-button-secondary w-full mt-4"
                                 >
-                                    ✕ Cancelar
+                                    ✕ Cancelar operación
                                 </Button>
                             </>
                         )}
@@ -436,29 +524,30 @@ export function HuellaVerificationModal({
                         {/* ========== ESTADO: EXITOSO ========== */}
                         {estado === "exitoso" && (
                             <>
-                                <div className="relative w-32 h-32">
-                                    <div className="absolute inset-0 bg-green-100 rounded-full blur-xl opacity-60 animate-pulse" />
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                        <CheckCircle2 className="w-28 h-28 text-green-500 animate-bounce" />
-                                    </div>
+                                <div className="huella-circular-indicator">
+                                    <div className="indicator-ring indicator-ring-1" />
+                                    <div className="indicator-ring indicator-ring-2" />
+                                    <CheckCircle2 className="w-20 h-20 text-green-400" style={{ filter: 'drop-shadow(0 0 20px rgba(0,255,136,0.6))' }} />
                                 </div>
 
-                                <div className="w-full text-center space-y-4">
-                                    <div className="space-y-1">
-                                        <p className="text-2xl font-bold text-green-600">{mensaje}</p>
-                                        <p className="text-sm text-slate-600">
+                                <div className="w-full text-center space-y-6">
+                                    <div className="huella-status-card">
+                                        <p className="huella-status-title text-green-400">
+                                            {mensaje}
+                                        </p>
+                                        <p className="huella-status-subtitle">
                                             {tipo === "registro"
-                                                ? "Su huella está lista para futuras verificaciones"
-                                                : "Acceso concedido - Asistencia registrada"}
+                                                ? "Su huella está registrada y lista para futuras verificaciones"
+                                                : "Acceso concedido - Asistencia registrada en el sistema"}
                                         </p>
                                     </div>
 
                                     {respuestaServidor?.user && (
-                                        <div className="bg-green-50 rounded-lg p-4 border border-green-200 space-y-1">
-                                            <p className="text-sm font-semibold text-slate-700">
-                                                {respuestaServidor.user.name}
+                                        <div className="huella-status-card border-green-500/30">
+                                            <p className="huella-status-subtitle text-center">
+                                                <span className="text-green-400 font-bold text-lg">{respuestaServidor.user.name}</span>
                                             </p>
-                                            <p className="text-xs text-slate-500">
+                                            <p className="text-xs text-center text-opacity-70 text-white mt-2">
                                                 {new Date().toLocaleString("es-ES", {
                                                     dateStyle: "short",
                                                     timeStyle: "short",
@@ -473,26 +562,27 @@ export function HuellaVerificationModal({
                         {/* ========== ESTADO: ERROR ========== */}
                         {estado === "error" && (
                             <>
-                                <div className="relative w-32 h-32">
-                                    <div className="absolute inset-0 bg-red-100 rounded-full blur-xl opacity-60 animate-pulse" />
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                        <XCircle className="w-28 h-28 text-red-500 animate-bounce" />
-                                    </div>
+                                <div className="huella-circular-indicator">
+                                    <div className="indicator-ring indicator-ring-1" style={{ borderTopColor: 'rgba(255,0,85,0.5)', borderRightColor: 'rgba(255,0,85,0.2)' }} />
+                                    <div className="indicator-ring indicator-ring-2" style={{ borderBottomColor: 'rgba(255,0,85,0.4)', borderLeftColor: 'rgba(255,0,85,0.1)' }} />
+                                    <XCircle className="w-20 h-20 text-red-500" style={{ filter: 'drop-shadow(0 0 20px rgba(255,0,85,0.6))' }} />
                                 </div>
 
-                                <div className="w-full text-center space-y-4">
-                                    <div className="space-y-2">
-                                        <p className="text-2xl font-bold text-red-600">Operación fallida</p>
-                                        <p className="text-sm text-slate-600 bg-red-50 rounded-lg p-3 border border-red-200">
+                                <div className="w-full text-center space-y-6">
+                                    <div className="huella-status-card border-red-500/30">
+                                        <p className="huella-status-title text-red-400">
+                                            ⚠️ Operación fallida
+                                        </p>
+                                        <p className="huella-status-subtitle text-red-300/80">
                                             {mensaje}
                                         </p>
                                     </div>
 
                                     <Button
                                         onClick={reintentar}
-                                        className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold"
+                                        className="huella-button-primary w-full"
                                     >
-                                        🔄 Reintentar
+                                        🔄 Reintentar verificación
                                     </Button>
                                 </div>
                             </>
@@ -501,36 +591,39 @@ export function HuellaVerificationModal({
                         {/* ========== ESTADO: CANCELADO ========== */}
                         {estado === "cancelado" && (
                             <>
-                                <div className="relative w-32 h-32">
-                                    <div className="absolute inset-0 bg-yellow-100 rounded-full blur-xl opacity-60 animate-pulse" />
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                        <AlertCircle className="w-28 h-28 text-yellow-500" />
-                                    </div>
+                                <div className="huella-circular-indicator">
+                                    <div className="indicator-ring indicator-ring-1" style={{ borderTopColor: 'rgba(255,170,0,0.5)', borderRightColor: 'rgba(255,170,0,0.2)' }} />
+                                    <div className="indicator-ring indicator-ring-2" style={{ borderBottomColor: 'rgba(255,170,0,0.4)', borderLeftColor: 'rgba(255,170,0,0.1)' }} />
+                                    <AlertCircle className="w-20 h-20 text-yellow-500" style={{ filter: 'drop-shadow(0 0 15px rgba(255,170,0,0.5))' }} />
                                 </div>
 
-                                <div className="w-full text-center space-y-2">
-                                    <p className="text-2xl font-bold text-yellow-700">Cancelado</p>
-                                    <p className="text-sm text-slate-600">
-                                        El proceso fue cancelado por el usuario
-                                    </p>
+                                <div className="w-full text-center space-y-3">
+                                    <div className="huella-status-card border-yellow-500/30">
+                                        <p className="huella-status-title text-yellow-400">
+                                            Operación cancelada
+                                        </p>
+                                        <p className="huella-status-subtitle text-yellow-300/80">
+                                            El proceso fue detenido por el usuario
+                                        </p>
+                                    </div>
                                 </div>
                             </>
                         )}
 
-                        {/* ========== DETALLES DEL PROCESO ========== */}
-                        {detalles.length > 0 && (
-                            <div className="w-full mt-4 border-t pt-4">
+                        {/* ========== LOG PANEL (solo si showDebugLogs=true) ========== */}
+                        {showDebugLogs && detalles.length > 0 && (
+                            <div className="w-full mt-6 pt-6 border-t border-opacity-20 border-cyan-400">
                                 <div className="flex items-center gap-2 mb-3">
-                                    <div className="w-2 h-2 rounded-full bg-blue-500" />
-                                    <p className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                                        Registro de proceso
+                                    <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                                    <p className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">
+                                        Registro en tiempo real
                                     </p>
                                 </div>
-                                <div className="bg-slate-800 text-slate-100 rounded-lg p-3 max-h-32 overflow-y-auto font-mono text-xs space-y-1 border border-slate-700">
-                                    {detalles.slice(-5).map((detalle, idx) => (
-                                        <div key={idx} className="flex gap-2">
-                                            <span className="text-green-400 flex-shrink-0">✓</span>
-                                            <span className="text-slate-400">{detalle}</span>
+                                <div className="huella-log-panel">
+                                    {detalles.slice(-6).map((detalle, idx) => (
+                                        <div key={idx} className="log-entry">
+                                            <span className="log-icon">▸</span>
+                                            <span className="log-text">{detalle}</span>
                                         </div>
                                     ))}
                                 </div>

@@ -9,7 +9,6 @@
 // ============================================================================
 // CONFIGURACIÓN
 // ============================================================================
-// 🔵 VALORES POR DEFECTO (se pueden cambiar via Bluetooth)
 const char *WIFI_SSID = "ronald";
 const char *WIFI_PASSWORD = "ronald2004";
 const char *WS_HOST = "192.168.178.194";
@@ -23,8 +22,6 @@ const uint16_t WS_PORT = 8000;
 #define LED_ASISTENCIA_PIN 4
 // Pin opcional para RESET del módulo de huella (conectar al pin RST del sensor si está disponible)
 #define FINGER_RESET_PIN 15
-// Pin para activar modo configuración (mantener presionado al inicio)
-#define CONFIG_BUTTON_PIN 0  // GPIO0 (botón BOOT en la mayoría de ESP32)
 
 #define MAX_TEMPLATE_SIZE 2048
 #define GCM_TAG_LEN 16
@@ -1068,36 +1065,7 @@ void setup() {
     Serial.println("\n╔════════════════════════════════════════════════╗");
     Serial.println("║   ESP32 Fingerprint Sensor v4 DUAL-CORE       ║");
     Serial.println("║   Socket.IO Style (NUNCA SE CAE)              ║");
-    Serial.println("║   + Configuración Bluetooth                    ║");
     Serial.println("╚════════════════════════════════════════════════╝\n");
-    
-    // === INICIALIZAR PIN DE CONFIGURACIÓN ===
-    pinMode(CONFIG_BUTTON_PIN, INPUT_PULLUP);
-    
-    // === VERIFICAR SI SE PRESIONA BOTÓN DE CONFIGURACIÓN ===
-    if (digitalRead(CONFIG_BUTTON_PIN) == LOW) {
-        Serial.println("\n[CONFIG] 🔵 Botón presionado - entrando en modo configuración...");
-        delay(2000); // Esperar 2s para confirmar
-        
-        if (digitalRead(CONFIG_BUTTON_PIN) == LOW) {
-            // Cargar configuración (para mostrar valores actuales)
-            initConfig();
-            startConfigMode();
-            
-            // Loop infinito en modo configuración
-            while (configMode) {
-                handleBluetoothCommands();
-                checkConfigModeTimeout();
-                delay(100);
-            }
-            
-            // Salir del modo configuración y continuar normalmente
-            Serial.println("[CONFIG] Continuando con inicio normal...");
-        }
-    }
-    
-    // === CARGAR CONFIGURACIÓN DESDE EEPROM ===
-    initConfig();
     
     // === INICIALIZAR LEDS ===
     pinMode(LED_REGISTRO_PIN, OUTPUT);
@@ -1113,10 +1081,10 @@ void setup() {
         Serial.println("[SETUP] ⚠️ Sensor no responde (continuando)");
     }
     
-    // === CONECTAR WIFI (usando configuración cargada) ===
-    Serial.printf("[WIFI] Conectando a '%s'...\n", config.wifi_ssid);
+    // === CONECTAR WIFI ===
+    Serial.println("[WIFI] Conectando...");
     WiFi.mode(WIFI_STA);
-    WiFi.begin(config.wifi_ssid, config.wifi_password);
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     
     int attempts = 0;
     while (WiFi.status() != WL_CONNECTED && attempts++ < 20) {
@@ -1126,17 +1094,15 @@ void setup() {
     
     if (WiFi.status() != WL_CONNECTED) {
         Serial.println("\n[WIFI] ✗ Error de conexión");
-        Serial.println("[WIFI] 💡 Presione botón BOOT para reconfigurar");
-        delay(5000);
         ESP.restart();
     }
     
     Serial.printf("\n[WIFI] ✓ Conectado - IP: %s\n\n", WiFi.localIP().toString().c_str());
     
-    // === INICIALIZAR WEBSOCKET (usando configuración cargada) ===
-    Serial.printf("[WEBSOCKET] Conectando a %s:%d...\n", config.ws_host, config.ws_port);
+    // === INICIALIZAR WEBSOCKET ===
+    Serial.println("[WEBSOCKET] Configurando...");
     webSocket.onEvent(webSocketEvent);
-    webSocket.begin(config.ws_host, config.ws_port, "/socket.io/?EIO=4&transport=websocket");
+    webSocket.begin(WS_HOST, WS_PORT, "/socket.io/?EIO=4&transport=websocket");
     delay(1000);
     
     // === CREAR COLA DE JOBS ===
@@ -1181,8 +1147,7 @@ void setup() {
         1                     // Core 1
     );
     
-    Serial.println("[SETUP] ✓ Sistema listo - Arquitectura dual-core activa");
-    Serial.println("[INFO] 💡 Para reconfigurar: Presione botón BOOT al reiniciar\n");
+    Serial.println("[SETUP] ✓ Sistema listo - Arquitectura dual-core activa\n");
 }
 
 // ============================================================================

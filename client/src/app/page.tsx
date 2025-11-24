@@ -1,13 +1,14 @@
 "use client"
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { LogIn, UserPlus, Fingerprint } from "lucide-react";
 import { Footer } from "@/components/footer";
 import { useSession } from "next-auth/react";
+import { AnimatedCard } from "@/components/AnimatedCard";
 import "./home.css"
 import BlurText from "@/components/react-beats/BlurText/ShinyText";
 import { SplitText } from "@/components/react-beats/SplitText/SplitText";
+
 export default function Home() {
   const { status } = useSession();
 
@@ -17,7 +18,7 @@ export default function Home() {
 
 
   return (
-    <div className="h-full flex flex-col justify-between">
+    <div className="flex flex-1 flex-col justify-between">
       {/* Contenido principal */}
       <div className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="max-w-6xl w-full flex flex-col gap-4">
@@ -51,89 +52,65 @@ export default function Home() {
             {status === "unauthenticated" &&
               <>
                 {/* Card Iniciar Sesión */}
-              <Card className="flex-1 min-w-[23rem] max-w-[24rem] group card_home">
-                  <CardContent className="p-8 text-center space-y-6">
-                    <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                      <LogIn className="w-8 h-8 text-white" />
-                    </div>
-
-                    <div className="">
-                      <h3 className="text-2xl font-bold text-foreground">
-                        Iniciar Sesión
-                      </h3>
-                      <p className="text-muted-foreground">
-                        Accede al panel de administración y gestiona el sistema
-                      </p>
-                    </div>
-
-                    <Link href="/auth" className="block">
-                      <Button
-                        size="lg"
-                        className="w-full text-base py-6 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg"
-                      >
-                        Ingresar
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
+                <AnimatedCard
+                  delay={100}
+                  icon={<LogIn className="w-8 h-8 text-white" />}
+                  title="Iniciar Sesión"
+                  description="Accede al panel de administración y gestiona el sistema"
+                  gradientFrom="from-blue-500"
+                  gradientTo="to-blue-600"
+                >
+                  <Link href="/auth" className="block">
+                    <Button
+                      size="lg"
+                      className="w-full text-base py-6 bg-linear-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg"
+                    >
+                      Ingresar
+                    </Button>
+                  </Link>
+                </AnimatedCard>
 
                 {/* Card Registro */}
-              <Card className="flex-1 min-w-[23rem] max-w-[24rem] group card_home">
-                  <CardContent className="p-8 text-center space-y-6">
-                    <div className="mx-auto w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                      <UserPlus className="w-8 h-8 text-white" />
-                    </div>
-
-                    <div className="">
-                      <h3 className="text-2xl font-bold text-foreground">
-                        Crear Cuenta
-                      </h3>
-                      <p className="text-muted-foreground">
-                        Regístrate en el sistema para comenzar a usar la plataforma
-                      </p>
-                    </div>
-
-                    <Link href="/auth/register" className="block">
-                      <Button
-                        size="lg"
-                        className="w-full text-base py-6 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 shadow-lg"
-                      >
-                        Registrarse
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
+                <AnimatedCard
+                  delay={200}
+                  icon={<UserPlus className="w-8 h-8 text-white" />}
+                  title="Crear Cuenta"
+                  description="Regístrate en el sistema para comenzar a usar la plataforma"
+                  gradientFrom="from-amber-500"
+                  gradientTo="to-orange-600"
+                >
+                  <Link href="/auth/register" className="block">
+                    <Button
+                      size="lg"
+                      className="w-full text-base py-6 bg-linear-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 shadow-lg"
+                    >
+                      Registrarse
+                    </Button>
+                  </Link>
+                </AnimatedCard>
 
               </>
             }
 
 
             {/* Card Marcar Asistencia */}
-            <Card className="flex-1 min-w-[23rem] max-w-[24rem] group card_home">
-              <CardContent className="p-8 text-center space-y-6">
-                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Fingerprint className="w-8 h-8 text-white" />
-                </div>
-
-                <div className="">
-                  <h3 className="text-2xl font-bold text-foreground">
-                    Marcar Asistencia
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Registra tu entrada o salida de forma rápida y segura
-                  </p>
-                </div>
-
-                <Link href="/registro-asistencia" className="block">
-                  <Button
-                    size="lg"
-                    className="w-full text-base py-6 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-lg"
-                  >
-                    Registrar
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+            <AnimatedCard
+              delay={300}
+              icon={<Fingerprint className="w-8 h-8 text-white" />}
+              title="Marcar Asistencia"
+              description="Registra tu entrada o salida de forma rápida y segura"
+              gradientFrom="from-emerald-500"
+              gradientTo="to-teal-600"
+            >
+              <Link href="/registro-asistencia" className="block">
+                <Button
+                  size="lg"
+                  className="w-full text-base py-6 bg-linear-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-lg"
+                >
+                  Registrar
+                </Button>
+              </Link>
+            </AnimatedCard>
           </div>
         </div>
       </div>

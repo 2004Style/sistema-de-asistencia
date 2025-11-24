@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -89,6 +89,87 @@ export default function RegistroAsistenciaPage() {
         await registrarAsistencia();
     };
 
+    // Animaciones en vivo para los íconos y el input cuando se muestran los métodos
+    useEffect(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const instances: any[] = [];
+        let cancelled = false;
+
+        const run = async () => {
+            try {
+                const { animate } = await import('animejs')
+
+                if (!showMethods || cancelled) return
+
+                // Pulse sutil para el botón de reconocimiento facial
+                const scanEls = document.querySelectorAll('.scan-icon')
+                if (scanEls && scanEls.length) {
+                    const inst = animate(scanEls, {
+                        scale: [{ from: 1, to: 1.08 }],
+                        opacity: [{ from: 0.92, to: 1 }],
+                        duration: 900,
+                        easing: 'easeInOutSine',
+                        direction: 'alternate',
+                        loop: true
+                    })
+                    instances.push(inst)
+                }
+
+                // Movimiento tipo "escaneo" para huella
+                const fpEls = document.querySelectorAll('.fingerprint-icon')
+                if (fpEls && fpEls.length) {
+                    const inst2 = animate(fpEls, {
+                        translateY: [{ from: 0, to: -6 }],
+                        rotate: [{ from: -6, to: 6 }],
+                        duration: 1200,
+                        easing: 'easeInOutSine',
+                        direction: 'alternate',
+                        loop: true
+                    })
+                    instances.push(inst2)
+                }
+
+                // Micro oscilación para el icono de edición
+                const editEls = document.querySelectorAll('.edit-icon')
+                if (editEls && editEls.length) {
+                    const inst3 = animate(editEls, {
+                        rotate: [{ from: -4, to: 4 }],
+                        duration: 1500,
+                        easing: 'easeInOutSine',
+                        direction: 'alternate',
+                        loop: true
+                    })
+                    instances.push(inst3)
+                }
+
+                // Brillo/halo sutil en el input
+                const inputEls = document.querySelectorAll('.animated-input')
+                if (inputEls && inputEls.length) {
+                    const inst4 = animate(inputEls, {
+                        boxShadow: [
+                            { value: '0 0 0 0 rgba(0,255,0,0)' },
+                            { value: '0 0 24px 6px rgba(0,255,0,0.06)' }
+                        ],
+                        duration: 2200,
+                        easing: 'easeInOutSine',
+                        direction: 'alternate',
+                        loop: true
+                    })
+                    instances.push(inst4)
+                }
+            } catch (err) {
+                console.error('anime error', err)
+            }
+        }
+
+        run()
+
+        return () => {
+            cancelled = true
+            instances.forEach(i => i?.pause && i.pause())
+        }
+    }, [showMethods])
+
     return (
         <div className="min-h-screen bg-base flex items-center justify-center p-4">
             <Card className="w-full max-w-md rounded-[5px] border-none card_asistencia">
@@ -116,7 +197,7 @@ export default function RegistroAsistenciaPage() {
                             placeholder="Ingrese su código"
                             value={codigo}
                             onChange={(e) => setCodigo(e.target.value)}
-                            className="card_asistencia_input"
+                            className="card_asistencia_input animated-input"
                             autoFocus
                         />
                     </div>
@@ -130,32 +211,32 @@ export default function RegistroAsistenciaPage() {
 
                     {showMethods && user && (
                         <>
-                            <p className="card_asistencia_bienvenida">Bienvenido, <strong>{user.name}</strong>. Seleccione el método de verificación.</p>
+                            <p className="card_asistencia_bienvenida scan-welcome">Bienvenido, <strong>{user.name}</strong>. Seleccione el método de verificación.</p>
                             <div className="relative overflow-hidden flex gap-4 py-4">
                                 <Button
                                     onClick={() => handleSeleccionMetodo("facial")}
-                                    className="card_asistencia_option_button"
+                                    className="card_asistencia_option_button scan-button"
                                     variant="outline"
                                 >
-                                    <Scan className="w-12 h-12" />
+                                    <Scan className="w-12 h-12 scan-icon" />
                                     <span className="text-wrap">Reconocimiento Facial</span>
                                 </Button>
                                 {!user.huella || user.huella !== "" &&
                                     <Button
                                         onClick={() => handleSeleccionMetodo("dactilar")}
-                                        className="card_asistencia_option_button"
+                                        className="card_asistencia_option_button fingerprint-button"
                                         variant="outline"
                                     >
-                                        <Fingerprint className="w-12 h-12" />
+                                        <Fingerprint className="w-12 h-12 fingerprint-icon" />
                                         <span className="text-wrap">Huella Dactilar</span>
                                     </Button>
                                 }
                                 <Button
                                     onClick={() => handleSeleccionMetodo("manual")}
-                                    className="card_asistencia_option_button"
+                                    className="card_asistencia_option_button edit-button"
                                     variant="outline"
                                 >
-                                    <Edit className="w-12 h-12" />
+                                    <Edit className="w-12 h-12 edit-icon" />
                                     <span className="text-wrap">Registro Manual</span>
                                 </Button>
                             </div>

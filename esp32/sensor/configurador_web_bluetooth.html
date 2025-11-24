@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurador ESP32 - Web Bluetooth</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status.disconnected {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .status.connected {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status.connecting {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #45a049;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #da190b;
+        }
+
+        .info-box {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .info-box strong {
+            color: #333;
+        }
+
+        .log {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+
+        .log-line {
+            margin-bottom: 5px;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .browser-support {
+            text-align: center;
+            color: white;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>⚙️ Configurador ESP32</h1>
+            <p class="subtitle">Configuración via Web Bluetooth</p>
+
+            <div id="status" class="status disconnected">
+                <div class="status-dot"></div>
+                <span>Desconectado</span>
+            </div>
+
+            <button id="connectBtn" class="btn-primary" onclick="connect()">
+                🔗 Conectar via Bluetooth
+            </button>
+
+            <div id="configForm" style="display: none;">
+                <div class="form-group">
+                    <label>📡 WiFi SSID</label>
+                    <input type="text" id="ssid" placeholder="Nombre de tu red WiFi">
+                </div>
+
+                <div class="form-group">
+                    <label>🔒 WiFi Password</label>
+                    <input type="password" id="password" placeholder="Contraseña WiFi">
+                </div>
+
+                <div class="form-group">
+                    <label>🖥️ WebSocket Host</label>
+                    <input type="text" id="host" placeholder="IP o dominio (ej: 192.168.1.100)">
+                </div>
+
+                <div class="form-group">
+                    <label>🔌 WebSocket Puerto</label>
+                    <input type="number" id="port" placeholder="8000" value="8000">
+                </div>
+
+                <button class="btn-success" onclick="getStatus()">
+                    📊 Ver Configuración Actual
+                </button>
+
+                <button class="btn-success" onclick="saveConfig()">
+                    💾 Guardar y Reiniciar
+                </button>
+
+                <button class="btn-danger" onclick="resetConfig()">
+                    🗑️ Borrar Configuración
+                </button>
+
+                <div class="warning">
+                    ⚠️ <strong>Atención:</strong> El ESP32 se reiniciará automáticamente después de guardar.
+                </div>
+            </div>
+
+            <div class="info-box">
+                <strong>📱 Requisitos:</strong><br>
+                • Navegador compatible (Chrome, Edge, Opera)<br>
+                • Bluetooth activado en tu dispositivo<br>
+                • ESP32 en modo configuración (botón BOOT presionado al iniciar)
+            </div>
+
+            <div class="log" id="log"></div>
+        </div>
+
+        <div class="browser-support">
+            Compatible con: Chrome • Edge • Opera<br>
+            <small>Firefox e iOS Safari no soportan Web Bluetooth</small>
+        </div>
+    </div>
+
+    <script>
+        let btDevice = null;
+        let characteristic = null;
+
+        const SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb';
+        const CHARACTERISTIC_UUID = '0000ffe1-0000-1000-8000-00805f9b34fb';
+
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            const colors = {
+                info: '#aed581',
+                error: '#ef5350',
+                success: '#66bb6a',
+                warning: '#ffa726'
+            };
+            logEl.innerHTML += `<div class="log-line" style="color: ${colors[type]}">[${time}] ${message}</div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function updateStatus(text, connected = false, connecting = false) {
+            const statusEl = document.getElementById('status');
+            statusEl.className = 'status ' + (connected ? 'connected' : connecting ? 'connecting' : 'disconnected');
+            statusEl.querySelector('span').textContent = text;
+        }
+
+        async function connect() {
+            if (!navigator.bluetooth) {
+                alert('❌ Tu navegador no soporta Web Bluetooth.\n\nUsa Chrome, Edge u Opera.');
+                log('Web Bluetooth no disponible', 'error');
+                return;
+            }
+
+            try {
+                updateStatus('Buscando dispositivo...', false, true);
+                log('Buscando dispositivos Bluetooth...', 'info');
+
+                btDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ namePrefix: 'ESP32' }],
+                    optionalServices: [SERVICE_UUID]
+                });
+
+                log(`Dispositivo encontrado: ${btDevice.name}`, 'success');
+                updateStatus('Conectando...', false, true);
+
+                const server = await btDevice.gatt.connect();
+                log('Conectado al servidor GATT', 'success');
+
+                const service = await server.getPrimaryService(SERVICE_UUID);
+                characteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+
+                // Suscribirse a notificaciones
+                await characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', handleNotification);
+
+                updateStatus('✓ Conectado: ' + btDevice.name, true);
+                log('✓ Listo para configurar', 'success');
+
+                document.getElementById('connectBtn').style.display = 'none';
+                document.getElementById('configForm').style.display = 'block';
+
+                // Obtener configuración actual automáticamente
+                setTimeout(() => getStatus(), 500);
+
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+                updateStatus('Error de conexión', false);
+                console.error(error);
+            }
+        }
+
+        function handleNotification(event) {
+            const decoder = new TextDecoder('utf-8');
+            const value = decoder.decode(event.target.value);
+            log(`📨 ${value}`, 'info');
+
+            // Parsear respuesta STATUS
+            if (value.includes('WiFi SSID:')) {
+                const lines = value.split('\n');
+                lines.forEach(line => {
+                    if (line.includes('WiFi SSID:')) {
+                        document.getElementById('ssid').value = line.split(':')[1].trim();
+                    } else if (line.includes('WS Host:')) {
+                        document.getElementById('host').value = line.split(':')[1].trim();
+                    } else if (line.includes('WS Port:')) {
+                        document.getElementById('port').value = line.split(':')[1].trim();
+                    }
+                });
+            }
+        }
+
+        async function sendCommand(command) {
+            if (!characteristic) {
+                alert('❌ No conectado');
+                return;
+            }
+
+            try {
+                const encoder = new TextEncoder();
+                await characteristic.writeValue(encoder.encode(command + '\n'));
+                log(`📤 Enviado: ${command}`, 'info');
+            } catch (error) {
+                log(`Error enviando comando: ${error.message}`, 'error');
+            }
+        }
+
+        async function getStatus() {
+            log('Solicitando configuración actual...', 'info');
+            await sendCommand('STATUS');
+        }
+
+        async function saveConfig() {
+            const ssid = document.getElementById('ssid').value;
+            const password = document.getElementById('password').value;
+            const host = document.getElementById('host').value;
+            const port = document.getElementById('port').value;
+
+            if (!ssid || !host || !port) {
+                alert('❌ Por favor completa todos los campos (la contraseña puede estar vacía)');
+                return;
+            }
+
+            if (confirm(`¿Guardar esta configuración?\n\nWiFi: ${ssid}\nServidor: ${host}:${port}\n\nEl ESP32 se reiniciará.`)) {
+                const command = `SET:${ssid}|${password}|${host}|${port}`;
+                await sendCommand(command);
+                log('⏳ Esperando confirmación...', 'warning');
+
+                setTimeout(() => {
+                    alert('✓ Configuración enviada.\nEl ESP32 debería reiniciarse en 3 segundos.');
+                    log('✓ Comando enviado correctamente', 'success');
+                }, 1000);
+            }
+        }
+
+        async function resetConfig() {
+            if (confirm('⚠️ ¿BORRAR toda la configuración guardada?\n\nEl ESP32 volverá a los valores por defecto del código.')) {
+                await sendCommand('RESET');
+                log('⏳ Borrando configuración...', 'warning');
+
+                setTimeout(() => {
+                    alert('✓ Configuración borrada.\nEl ESP32 se reiniciará.');
+                    log('✓ Reset completado', 'success');
+                }, 1000);
+            }
+        }
+
+        // Verificar compatibilidad al cargar
+        window.addEventListener('load', () => {
+            if (!navigator.bluetooth) {
+                log('⚠️ Web Bluetooth no disponible en este navegador', 'warning');
+                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('connectBtn').textContent = '❌ Navegador no compatible';
+            } else {
+                log('✓ Web Bluetooth disponible', 'success');
+                log('👉 Presiona "Conectar via Bluetooth" para comenzar', 'info');
+            }
+        });
+    </script>
+</body>
+
+</html>

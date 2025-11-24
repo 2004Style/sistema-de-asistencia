@@ -1,0 +1,594 @@
+/* ============================================
+   HUELLA MODAL - DISEÑO FUTURISTA CINEMATOGRÁFICO
+   ============================================ */
+
+:root {
+    --primary-glow: #00d9ff;
+    --primary-dark: #0a0f2c;
+    --secondary-glow: #6a11cb;
+    --accent-cyan: #00d9ff;
+    --accent-purple: #6a11cb;
+    --accent-pink: #ff006e;
+    --text-primary: #ffffff;
+    --text-secondary: #b0b5c9;
+}
+
+/* ==================== SENSOR ANIMADO FUTURISTA ==================== */
+.huella-sensor-container {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Anillo externo con rotación */
+.huella-sensor-ring-1 {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    border: 2px solid transparent;
+    border-top-color: rgba(0, 217, 255, 0.4);
+    border-right-color: rgba(106, 17, 203, 0.3);
+    border-radius: 50%;
+    animation: rotateCW 6s linear infinite;
+    filter: drop-shadow(0 0 20px rgba(0, 217, 255, 0.3));
+}
+
+.huella-sensor-ring-2 {
+    position: absolute;
+    width: 160px;
+    height: 160px;
+    border: 2px solid transparent;
+    border-top-color: rgba(255, 0, 110, 0.3);
+    border-right-color: rgba(0, 217, 255, 0.25);
+    border-radius: 50%;
+    animation: rotateCCW 8s linear infinite;
+    filter: drop-shadow(0 0 15px rgba(106, 17, 203, 0.2));
+}
+
+.huella-sensor-ring-3 {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    border: 1px solid transparent;
+    border-top-color: rgba(0, 217, 255, 0.5);
+    border-radius: 50%;
+    animation: rotateCW 4s linear infinite;
+    filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.4));
+}
+
+@keyframes rotateCW {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes rotateCCW {
+    from {
+        transform: rotate(360deg);
+    }
+
+    to {
+        transform: rotate(0deg);
+    }
+}
+
+/* Icono del sensor con glow */
+.huella-sensor-icon {
+    position: relative;
+    z-index: 10;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.huella-sensor-icon::before {
+    content: '';
+    position: absolute;
+    inset: -30px;
+    background: radial-gradient(circle, rgba(0, 217, 255, 0.4) 0%, rgba(106, 17, 203, 0.2) 50%, transparent 70%);
+    border-radius: 50%;
+    animation: pulseGlow 2.5s ease-in-out infinite;
+    filter: blur(25px);
+    z-index: -1;
+}
+
+@keyframes pulseGlow {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.6;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+}
+
+.huella-sensor-icon svg {
+    width: 100%;
+    height: 100%;
+    color: var(--accent-cyan);
+    filter: drop-shadow(0 0 30px rgba(0, 217, 255, 0.6));
+    animation: iconFloat 3s ease-in-out infinite;
+}
+
+@keyframes iconFloat {
+
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-15px);
+    }
+}
+
+/* Líneas de escaneo */
+.huella-scan-lines {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    z-index: 5;
+}
+
+.scan-line {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0, 217, 255, 0.8), transparent);
+    filter: drop-shadow(0 0 8px rgba(0, 217, 255, 0.6));
+    animation: scanMove 2s ease-in-out infinite;
+}
+
+.scan-line:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.scan-line:nth-child(2) {
+    animation-delay: 0.4s;
+}
+
+.scan-line:nth-child(3) {
+    animation-delay: 0.8s;
+}
+
+.scan-line:nth-child(4) {
+    animation-delay: 1.2s;
+}
+
+@keyframes scanMove {
+    0% {
+        transform: translateX(-100px) scaleX(0);
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateX(100px) scaleX(1);
+        opacity: 0;
+    }
+}
+
+/* Partículas que flotan */
+.huella-particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: radial-gradient(circle, rgba(0, 217, 255, 0.8), transparent);
+    border-radius: 50%;
+    filter: drop-shadow(0 0 6px rgba(0, 217, 255, 0.8));
+}
+
+.particle:nth-child(1) {
+    left: 30%;
+    top: 20%;
+    animation: float 8s ease-in-out infinite;
+}
+
+.particle:nth-child(2) {
+    left: 70%;
+    top: 30%;
+    animation: float 10s ease-in-out infinite 1s;
+}
+
+.particle:nth-child(3) {
+    left: 50%;
+    top: 70%;
+    animation: float 9s ease-in-out infinite 0.5s;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translate(0, 0);
+        opacity: 0.3;
+    }
+
+    50% {
+        transform: translate(20px, -20px);
+        opacity: 1;
+    }
+}
+
+/* ==================== INDICADOR DE PROGRESO ==================== */
+.huella-progress-steps {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 2rem 0;
+    position: relative;
+    z-index: 10;
+}
+
+.progress-step {
+    flex: 1;
+    position: relative;
+}
+
+.progress-bar {
+    height: 4px;
+    background: rgba(176, 181, 201, 0.2);
+    border-radius: 2px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 217, 255, 0.1);
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00d9ff, #6a11cb);
+    border-radius: 2px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 15px rgba(0, 217, 255, 0.6);
+    width: 0%;
+}
+
+.progress-step.active .progress-bar-fill {
+    animation: progressPulse 1s ease-in-out infinite;
+}
+
+@keyframes progressPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 15px rgba(0, 217, 255, 0.6);
+    }
+
+    50% {
+        box-shadow: 0 0 25px rgba(0, 217, 255, 0.9);
+    }
+}
+
+.progress-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-top: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+}
+
+/* ==================== ESTADO CARDS ==================== */
+.huella-status-card {
+    background: linear-gradient(135deg, rgba(0, 217, 255, 0.05), rgba(106, 17, 203, 0.05));
+    border: 1px solid rgba(0, 217, 255, 0.2);
+    border-radius: 12px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    position: relative;
+    z-index: 10;
+    overflow: hidden;
+}
+
+.huella-status-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(0, 217, 255, 0.1) 0%, transparent 70%);
+    animation: moveGradient 8s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes moveGradient {
+
+    0%,
+    100% {
+        transform: translate(0, 0);
+    }
+
+    50% {
+        transform: translate(50px, 50px);
+    }
+}
+
+.huella-status-title {
+    font-size: 1.4rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+}
+
+.huella-status-subtitle {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+/* ==================== INDICADORES CIRCULARES ==================== */
+.huella-circular-indicator {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.indicator-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    animation: spinRing 3s linear infinite;
+}
+
+.indicator-ring-1 {
+    border-top-color: rgba(0, 217, 255, 0.5);
+    border-right-color: rgba(0, 217, 255, 0.2);
+    animation-duration: 2s;
+}
+
+.indicator-ring-2 {
+    border-bottom-color: rgba(106, 17, 203, 0.4);
+    border-left-color: rgba(106, 17, 203, 0.1);
+    animation-duration: 3s;
+    animation-direction: reverse;
+}
+
+@keyframes spinRing {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ==================== BOTONES MEJORADOS ==================== */
+.huella-button-primary {
+    position: relative;
+    width: 100%;
+    padding: 14px 24px;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: white;
+    background: linear-gradient(135deg, #00d9ff, #6a11cb);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow:
+        0 0 30px rgba(0, 217, 255, 0.4),
+        0 0 60px rgba(106, 17, 203, 0.2);
+    z-index: 11;
+}
+
+.huella-button-primary::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+    animation: buttonShine 3s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes buttonShine {
+
+    0%,
+    100% {
+        transform: translate(0, 0);
+    }
+
+    50% {
+        transform: translate(100px, 100px);
+    }
+}
+
+.huella-button-primary:hover {
+    transform: translateY(-3px);
+    box-shadow:
+        0 0 40px rgba(0, 217, 255, 0.6),
+        0 0 80px rgba(106, 17, 203, 0.3),
+        0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.huella-button-primary:active {
+    transform: translateY(-1px);
+}
+
+.huella-button-secondary {
+    position: relative;
+    width: 100%;
+    padding: 12px 20px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--accent-cyan);
+    background: transparent;
+    border: 2px solid rgba(0, 217, 255, 0.3);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 11;
+}
+
+.huella-button-secondary:hover {
+    background: rgba(0, 217, 255, 0.1);
+    border-color: rgba(0, 217, 255, 0.6);
+    box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+}
+
+/* ==================== LOG PANEL ==================== */
+.huella-log-panel {
+    background: linear-gradient(135deg, rgba(0, 10, 30, 0.8), rgba(15, 21, 53, 0.8));
+    border: 1px solid rgba(0, 217, 255, 0.2);
+    border-radius: 8px;
+    padding: 16px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    color: var(--accent-cyan);
+    position: relative;
+    z-index: 10;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 217, 255, 0.3) transparent;
+}
+
+.huella-log-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.huella-log-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.huella-log-panel::-webkit-scrollbar-thumb {
+    background: rgba(0, 217, 255, 0.3);
+    border-radius: 3px;
+}
+
+.huella-log-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 217, 255, 0.5);
+}
+
+.log-entry {
+    display: flex;
+    gap: 8px;
+    margin: 6px 0;
+    line-height: 1.4;
+}
+
+.log-icon {
+    color: rgba(0, 217, 255, 0.8);
+    flex-shrink: 0;
+}
+
+.log-text {
+    color: rgba(176, 181, 201, 0.8);
+    word-break: break-word;
+}
+
+/* ==================== ÉXITO Y ERROR ESTADOS ==================== */
+.status-success {
+    color: #00ff88;
+}
+
+.status-error {
+    color: #ff0055;
+}
+
+.status-warning {
+    color: #ffaa00;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 768px) {
+    .huella-sensor-container {
+        width: 160px;
+        height: 160px;
+    }
+
+    .huella-sensor-ring-1 {
+        width: 160px;
+        height: 160px;
+    }
+
+    .huella-sensor-ring-2 {
+        width: 120px;
+        height: 120px;
+    }
+
+    .huella-sensor-ring-3 {
+        width: 80px;
+        height: 80px;
+    }
+
+    .huella-sensor-icon svg {
+        width: 60px;
+        height: 80px;
+    }
+}
+
+/* ==================== ACCESIBILIDAD ==================== */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}
+
+/* ==================== BOTÓN CERRAR PERSONALIZADO ==================== */
+.huella-panel~[data-slot="dialog-close"],
+[data-slot="dialog-close"] {
+    position: absolute !important;
+    top: 1.5rem !important;
+    right: 1.5rem !important;
+    z-index: 999 !important;
+    width: 40px !important;
+    height: 40px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: linear-gradient(135deg, rgba(0, 217, 255, 0.2), rgba(106, 17, 203, 0.2)) !important;
+    border: 1px solid rgba(0, 217, 255, 0.3) !important;
+    border-radius: 8px !important;
+    color: var(--accent-cyan) !important;
+    opacity: 1 !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+}
+
+[data-slot="dialog-close"]:hover {
+    background: linear-gradient(135deg, rgba(0, 217, 255, 0.4), rgba(106, 17, 203, 0.3)) !important;
+    border-color: var(--accent-cyan) !important;
+    box-shadow: 0 0 20px rgba(0, 217, 255, 0.4) !important;
+    transform: scale(1.1) !important;
+}
+
+[data-slot="dialog-close"]:active {
+    transform: scale(0.95) !important;
+}
