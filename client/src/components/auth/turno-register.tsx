@@ -1,27 +1,20 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useHorariosApi } from "@/hooks/useHorariosApi.hook";
 import { useSession } from "next-auth/react";
-import { CrearHorario } from "@/interfaces";
+import { useHorariosApi } from "@/hooks/useHorariosApi.hook";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, ArrowLeft, Trash2, Plus, AlertCircle } from "lucide-react";
 import { useClientApi } from "@/hooks/useClientApi.hook";
 
-type DiaSemanaType = "lunes" | "martes" | "miercoles" | "jueves" | "viernes" | "sabado" | "domingo";
 
+type DiaSemanaType = "lunes" | "martes" | "miercoles" | "jueves" | "viernes" | "sabado" | "domingo";
 const DIAS_SEMANA: { value: DiaSemanaType; label: string }[] = [
     { value: "lunes", label: "Lunes" },
     { value: "martes", label: "Martes" },
@@ -41,10 +34,9 @@ interface TurnosList {
 }
 
 export function ClientHorarioCreate({ id_user }: { id_user?: number }) {
-
     const router = useRouter();
     const { data: session } = useSession();
-    const { create } = useHorariosApi(id_user ? false : true);
+    const { createBulk } = useHorariosApi(id_user ? false : true);
     const { GET } = useClientApi(id_user ? false : true);
 
     const [saving, setSaving] = useState(false);
@@ -53,19 +45,23 @@ export function ClientHorarioCreate({ id_user }: { id_user?: number }) {
     const [turnos, setTurnos] = useState<TurnosList[]>([]);
     const [turnosLoading, setTurnosLoading] = useState(true);
 
-    // Form state
-    const [formData, setFormData] = useState({
-        dia_semana: "" as DiaSemanaType | "",
-        turno_id: "",
-        hora_entrada: "",
-        hora_salida: "",
-        activo: true,
-        descripcion: "",
-    });
+    // Lista de horarios a crear
+    const [horarios, setHorarios] = useState<{
+        dia_semana: DiaSemanaType | "";
+        turno_id: string;
+        hora_entrada: string;
+        hora_salida: string;
+        activo: boolean;
+        descripcion: string;
+    }[]>([
+        { dia_semana: "lunes", turno_id: "", hora_entrada: "", hora_salida: "", activo: true, descripcion: "" },
+        // { dia_semana: "martes", turno_id: "", hora_entrada: "", hora_salida: "", activo: true, descripcion: "" },
+        // { dia_semana: "miercoles", turno_id: "", hora_entrada: "", hora_salida: "", activo: true, descripcion: "" },
+        // { dia_semana: "jueves", turno_id: "", hora_entrada: "", hora_salida: "", activo: true, descripcion: "" },
+        // { dia_semana: "viernes", turno_id: "", hora_entrada: "", hora_salida: "", activo: true, descripcion: "" },
+    ]);
 
-    const [validationErrors, setValidationErrors] = useState<
-        Record<string, string>
-    >({});
+    const [validationErrors, setValidationErrors] = useState<Record<number, Record<string, string>>>({});
 
     // Cargar turnos al iniciar
     useEffect(() => {
@@ -82,115 +78,108 @@ export function ClientHorarioCreate({ id_user }: { id_user?: number }) {
                 setTurnosLoading(false);
             }
         };
-
         fetchTurnos();
-    }, [GET]);
+    }, []);
 
-    const validateForm = () => {
+    // Copiar el primer horario a los demás si se modifica
+    useEffect(() => {
+        if (horarios.length > 1) {
+            const first = horarios[0];
+            setHorarios((prev) => prev.map((h, idx) => idx === 0 ? h : {
+                ...h,
+                turno_id: h.turno_id || first.turno_id,
+                hora_entrada: h.hora_entrada || first.hora_entrada,
+                hora_salida: h.hora_salida || first.hora_salida,
+            }));
+        }
+    }, [horarios[0].turno_id, horarios[0].hora_entrada, horarios[0].hora_salida]);
+
+    const validateHorario = (horario: any) => {
         const errors: Record<string, string> = {};
+        if (!horario.dia_semana) errors.dia_semana = "Día requerido";
+        if (!horario.turno_id) errors.turno_id = "Turno requerido";
+        if (!horario.hora_entrada.match(/^\d{2}:\d{2}$/)) errors.hora_entrada = "Formato HH:MM";
+        if (!horario.hora_salida.match(/^\d{2}:\d{2}$/)) errors.hora_salida = "Formato HH:MM";
+        if (horario.hora_entrada && horario.hora_salida && horario.hora_entrada >= horario.hora_salida) errors.hora_salida = "Salida debe ser mayor";
+        return errors;
+    };
 
-        if (!formData.dia_semana) {
-            errors.dia_semana = "Día de la semana es requerido";
-        }
+    const validateAll = () => {
+        const allErrors: Record<number, Record<string, string>> = {};
+        horarios.forEach((h, idx) => {
+            const err = validateHorario(h);
+            if (Object.keys(err).length > 0) allErrors[idx] = err;
+        });
+        setValidationErrors(allErrors);
+        return Object.keys(allErrors).length === 0;
+    };
 
-        if (!formData.turno_id) {
-            errors.turno_id = "Turno es requerido";
-        }
+    const handleChange = (idx: number, field: string, value: any) => {
+        setHorarios((prev) => prev.map((h, i) => i === idx ? { ...h, [field]: value } : h));
+    };
 
-        if (!formData.hora_entrada.match(/^\d{2}:\d{2}$/)) {
-            errors.hora_entrada = "Formato HH:MM requerido";
-        }
+    const handleDelete = (idx: number) => {
+        setHorarios((prev) => prev.filter((_, i) => i !== idx));
+    };
 
-        if (!formData.hora_salida.match(/^\d{2}:\d{2}$/)) {
-            errors.hora_salida = "Formato HH:MM requerido";
-        }
-
-        // Validar que la hora de entrada no sea menor a la hora de inicio del turno
-        if (formData.turno_id && formData.hora_entrada) {
-            const turnoSeleccionado = turnos.find(t => String(t.id) === formData.turno_id);
-            if (turnoSeleccionado) {
-                if (formData.hora_entrada < turnoSeleccionado.hora_inicio) {
-                    errors.hora_entrada = `La hora de entrada no puede ser antes de ${turnoSeleccionado.hora_inicio} (inicio del turno)`;
+    const handleAdd = () => {
+        setHorarios((prev) => {
+            const last = prev[prev.length - 1];
+            return [
+                ...prev,
+                {
+                    dia_semana: "", // El usuario debe elegir el día
+                    turno_id: last.turno_id,
+                    hora_entrada: last.hora_entrada,
+                    hora_salida: last.hora_salida,
+                    activo: last.activo,
+                    descripcion: last.descripcion,
                 }
-            }
-        }
-
-        // Validar que la hora de salida no sea mayor a la hora de fin del turno
-        if (formData.turno_id && formData.hora_salida) {
-            const turnoSeleccionado = turnos.find(t => String(t.id) === formData.turno_id);
-            if (turnoSeleccionado) {
-                if (formData.hora_salida > turnoSeleccionado.hora_fin) {
-                    errors.hora_salida = `La hora de salida no puede ser después de ${turnoSeleccionado.hora_fin} (fin del turno)`;
-                }
-            }
-        }
-
-        // Validar que la hora de entrada sea menor a la hora de salida
-        if (formData.hora_entrada && formData.hora_salida) {
-            if (formData.hora_entrada >= formData.hora_salida) {
-                errors.hora_salida = "La hora de salida debe ser mayor a la hora de entrada";
-            }
-        }
-
-        setValidationErrors(errors);
-        return Object.keys(errors).length === 0;
+            ];
+        });
     };
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (!validateForm()) {
-            return;
-        }
-
-        if (!session?.user?.id && !id_user) {
+        if (!validateAll()) return;
+        const userId = session?.user?.id ?? id_user;
+        if (!userId) {
             setError("No se pudo obtener tu información de usuario");
             return;
         }
-
-        const userId = session?.user.id ?? id_user;
-
-        if (userId === undefined) {
-            setError("No se pudo obtener tu información de usuario");
-            return;
-        }
-
         try {
             setSaving(true);
             setError(null);
             setSuccessMessage(null);
-
-            // Calcular horas requeridas considerando minutos
-            const [horaEntrada, minEntrada] = formData.hora_entrada.split(":").map(Number);
-            const [horaSalida, minSalida] = formData.hora_salida.split(":").map(Number);
-            const minutosTotales = (horaSalida * 60 + minSalida) - (horaEntrada * 60 + minEntrada);
-            const horasRequeridas = Math.round(minutosTotales / 60);
-
-            const createData: CrearHorario = {
-                user_id: userId,
-                dia_semana: formData.dia_semana as DiaSemanaType,
-                turno_id: parseInt(formData.turno_id),
-                hora_entrada: formData.hora_entrada,
-                hora_salida: formData.hora_salida,
-                horas_requeridas: horasRequeridas,
-                tolerancia_entrada: 15,
-                tolerancia_salida: 15,
-                activo: formData.activo,
-                descripcion: formData.descripcion || undefined,
-            };
-
-            const response = await create(createData);
-
+            const horariosBulk = horarios.map((h) => {
+                const [horaEntrada, minEntrada] = h.hora_entrada.split(":").map(Number);
+                const [horaSalida, minSalida] = h.hora_salida.split(":").map(Number);
+                const minutosTotales = (horaSalida * 60 + minSalida) - (horaEntrada * 60 + minEntrada);
+                const horasRequeridas = Math.round(minutosTotales / 60);
+                return {
+                    user_id: userId,
+                    dia_semana: h.dia_semana as DiaSemanaType,
+                    turno_id: parseInt(h.turno_id),
+                    hora_entrada: h.hora_entrada,
+                    hora_salida: h.hora_salida,
+                    horas_requeridas: horasRequeridas,
+                    tolerancia_entrada: 15,
+                    tolerancia_salida: 15,
+                    activo: h.activo,
+                    descripcion: h.descripcion || undefined,
+                };
+            });
+            const response = await createBulk(horariosBulk);
             if (response.alert === "success") {
-                setSuccessMessage("¡Horario creado exitosamente!");
+                setSuccessMessage("¡Horarios creados exitosamente!");
                 setTimeout(() => {
                     router.replace("/client/horarios");
                 }, 1500);
             } else {
-                setError(response.message || "Error al crear el horario");
+                setError(response.message || "Error al crear los horarios");
             }
         } catch {
-            setError("Error al crear el horario");
+            setError("Error al crear los horarios");
         } finally {
             setSaving(false);
         }
@@ -198,233 +187,112 @@ export function ClientHorarioCreate({ id_user }: { id_user?: number }) {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex items-center gap-4">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => router.back()}
-                >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Volver
+                <Button variant="ghost" size="sm" onClick={() => router.back()}>
+                    <ArrowLeft className="h-4 w-4 mr-2" /> Volver
                 </Button>
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">
-                        Crear Mi Horario
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
-                        Solicita un nuevo horario de trabajo
-                    </p>
+                    <h1 className="text-3xl font-bold tracking-tight">Crear Horarios</h1>
+                    <p className="text-muted-foreground mt-1">Solicita tus horarios de trabajo</p>
                 </div>
             </div>
-
-            {/* Alertas */}
             {error && (
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
             )}
-
             {successMessage && (
                 <Alert variant="default" className="border-green-600 bg-green-50">
                     <AlertCircle className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="text-green-800">
-                        {successMessage}
-                    </AlertDescription>
+                    <AlertDescription className="text-green-800">{successMessage}</AlertDescription>
                 </Alert>
             )}
-
-            {/* Formulario */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Información de tu Horario</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={onSubmit} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Día de la Semana */}
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">
-                                    Día de la Semana *
-                                </label>
-                                <Select
-                                    value={formData.dia_semana}
-                                    onValueChange={(value) =>
-                                        setFormData({
-                                            ...formData,
-                                            dia_semana: value as DiaSemanaType,
-                                        })
-                                    }
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Selecciona un día" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {DIAS_SEMANA.map((dia) => (
-                                            <SelectItem key={dia.value} value={dia.value}>
-                                                {dia.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {validationErrors.dia_semana && (
-                                    <p className="text-sm text-red-500">
-                                        {validationErrors.dia_semana}
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Turno */}
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Turno *</label>
-                                {turnosLoading ? (
-                                    <div className="flex items-center justify-center h-10">
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    </div>
-                                ) : (
-                                    <Select
-                                        value={formData.turno_id}
-                                        onValueChange={(value) =>
-                                            setFormData({
-                                                ...formData,
-                                                turno_id: value,
-                                            })
-                                        }
-                                    >
+            <form onSubmit={onSubmit} className="space-y-6">
+                {horarios.map((h, idx) => (
+                    <Card key={idx} className="mb-2">
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle>Horario #{idx + 1}</CardTitle>
+                            <Button variant="ghost" size="icon" onClick={() => handleDelete(idx)} disabled={horarios.length <= 1}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Día *</label>
+                                    <Select value={h.dia_semana} onValueChange={(value) => handleChange(idx, "dia_semana", value)}>
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Selecciona un turno" />
+                                            <SelectValue placeholder="Selecciona un día" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {turnos.map((turno) => (
-                                                <SelectItem key={turno.id} value={String(turno.id)}>
-                                                    {`${turno.nombre} (${turno.hora_inicio} - ${turno.hora_fin})`}
-                                                </SelectItem>
+                                            {DIAS_SEMANA.map((dia) => (
+                                                <SelectItem key={dia.value} value={dia.value}>{dia.label}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                )}
-                                {validationErrors.turno_id && (
-                                    <p className="text-sm text-red-500">
-                                        {validationErrors.turno_id}
-                                    </p>
-                                )}
-                                {formData.turno_id && turnos.find(t => String(t.id) === formData.turno_id) && (
-                                    <p className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
-                                        📋 Rango permitido: {turnos.find(t => String(t.id) === formData.turno_id)?.hora_inicio} a {turnos.find(t => String(t.id) === formData.turno_id)?.hora_fin}
-                                    </p>
-                                )}
+                                    {validationErrors[idx]?.dia_semana && (
+                                        <p className="text-sm text-red-500">{validationErrors[idx].dia_semana}</p>
+                                    )}
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Turno *</label>
+                                    {turnosLoading ? (
+                                        <div className="flex items-center justify-center h-10">
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        </div>
+                                    ) : (
+                                        <Select value={h.turno_id} onValueChange={(value) => handleChange(idx, "turno_id", value)}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Selecciona un turno" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {turnos.map((t: any) => (
+                                                    <SelectItem key={t.id} value={String(t.id)}>{t.nombre} ({t.hora_inicio} - {t.hora_fin})</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                    {validationErrors[idx]?.turno_id && (
+                                        <p className="text-sm text-red-500">{validationErrors[idx].turno_id}</p>
+                                    )}
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Hora Entrada *</label>
+                                    <Input type="time" value={h.hora_entrada} onChange={(e) => handleChange(idx, "hora_entrada", e.target.value)} />
+                                    {validationErrors[idx]?.hora_entrada && (
+                                        <p className="text-sm text-red-500">{validationErrors[idx].hora_entrada}</p>
+                                    )}
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Hora Salida *</label>
+                                    <Input type="time" value={h.hora_salida} onChange={(e) => handleChange(idx, "hora_salida", e.target.value)} />
+                                    {validationErrors[idx]?.hora_salida && (
+                                        <p className="text-sm text-red-500">{validationErrors[idx].hora_salida}</p>
+                                    )}
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Descripción</label>
+                                    <Input placeholder="Notas..." value={h.descripcion} onChange={(e) => handleChange(idx, "descripcion", e.target.value)} />
+                                </div>
+                                <div className="flex flex-row items-center gap-2 mt-4">
+                                    <Checkbox checked={h.activo} onCheckedChange={(checked) => handleChange(idx, "activo", Boolean(checked))} />
+                                    <span className="text-sm">Activo</span>
+                                </div>
                             </div>
-
-                            {/* Hora de Entrada */}
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">
-                                    Hora de Entrada *
-                                </label>
-                                <Input
-                                    type="time"
-                                    value={formData.hora_entrada}
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            hora_entrada: e.target.value,
-                                        })
-                                    }
-                                />
-                                {validationErrors.hora_entrada && (
-                                    <p className="text-sm text-red-500">
-                                        {validationErrors.hora_entrada}
-                                    </p>
-                                )}
-                                <p className="text-xs text-muted-foreground">
-                                    Formato: HH:MM (ej: 08:00)
-                                </p>
-                            </div>
-
-                            {/* Hora de Salida */}
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">
-                                    Hora de Salida *
-                                </label>
-                                <Input
-                                    type="time"
-                                    value={formData.hora_salida}
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            hora_salida: e.target.value,
-                                        })
-                                    }
-                                />
-                                {validationErrors.hora_salida && (
-                                    <p className="text-sm text-red-500">
-                                        {validationErrors.hora_salida}
-                                    </p>
-                                )}
-                                <p className="text-xs text-muted-foreground">
-                                    Formato: HH:MM (ej: 17:00)
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Descripción */}
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">
-                                Descripción (opcional)
-                            </label>
-                            <Input
-                                placeholder="Notas sobre tu solicitud de horario..."
-                                value={formData.descripcion}
-                                onChange={(e) =>
-                                    setFormData({
-                                        ...formData,
-                                        descripcion: e.target.value,
-                                    })
-                                }
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                Información adicional que quieras incluir
-                            </p>
-                        </div>
-
-                        {/* Estado Activo */}
-                        <div className="flex flex-row items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                                <label className="text-sm font-medium">
-                                    Activar inmediatamente
-                                </label>
-                                <p className="text-xs text-muted-foreground">
-                                    Marca si deseas que el horario esté activo desde ahora
-                                </p>
-                            </div>
-                            <Checkbox
-                                checked={formData.activo}
-                                onCheckedChange={(checked) =>
-                                    setFormData({
-                                        ...formData,
-                                        activo: Boolean(checked),
-                                    })
-                                }
-                            />
-                        </div>
-
-                        {/* Botones */}
-                        <div className="flex gap-2 justify-end">
-                            <Button
-                                variant="outline"
-                                onClick={() => router.back()}
-                                disabled={saving}
-                            >
-                                Cancelar
-                            </Button>
-                            <Button type="submit" disabled={saving}>
-                                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                                {saving ? "Creando..." : "Crear Horario"}
-                            </Button>
-                        </div>
-                    </form>
-                </CardContent>
-            </Card>
+                        </CardContent>
+                    </Card>
+                ))}
+                <div className="flex gap-2">
+                    <Button type="button" variant="outline" onClick={handleAdd}>
+                        <Plus className="h-4 w-4 mr-2" /> Añadir horario
+                    </Button>
+                    <Button type="submit" disabled={saving}>
+                        {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        {saving ? "Creando..." : "Crear Horarios"}
+                    </Button>
+                </div>
+            </form>
         </div>
     );
 }

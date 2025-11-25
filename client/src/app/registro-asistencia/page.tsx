@@ -198,6 +198,7 @@ export default function RegistroAsistenciaPage() {
                             value={codigo}
                             onChange={(e) => setCodigo(e.target.value)}
                             className="card_asistencia_input animated-input"
+                            autoComplete="off"
                             autoFocus
                         />
                     </div>

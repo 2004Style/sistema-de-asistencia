@@ -277,6 +277,49 @@ class NotificacionService(BaseService):
             logger.error(f"Error notifying incomplete workday: {str(e)}")
             return False
     
+    async def notificar_cierre_asistencia(
+        self,
+        db: Session,
+        user_id: int,
+        user_email: str,
+        user_name: str,
+        fecha: date,
+        horario: object
+    ) -> bool:
+        """
+        Notificar cierre de asistencia abierta
+        """
+        try:
+            # Crear notificación in-app
+            await self.crear_notificacion(
+                db=db,
+                user_id=user_id,
+                tipo=TipoNotificacion.CIERRE,
+                titulo="Cierre de asistencia",
+                mensaje=f"Tu asistencia del {fecha.strftime('%d/%m/%Y')} ha sido cerrada automáticamente.",
+                datos_adicionales={
+                    "fecha": str(fecha),
+                    "horario": horario.id
+                },
+                prioridad=PrioridadNotificacion.MEDIA
+            )
+
+            # Enviar email
+            fecha_str = fecha.strftime("%d/%m/%Y")
+            await email_service.send_cierre_asistencia_notification(
+                user_email=user_email,
+                user_name=user_name,
+                fecha=fecha_str,
+                horario=horario
+            )
+
+            logger.info(f"Attendance closure notification sent to user {user_id}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error notifying attendance closure: {str(e)}")
+            return False
+    
     def obtener_notificaciones_usuario(
         self,
         db: Session,

@@ -66,9 +66,14 @@ class Horario(BaseModel):
     turno = relationship("Turno", back_populates="horarios")
     asistencias = relationship("Asistencia", back_populates="horario")
     
-    # CONSTRAINT: Solo un horario por (user_id + dia_semana + turno_id)
+    # CONSTRAINT: Evitar duplicados exactos. Ahora la restricción incluye
+    # hora_entrada y hora_salida para permitir múltiples horarios en el mismo
+    # día/turno siempre que no sean idénticos.
     __table_args__ = (
-        UniqueConstraint('user_id', 'dia_semana', 'turno_id', name='uq_user_dia_turno'),
+        UniqueConstraint(
+            'user_id', 'dia_semana', 'turno_id', 'hora_entrada', 'hora_salida',
+            name='uq_user_dia_turno_horas'
+        ),
     )
     
     def __repr__(self):

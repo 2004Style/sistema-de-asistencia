@@ -311,7 +311,6 @@ def detectar_turno_activo(
 @router.post("/bulk", status_code=status.HTTP_201_CREATED)
 def create_bulk_horarios(
     horarios_data: List[HorarioCreate],
-    current_user: "User" = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     """

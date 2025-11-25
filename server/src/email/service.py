@@ -335,6 +335,44 @@ class EmailService:
             html_content=html_content,
             attachments=attachments
         )
+    
+    async def send_cierre_asistencia_notification(
+        self,
+        admin_emails: List[str],
+        fecha: str,
+        detalles: str
+    ) -> bool:
+        """
+        Send notification to administrators about attendance closure.
+        """
+        subject = f"✅ Cierre de Asistencia - {fecha}"
+
+        html_content = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; padding: 20px;">
+                <div style="max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; padding: 20px;">
+                    <h2 style="color: #27ae60;">✅ Cierre de Asistencia</h2>
+                    <p>Estimado/a Administrador/a,</p>
+                    <p>Se ha realizado el cierre de asistencia para el día:</p>
+                    <ul>
+                        <li><strong>Fecha:</strong> {fecha}</li>
+                    </ul>
+                    <p>Detalles del cierre:</p>
+                    <p style="color: #333;">{detalles}</p>
+                    <hr style="margin: 20px 0;">
+                    <p style="font-size: 12px; color: #999;">
+                        Este es un mensaje automático del Sistema de Asistencia.
+                    </p>
+                </div>
+            </body>
+        </html>
+        """
+
+        return await self.send_email(
+            to_email=admin_emails,
+            subject=subject,
+            html_content=html_content
+        )
 
 
 # Singleton instance

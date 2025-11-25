@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from fastapi import HTTPException, status
 from typing import Optional, List
+from sqlalchemy.exc import IntegrityError
 from datetime import datetime, time, timedelta
 
 from .model import Horario, DiaSemana
@@ -54,19 +55,21 @@ class HorarioService(BaseService):
         # Validar que el turno existe
         turno = turno_service.obtener_turno(db, horario_data.turno_id)
         
-        # Validar que no existe un horario para este usuario, día y turno
+        # Validar que no existe un horario EXACTO igual para este usuario (mismo día, turno, hora_entrada y hora_salida)
         existing = db.query(Horario).filter(
             and_(
                 Horario.user_id == horario_data.user_id,
                 Horario.dia_semana == horario_data.dia_semana,
-                Horario.turno_id == horario_data.turno_id
+                Horario.turno_id == horario_data.turno_id,
+                Horario.hora_entrada == horario_data.hora_entrada,
+                Horario.hora_salida == horario_data.hora_salida,
             )
         ).first()
-        
+
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Ya existe un horario para el día {horario_data.dia_semana.value} con el turno {turno.nombre}"
+                detail=f"Ya existe un horario idéntico para el día {horario_data.dia_semana.value} con el turno {turno.nombre}"
             )
         
         # Obtener horarios del mismo día para validar solapamiento
@@ -229,25 +232,29 @@ class HorarioService(BaseService):
         hora_actual: time
     ) -> Optional[Horario]:
         """
-        Detecta qué turno está activo en este momento para un usuario.
+        Detecta qué horario está activo en este momento para un usuario específico.
         Considera ventana de tolerancia (1 hora antes/después).
+        Si hay múltiples horarios activos, selecciona el más cercano a la hora actual.
         
         Args:
             db: Sesión de base de datos
-            user_id: ID del usuario
+            user_id: ID del usuario (solo se consideran horarios de este usuario)
             dia: Día de la semana
             hora_actual: Hora actual a verificar
         
         Returns:
-            Horario activo o None si no hay turno activo
+            Horario activo o None si no hay horario activo
         """
+        # Obtener todos los horarios activos del usuario para el día especificado
         horarios = self.get_by_user_and_dia_all(db, user_id, dia)
         
         if not horarios:
             return None
         
         hora_actual_dt = datetime.combine(datetime.today(), hora_actual)
-        
+        horario_activo = None
+        menor_diferencia = timedelta.max
+
         for horario in horarios:
             hora_entrada_dt = datetime.combine(datetime.today(), horario.hora_entrada)
             hora_salida_dt = datetime.combine(datetime.today(), horario.hora_salida)
@@ -268,9 +275,12 @@ class HorarioService(BaseService):
             
             # Verificar si la hora actual está en la ventana
             if ventana_inicio <= hora_actual_dt <= ventana_fin:
-                return horario
+                diferencia = min(abs(hora_actual_dt - hora_entrada_dt), abs(hora_actual_dt - hora_salida_dt))
+                if diferencia < menor_diferencia:
+                    menor_diferencia = diferencia
+                    horario_activo = horario
         
-        return None
+        return horario_activo
     
     def update_horario(self, db: Session, horario_id: int, horario_data: HorarioUpdate) -> Horario:
         """
@@ -359,14 +369,17 @@ class HorarioService(BaseService):
         """
         # Validar que el usuario existe
         user_service.get_user(db, user_id)
+
+        print("Creating bulk horarios for user_id:", user_id)
+        print("Horarios data:", horarios_data)
         
         # Validar que no hay duplicados (mismo día y turno) en la lista
-        combinaciones = [(h.dia_semana, h.turno_id) for h in horarios_data]
-        if len(combinaciones) != len(set(combinaciones)):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No se pueden crear múltiples horarios con el mismo día y turno"
-            )
+        # combinaciones = [(h.dia_semana, h.turno_id) for h in horarios_data]
+        # if len(combinaciones) != len(set(combinaciones)):
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail="No se pueden crear múltiples horarios con el mismo día y turno"
+        #     )
         
         # Obtener todos los horarios existentes del usuario
         horarios_existentes = db.query(Horario).filter(Horario.user_id == user_id).all()
@@ -376,13 +389,17 @@ class HorarioService(BaseService):
             # Validar turno existe
             turno = turno_service.obtener_turno(db, horario_data.turno_id)
             
-            # Verificar que no existe el mismo día/turno
+            # Verificar que no existe un horario EXACTO igual en la base (mismo día, mismo turno, misma hora entrada/salida)
             for horario_exist in horarios_existentes:
-                if (horario_exist.dia_semana == horario_data.dia_semana and 
-                    horario_exist.turno_id == horario_data.turno_id):
+                if (
+                    horario_exist.dia_semana == horario_data.dia_semana
+                    and horario_exist.turno_id == horario_data.turno_id
+                    and horario_exist.hora_entrada == horario_data.hora_entrada
+                    and horario_exist.hora_salida == horario_data.hora_salida
+                ):
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Ya existe un horario para {horario_data.dia_semana.value} con el turno {turno.nombre}"
+                        detail=f"Ya existe un horario idéntico para {horario_data.dia_semana.value} con el turno {turno.nombre}"
                     )
             
             # Validar solapamiento con horarios existentes del mismo día
@@ -433,6 +450,14 @@ class HorarioService(BaseService):
                 db.refresh(horario)
             
             return horarios_creados
+        except IntegrityError as e:
+            db.rollback()
+            # Detectar violaciones de constraint y devolver un error más claro
+            detail = str(e.orig) if hasattr(e, 'orig') else str(e)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Error de integridad al crear horarios: {detail}"
+            )
         except Exception as e:
             db.rollback()
             raise HTTPException(

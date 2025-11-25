@@ -13,6 +13,7 @@ from src.roles.model import Role
 from src.notificaciones.service import notificacion_service
 from src.reportes.service import reportes_service
 from src.config.settings import get_settings
+from src.email.service import email_service
 import logging
 
 logger = logging.getLogger(__name__)
@@ -43,9 +44,9 @@ async def verificar_ausencias_diarias():
     db = get_db()
     
     try:
-        # Fecha del día anterior
-        fecha_ayer = date.today() - timedelta(days=1)
-        dia_semana = fecha_ayer.strftime("%A").lower()
+        # Fecha del día actual
+        fecha_hoy = date.today()
+        dia_semana = fecha_hoy.strftime("%A").lower()
         
         # Mapeo de días en inglés a español
         dias_map = {
@@ -59,27 +60,26 @@ async def verificar_ausencias_diarias():
         }
         
         dia_enum = dias_map.get(dia_semana)
-        
         if not dia_enum:
             print(f"  ℹ️ No se pudo mapear el día {dia_semana}")
             return
-        
+
         # Obtener usuarios que deberían haber trabajado ese día
         usuarios_con_horario = db.query(User).join(Horario).filter(
             Horario.dia_semana == dia_enum,
             Horario.activo == True,
             User.is_active == True
         ).all()
-        
+
         ausencias_detectadas = 0
-        
+
         for usuario in usuarios_con_horario:
             # Verificar si registró asistencia
             asistencia = db.query(Asistencia).filter(
                 Asistencia.user_id == usuario.id,
-                Asistencia.fecha == fecha_ayer
+                Asistencia.fecha == fecha_hoy
             ).first()
-            
+
             # Si no hay registro o está marcado como ausente sin justificación
             if not asistencia or (asistencia.estado == EstadoAsistencia.AUSENTE and not asistencia.justificacion_id):
                 # Enviar notificación
@@ -88,11 +88,11 @@ async def verificar_ausencias_diarias():
                     user_id=usuario.id,
                     user_email=usuario.email,
                     user_name=usuario.name,
-                    fecha=fecha_ayer,
+                    fecha=fecha_hoy,
                     supervisor_email=None  # TODO: Obtener email del supervisor
                 )
                 ausencias_detectadas += 1
-        
+
         db.commit()
         print(f"  ✅ Ausencias detectadas y notificadas: {ausencias_detectadas}")
         
@@ -118,31 +118,31 @@ async def calcular_horas_diarias():
     db = get_db()
     
     try:
-        fecha_ayer = date.today() - timedelta(days=1)
-        
-        # Obtener todas las asistencias del día anterior con entrada y salida
+        fecha_hoy = date.today()
+
+        # Obtener todas las asistencias del día actual con entrada y salida
         asistencias = db.query(Asistencia).filter(
-            Asistencia.fecha == fecha_ayer,
+            Asistencia.fecha == fecha_hoy,
             Asistencia.hora_entrada.isnot(None),
             Asistencia.hora_salida.isnot(None)
         ).all()
-        
+
         alertas_enviadas = 0
-        
+
         for asistencia in asistencias:
             # Calcular horas trabajadas
-            entrada = datetime.combine(fecha_ayer, asistencia.hora_entrada)
-            salida = datetime.combine(fecha_ayer, asistencia.hora_salida)
-            
+            entrada = datetime.combine(fecha_hoy, asistencia.hora_entrada)
+            salida = datetime.combine(fecha_hoy, asistencia.hora_salida)
+
             # Manejar caso de salida al día siguiente (después de medianoche)
             if salida < entrada:
                 salida += timedelta(days=1)
-            
+
             diferencia = salida - entrada
             horas_trabajadas = diferencia.total_seconds() / 3600
-            
+
             # Obtener horario del usuario
-            dia_semana_nombre = fecha_ayer.strftime("%A").lower()
+            dia_semana_nombre = fecha_hoy.strftime("%A").lower()
             dias_map = {
                 "monday": DiaSemana.LUNES,
                 "tuesday": DiaSemana.MARTES,
@@ -153,17 +153,17 @@ async def calcular_horas_diarias():
                 "sunday": DiaSemana.DOMINGO
             }
             dia_enum = dias_map.get(dia_semana_nombre)
-            
+
             horario = db.query(Horario).filter(
                 Horario.user_id == asistencia.user_id,
                 Horario.dia_semana == dia_enum,
                 Horario.activo == True
             ).first()
-            
+
             if horario:
                 horas_requeridas = horario.horas_requeridas / 60  # Convertir minutos a horas
                 diferencia_horas = abs(horas_trabajadas - horas_requeridas)
-                
+
                 # Si la diferencia es significativa (más de 30 minutos)
                 if diferencia_horas > 0.5:
                     if horas_trabajadas > horas_requeridas:
@@ -171,7 +171,7 @@ async def calcular_horas_diarias():
                         await notificacion_service.notificar_exceso_jornada(
                             db=db,
                             user_id=asistencia.user_id,
-                            fecha=fecha_ayer,
+                            fecha=fecha_hoy,
                             horas_trabajadas=horas_trabajadas,
                             horas_requeridas=horas_requeridas
                         )
@@ -181,12 +181,12 @@ async def calcular_horas_diarias():
                         await notificacion_service.notificar_incumplimiento_jornada(
                             db=db,
                             user_id=asistencia.user_id,
-                            fecha=fecha_ayer,
+                            fecha=fecha_hoy,
                             horas_trabajadas=horas_trabajadas,
                             horas_requeridas=horas_requeridas
                         )
                         alertas_enviadas += 1
-        
+
         db.commit()
         print(f"  ✅ Alertas de jornada enviadas: {alertas_enviadas}")
         
@@ -212,9 +212,9 @@ async def verificar_alertas_acumuladas():
     db = get_db()
     
     try:
-        # Período de análisis: últimos 30 días
-        fecha_inicio = date.today() - timedelta(days=30)
+        # Período de análisis: últimos 30 días hasta hoy
         fecha_fin = date.today()
+        fecha_inicio = fecha_fin - timedelta(days=30)
         
         # Obtener todos los usuarios activos
         usuarios = db.query(User).filter(User.is_active == True).all()
@@ -288,15 +288,15 @@ async def generar_reporte_diario():
     db = get_db()
 
     try:
-        fecha_ayer = date.today() - timedelta(days=1)
+        fecha_hoy = date.today()
 
-        # Generar reporte para el día anterior
+        # Generar reporte para el día actual
         resultado = await reportes_service.generar_reporte_diario(
             db=db,
-            fecha=fecha_ayer,
+            fecha=fecha_hoy,
             user_id=None,
             formato="both",
-            enviar_email=False  # no enviar desde el service automáticamente; lo haremos aquí
+            enviar_email=True  # enviar desde el service automáticamente; lo haremos aquí
         )
 
         if resultado.get("success"):
@@ -349,7 +349,8 @@ async def generar_reporte_semanal():
             db=db,
             fecha_inicio=lunes_anterior,
             user_id=None,  # Todos los usuarios
-            formato="both"  # PDF y Excel
+            formato="both",  # PDF y Excel
+            enviar_email=True  # enviar desde el service automáticamente; lo haremos aquí
         )
         
         if resultado["success"]:
@@ -398,7 +399,8 @@ async def generar_reporte_mensual():
             anio=anio_anterior,
             mes=mes_anterior,
             user_id=None,  # Todos los usuarios
-            formato="both"  # PDF y Excel
+            formato="both",  # PDF y Excel
+            enviar_email=True  # enviar desde el service automáticamente; lo haremos aquí
         )
         
         if resultado["success"]:
@@ -454,3 +456,119 @@ async def limpiar_archivos_temporales():
         
     except Exception as e:
         logger.error(f"Error en job de limpieza: {str(e)}")
+
+
+# ========================
+# JOB: Cerrar asistencias abiertas y marcar faltas
+# ========================
+async def cerrar_asistencias_y_marcar_faltas():
+    """
+    Job que se ejecuta diariamente a las 22:00 para:
+    - Cerrar asistencias abiertas (entrada sin salida).
+    - Marcar faltas para horarios sin registros.
+    - Enviar notificaciones al administrador.
+    """
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{timestamp}] ⏰ JOB: Cerrando asistencias abiertas y marcando faltas")
+
+    db = get_db()
+
+    try:
+        fecha_hoy = date.today()
+        dia_semana = fecha_hoy.strftime("%A").lower()
+
+        # Mapeo de días en inglés a español
+        dias_map = {
+            "monday": DiaSemana.LUNES,
+            "tuesday": DiaSemana.MARTES,
+            "wednesday": DiaSemana.MIERCOLES,
+            "thursday": DiaSemana.JUEVES,
+            "friday": DiaSemana.VIERNES,
+            "saturday": DiaSemana.SABADO,
+            "sunday": DiaSemana.DOMINGO
+        }
+
+        dia_enum = dias_map.get(dia_semana)
+        if not dia_enum:
+            print(f"  ℹ️ No se pudo mapear el día {dia_semana}")
+            return
+
+        # Obtener usuarios con horarios activos para el día
+        usuarios_con_horario = db.query(User).join(Horario).filter(
+            Horario.dia_semana == dia_enum,
+            Horario.activo == True,
+            User.is_active == True
+        ).all()
+
+        asistencias_cerradas = 0
+        faltas_marcadas = 0
+
+        for usuario in usuarios_con_horario:
+            horarios = db.query(Horario).filter(
+                Horario.user_id == usuario.id,
+                Horario.dia_semana == dia_enum,
+                Horario.activo == True
+            ).all()
+
+            for horario in horarios:
+                asistencia = db.query(Asistencia).filter(
+                    Asistencia.user_id == usuario.id,
+                    Asistencia.fecha == fecha_hoy,
+                    Asistencia.horario_id == horario.id
+                ).first()
+
+                if asistencia:
+                    # Cerrar asistencias abiertas (entrada sin salida)
+                    if asistencia.hora_entrada and not asistencia.hora_salida:
+                        asistencia.hora_salida = datetime.now().time()
+                        asistencia.estado = EstadoAsistencia.PRESENTE
+                        asistencias_cerradas += 1
+
+                        # Notificar al administrador
+                        await notificacion_service.notificar_cierre_asistencia(
+                            db=db,
+                            user_id=usuario.id,
+                            user_email=usuario.email,
+                            user_name=usuario.name,
+                            fecha=fecha_hoy,
+                            horario=horario
+                        )
+                else:
+                    # Marcar falta si no hay asistencia
+                    nueva_asistencia = Asistencia(
+                        user_id=usuario.id,
+                        horario_id=horario.id,
+                        fecha=fecha_hoy,
+                        estado=EstadoAsistencia.AUSENTE
+                    )
+                    db.add(nueva_asistencia)
+                    faltas_marcadas += 1
+
+        db.commit()
+        print(f"  ✅ Asistencias cerradas: {asistencias_cerradas}")
+        print(f"  ✅ Faltas marcadas: {faltas_marcadas}")
+
+        # Obtener correos de administradores
+        admins = db.query(User).join(Role).filter(Role.es_admin == True).all()
+        destinatarios = [admin.email for admin in admins if admin.email]
+
+        if destinatarios:
+            try:
+                # Enviar resumen por correo
+                asunto = "Resumen de cierre de asistencias y faltas marcadas"
+                mensaje = (
+                    f"Se cerraron {asistencias_cerradas} asistencias abiertas y se marcaron {faltas_marcadas} faltas el día {fecha_hoy.strftime('%d/%m/%Y')}.")
+                await email_service.send_email(
+                    to_email=destinatarios,
+                    subject=asunto,
+                    body=mensaje
+                )
+                print(f"  ✅ Notificación enviada a administradores: {len(destinatarios)} correos")
+            except Exception as e:
+                logger.error(f"Error enviando notificación a administradores: {str(e)}")
+
+    except Exception as e:
+        logger.error(f"Error en job de cierre de asistencias y marcación de faltas: {str(e)}")
+        db.rollback()
+    finally:
+        db.close()

@@ -10,6 +10,7 @@ import { HorariosList, HorarioDetails, ActualizarHorario, CrearHorario } from "@
  * Incluye listado, consulta, actualización, eliminación y creación masiva
  */
 export const useHorariosApi = (requireAuth: boolean = true) => {
+  console.log("useHorariosApi hook initialized with requireAuth =", requireAuth);
   const api = useClientApi(requireAuth);
 
   /**

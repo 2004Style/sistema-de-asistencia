@@ -14,7 +14,8 @@ from src.jobs.tasks import (
     generar_reporte_diario,
     generar_reporte_semanal,
     generar_reporte_mensual,
-    limpiar_archivos_temporales
+    limpiar_archivos_temporales,
+    cerrar_asistencias_y_marcar_faltas
 )
 from src.config.settings import get_settings
 
@@ -31,41 +32,41 @@ def start_scheduler():
     Defines all scheduled tasks for attendance system.
     """
     
-    # JOB 1: Verificar ausencias del día anterior
-    # Se ejecuta todos los días a las 00:30
+    # JOB 1: Verificar ausencias del día actual
+    # Se ejecuta todos los días a las 23:00
     # Requerimiento #5, #21
     scheduler.add_job(
         verificar_ausencias_diarias,
-        trigger=CronTrigger(hour=0, minute=30, timezone=timezone),
+        trigger=CronTrigger(hour=23, minute=0, timezone=timezone),
         id="verificar_ausencias",
         name="Verificar Ausencias Diarias",
         replace_existing=True
     )
-    
-    # JOB 2: Calcular horas trabajadas del día anterior
-    # Se ejecuta todos los días a las 01:00
+
+    # JOB 2: Calcular horas trabajadas del día actual
+    # Se ejecuta todos los días a las 23:40
     # Requerimiento #6, #7, #8
     scheduler.add_job(
         calcular_horas_diarias,
-        trigger=CronTrigger(hour=1, minute=0, timezone=timezone),
+        trigger=CronTrigger(hour=23, minute=40, timezone=timezone),
         id="calcular_horas",
         name="Calcular Horas Trabajadas",
         replace_existing=True
     )
-    
+
     # JOB 3: Verificar alertas acumuladas (tardanzas y faltas)
-    # Se ejecuta todos los días a las 02:00
+    # Se ejecuta todos los días a las 23:10
     # Requerimiento #22
     scheduler.add_job(
         verificar_alertas_acumuladas,
-        trigger=CronTrigger(hour=2, minute=0, timezone=timezone),
+        trigger=CronTrigger(hour=23, minute=10, timezone=timezone),
         id="alertas_acumuladas",
         name="Verificar Alertas Acumuladas",
         replace_existing=True
     )
-    
+
     # JOB 4: Limpiar archivos temporales
-    # Se ejecuta todos los días a las 03:00
+    # Se ejecuta todos los días a las 03:00 (sin cambios)
     scheduler.add_job(
         limpiar_archivos_temporales,
         trigger=CronTrigger(hour=3, minute=0, timezone=timezone),
@@ -75,11 +76,11 @@ def start_scheduler():
     )
 
     # JOB X: Generar reporte diario
-    # Se ejecuta todos los días a las 06:00
+    # Se ejecuta todos los días a las 23:45
     # Requerimiento #11
     scheduler.add_job(
         generar_reporte_diario,
-        trigger=CronTrigger(hour=6, minute=0, timezone=timezone),
+        trigger=CronTrigger(hour=23, minute=45, timezone=timezone),
         id="reporte_diario",
         name="Generar Reporte Diario",
         replace_existing=True
@@ -107,15 +108,26 @@ def start_scheduler():
         replace_existing=True
     )
     
+    # JOB: Cerrar asistencias abiertas y marcar faltas
+    # Se ejecuta todos los días a las 22:00
+    scheduler.add_job(
+        cerrar_asistencias_y_marcar_faltas,
+        trigger=CronTrigger(hour=22, minute=0, timezone=timezone),
+        id="cerrar_asistencias_y_marcar_faltas",
+        name="Cerrar Asistencias Abiertas y Marcar Faltas",
+        replace_existing=True
+    )
+    
     scheduler.start()
     print("=" * 70)
     print("✓ SCHEDULER STARTED SUCCESSFULLY")
     print("=" * 70)
     print(f"  Timezone: {settings.TIMEZONE}")
     print(f"  Jobs programados:")
-    print(f"    → 00:30 - Verificar ausencias del día anterior")
-    print(f"    → 01:00 - Calcular horas trabajadas")
-    print(f"    → 02:00 - Verificar alertas acumuladas (tardanzas/faltas)")
+    print(f"    → 23:00 - Verificar ausencias del día actual")
+    print(f"    → 23:10 - Verificar alertas acumuladas (tardanzas/faltas)")
+    print(f"    → 23:40 - Calcular horas trabajadas")
+    print(f"    → 23:45 - Generar reporte diario")
     print(f"    → 03:00 - Limpiar archivos temporales")
     print(f"    → 08:00 Lunes - Generar reporte semanal")
     print(f"    → 09:00 Día 1 - Generar reporte mensual")
