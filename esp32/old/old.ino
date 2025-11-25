@@ -11,7 +11,7 @@
 // ============================================================================
 const char *WIFI_SSID = "ronald";
 const char *WIFI_PASSWORD = "ronald2004";
-const char *WS_HOST = "192.168.178.194";
+const char *WS_HOST = "192.168.181.194";
 const uint16_t WS_PORT = 8000;
 
 #define FINGER_RX_PIN 16

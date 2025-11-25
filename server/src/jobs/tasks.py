@@ -556,14 +556,24 @@ async def cerrar_asistencias_y_marcar_faltas():
             try:
                 # Enviar resumen por correo
                 asunto = "Resumen de cierre de asistencias y faltas marcadas"
-                mensaje = (
-                    f"Se cerraron {asistencias_cerradas} asistencias abiertas y se marcaron {faltas_marcadas} faltas el día {fecha_hoy.strftime('%d/%m/%Y')}.")
+                html_content = f"""
+                <html>
+                    <body style="font-family: Arial, sans-serif; padding: 20px;">
+                        <div style="max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; padding: 20px;">
+                            <h2 style="color: #27ae60;">✅ Resumen de Cierre de Asistencias</h2>
+                            <p>Se cerraron <strong>{asistencias_cerradas}</strong> asistencias abiertas y se marcaron <strong>{faltas_marcadas}</strong> faltas el día <strong>{fecha_hoy.strftime('%d/%m/%Y')}</strong>.</p>
+                            <hr style="margin: 20px 0;">
+                            <p style="font-size: 12px; color: #999;">Este es un mensaje automático del Sistema de Asistencia.</p>
+                        </div>
+                    </body>
+                </html>
+                """
+
                 await email_service.send_email(
                     to_email=destinatarios,
                     subject=asunto,
-                    body=mensaje
+                    html_content=html_content
                 )
-                print(f"  ✅ Notificación enviada a administradores: {len(destinatarios)} correos")
             except Exception as e:
                 logger.error(f"Error enviando notificación a administradores: {str(e)}")
 
