@@ -8,7 +8,7 @@ import { useTableActions } from "@/hooks/use-table-actions.hook";
 import { BACKEND_ROUTES } from "@/routes/backend.routes";
 import { ensureArray, getErrorMessage } from "@/utils";
 import { User } from "@/interfaces/user.interface";
-import { CheckCircle2, XCircle, Fingerprint, Plus } from "lucide-react";
+import { CheckCircle2, XCircle, Fingerprint, Plus, ScanFace } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { TableActionsMenu } from "@/components/ui/table-actions-menu";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
@@ -90,7 +90,7 @@ const createColumns = (
                 const huella = row.getValue("huella");
                 return (
                     <Badge
-                        variant={huella ? "default" : "outline"}
+                        variant={huella ? "default" : "destructive"}
                         className="gap-1"
                     >
                         <Fingerprint className="h-3 w-3" />
@@ -98,6 +98,22 @@ const createColumns = (
                     </Badge>
                 );
             },
+        },
+        {
+            accessorKey: "facial_recognize",
+            header: "Facial",
+            cell: ({ row }) => {
+                const facial_recognize = row.getValue("facial_recognize");
+                return (
+                    <Badge
+                        variant={facial_recognize ? "default" : "destructive"}
+                        className="gap-1"
+                    >
+                        <ScanFace className="h-3 w-3" />
+                        {facial_recognize ? "Registrado" : "No registrado"}
+                    </Badge>
+                );
+            }
         },
         {
             accessorKey: "created_at",
@@ -143,6 +159,17 @@ const createColumns = (
                                 show: (v: User) => !v.huella, // Solo mostrar si no tiene huella
                                 separator: false,
                             },
+                            {
+                                label: "Agregar Facial",
+                                icon: <ScanFace className="h-4 w-4" />,
+                                onClick: (u: User) => {
+                                    return tableActions.createNavigateAction(
+                                        (x: User) => `/admin/users/${x.id}/register-facial`
+                                    )(u);
+                                },
+                                show: (v: User) => !v.facial_recognize, // Solo mostrar si no tiene reconocimiento facial
+                                separator: false,
+                            }
                         ]}
                     />
                 );

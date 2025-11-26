@@ -82,6 +82,29 @@ class UserService(BaseService):
         """Verifica si un código ya está registrado (usa field_exists del BaseService)."""
         return self.field_exists(db, "codigo_user", codigo, exclude_id)
     
+    # ================= ELIMINAR DE LA LISTA DE RECONOCIMIENTO ================
+    def remove_from_recognition(self, user_id: int) -> bool:
+        """
+        Elimina un usuario del sistema de reconocimiento facial.
+        
+        Args:
+            user_id: ID del usuario
+            
+        Returns:
+            True si se eliminó exitosamente
+            
+        Raises:
+            Exception: Si falla la eliminación
+        """
+        try:
+            user = self.get_by_id(None, user_id)  # No se necesita DB aquí
+            if not user:
+                raise Exception("Usuario no encontrado")
+            return quick_remove(user.name)
+        except Exception as e:
+            logger.error(f"Error al eliminar {user.name} del sistema de reconocimiento: {str(e)}")
+            raise
+    
     # ========== CRUD ESPECÍFICO DE USUARIO ==========
     
     def create_user(

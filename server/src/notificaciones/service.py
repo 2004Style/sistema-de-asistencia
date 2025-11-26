@@ -304,13 +304,28 @@ class NotificacionService(BaseService):
                 prioridad=PrioridadNotificacion.MEDIA
             )
 
-            # Enviar email
+            # Enviar email al usuario indicando que su asistencia fue cerrada por el sistema
             fecha_str = fecha.strftime("%d/%m/%Y")
-            await email_service.send_cierre_asistencia_notification(
-                user_email=user_email,
-                user_name=user_name,
-                fecha=fecha_str,
-                horario=horario
+            subject = f"✅ Cierre automático de asistencia - {fecha_str}"
+            html_content = f"""
+            <html>
+                <body style=\"font-family: Arial, sans-serif; padding: 20px;\">
+                    <div style=\"max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; padding: 20px;\">
+                        <h2 style=\"color: #27ae60;\">✅ Cierre automático de asistencia</h2>
+                        <p>Estimado/a <strong>{user_name}</strong>,</p>
+                        <p>Su asistencia del <strong>{fecha_str}</strong> fue cerrada automáticamente por el sistema para el horario <strong>{horario.id}</strong>.</p>
+                        <p>Si considera que esto es un error, puede registrar la salida manualmente dentro de la ventana de gracia o contactar a su supervisor.</p>
+                        <hr style=\"margin: 20px 0;\">
+                        <p style=\"font-size: 12px; color: #999;\">Este es un mensaje automático del Sistema de Asistencia.</p>
+                    </div>
+                </body>
+            </html>
+            """
+
+            await email_service.send_email(
+                to_email=user_email,
+                subject=subject,
+                html_content=html_content
             )
 
             logger.info(f"Attendance closure notification sent to user {user_id}")

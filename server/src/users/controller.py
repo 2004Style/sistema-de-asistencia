@@ -199,21 +199,20 @@ async def login(
             )
         )
 
-
 # ============================================================================
 # RUTAS PROTEGIDAS (requieren autenticación)
 # ============================================================================
-
-
-@router.get("/me")
-def get_current_user_profile(
-    current_user: "User" = Depends(get_current_user),
+@router.put("/{user_id}")
+def update_user(
+    user_id: int,
+    user_data: UserUpdate,
+    current_user: "User" = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     """
-    Obtiene el perfil del usuario autenticado actual.
+    🔐 PUEDE GESTIONAR USUARIOS - Actualiza información de un usuario.
     
-    🔒 RUTA PROTEGIDA (requiere autenticación)
+    Permitido para: ADMIN, RRHH
     
     Returns:
         {
@@ -222,10 +221,10 @@ def get_current_user_profile(
         }
     """
     try:
-        user = user_service.get_user(db, current_user.id)
+        user = user_service.update_user(db, user_id, user_data)
         return create_single_response(
             data=UserResponse.model_validate(user),
-            message="Perfil obtenido exitosamente"
+            message="Usuario actualizado exitosamente"
         )
     except HTTPException as e:
         raise e
@@ -233,7 +232,7 @@ def get_current_user_profile(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=create_error_response(
-                message="Error al obtener perfil",
+                message="Error al actualizar usuario",
                 error=str(e),
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
@@ -276,7 +275,6 @@ def update_current_user_profile(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         )
-
 
 @router.put("/change-password")
 def change_password(
@@ -336,84 +334,6 @@ def change_password(
             )
         )
 
-
-@router.get("/{user_id}")
-def get_user(
-    user_id: int,
-    current_user: "User" = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Obtiene un usuario por su ID.
-    
-    🔒 RUTA PROTEGIDA (requiere autenticación)
-    
-    Returns:
-        {
-            "data": UserResponse,
-            "message": string
-        }
-    """
-    try:
-        user = user_service.get_user(db, user_id)
-        return create_single_response(
-            data=UserResponse.model_validate(user),
-            message="Usuario obtenido exitosamente"
-        )
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=create_error_response(
-                message="Error al obtener usuario",
-                error=str(e),
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-        )
-
-
-@router.get("/codigo/{codigo}")
-def get_user_by_code(
-    codigo: str,
-    db: Session = Depends(get_db)
-):
-    """
-    Obtiene un usuario por su código.
-
-    🔒 RUTA PÚBLICA (requiere autenticación)
-
-    Returns:
-        {
-            "data": UserResponse,
-            "message": string
-        }
-    """
-    try:
-        user = user_service.get_by_codigo(db, codigo)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Usuario no encontrado"
-            )
-        
-        return create_single_response(
-            data=UserResponse.model_validate(user),
-            message="Usuario obtenido exitosamente"
-        )
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=create_error_response(
-                message="Error al obtener usuario",
-                error=str(e),
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-        )
-
-
 @router.get("/")
 def get_users(
     page: int = Query(1, ge=1, description="Número de página"),
@@ -471,18 +391,16 @@ def get_users(
             )
         )
 
-
-@router.put("/{user_id}")
-def update_user(
+@router.get("/{user_id}")
+def get_user(
     user_id: int,
-    user_data: UserUpdate,
-    current_user: "User" = Depends(require_admin),
+    current_user: "User" = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    🔐 PUEDE GESTIONAR USUARIOS - Actualiza información de un usuario.
+    Obtiene un usuario por su ID.
     
-    Permitido para: ADMIN, RRHH
+    🔒 RUTA PROTEGIDA (requiere autenticación)
     
     Returns:
         {
@@ -491,10 +409,10 @@ def update_user(
         }
     """
     try:
-        user = user_service.update_user(db, user_id, user_data)
+        user = user_service.get_user(db, user_id)
         return create_single_response(
             data=UserResponse.model_validate(user),
-            message="Usuario actualizado exitosamente"
+            message="Usuario obtenido exitosamente"
         )
     except HTTPException as e:
         raise e
@@ -502,12 +420,85 @@ def update_user(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=create_error_response(
-                message="Error al actualizar usuario",
+                message="Error al obtener usuario",
                 error=str(e),
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         )
 
+@router.get("/me")
+def get_current_user_profile(
+    current_user: "User" = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Obtiene el perfil del usuario autenticado actual.
+    
+    🔒 RUTA PROTEGIDA (requiere autenticación)
+    
+    Returns:
+        {
+            "data": UserResponse,
+            "message": string
+        }
+    """
+    try:
+        user = user_service.get_user(db, current_user.id)
+        return create_single_response(
+            data=UserResponse.model_validate(user),
+            message="Perfil obtenido exitosamente"
+        )
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=create_error_response(
+                message="Error al obtener perfil",
+                error=str(e),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        )
+
+@router.get("/codigo/{codigo}")
+def get_user_by_code(
+    codigo: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Obtiene un usuario por su código.
+
+    🔒 RUTA PÚBLICA (requiere autenticación)
+
+    Returns:
+        {
+            "data": UserResponse,
+            "message": string
+        }
+    """
+    try:
+        user = user_service.get_by_codigo(db, codigo)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuario no encontrado"
+            )
+        
+        return create_single_response(
+            data=UserResponse.model_validate(user),
+            message="Usuario obtenido exitosamente"
+        )
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=create_error_response(
+                message="Error al obtener usuario",
+                error=str(e),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        )
 
 @router.delete("/{user_id}")
 def delete_user(
@@ -544,6 +535,45 @@ def delete_user(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=create_error_response(
                 message="Error al eliminar usuario",
+                error=str(e),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        )
+
+@router.delete("/face/{user_id}")
+def delete_user_face_data(
+    user_id: int,
+    current_user: "User" = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Elimina los datos de reconocimiento facial de un usuario.
+    
+    🔒 RUTA PROTEGIDA (requiere autenticación y permisos para gestionar usuarios)
+    
+    Esto eliminará:
+    - Las imágenes faciales del usuario en data/username/faces
+    - El registro del sistema de reconocimiento
+    
+    Returns:
+        {
+            "data": {"face_data_deleted": true},
+            "message": string
+        }
+    """
+    try:
+        result = user_service.remove_from_recognition(db, user_id)
+        return create_single_response(
+            data={"face_data_deleted": True},
+            message=result["message"]
+        )
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=create_error_response(
+                message="Error al eliminar datos de reconocimiento facial",
                 error=str(e),
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

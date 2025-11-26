@@ -245,7 +245,7 @@ const createColumns = (
         },
         {
             accessorKey: "codigo_usuario",
-            header: "C digo usuario",
+            header: "Codigo usuario",
             cell: ({ row }) => {
                 const codigo = row.getValue("codigo_usuario") as string | undefined;
                 return codigo ? (
@@ -347,7 +347,7 @@ export default function AsistenciasPage() {
         setSorting,
         refresh,
     } = useServerTable<AsistenciaList>({
-        endpoint: BACKEND_ROUTES.urlAsistencias,
+        endpoint: BACKEND_ROUTES.urlAsistenciasAdmin,
         initialPageSize: 15,
     });
 

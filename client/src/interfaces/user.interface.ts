@@ -4,6 +4,7 @@ interface UserBase {
   codigo_user: string;
   role_id: number;
   is_active: boolean;
+  facial_recognize: boolean;
 }
 
 export interface User extends UserBase {

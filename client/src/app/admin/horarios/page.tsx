@@ -211,7 +211,7 @@ export default function HorariosPage() {
         setSorting,
         refresh,
     } = useServerTable<HorariosList>({
-        endpoint: BACKEND_ROUTES.urlHorarios,
+        endpoint: BACKEND_ROUTES.urlHorariosAdmin,
         initialPageSize: 15,
     });
 

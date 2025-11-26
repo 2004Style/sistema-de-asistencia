@@ -44,7 +44,7 @@ async def verificar_ausencias_diarias():
     db = get_db()
     
     try:
-        # Fecha del día actual
+        # Fecha del día actual (el job corre después de que terminan los turnos)
         fecha_hoy = date.today()
         dia_semana = fecha_hoy.strftime("%A").lower()
         
@@ -74,7 +74,7 @@ async def verificar_ausencias_diarias():
         ausencias_detectadas = 0
 
         for usuario in usuarios_con_horario:
-            # Verificar si registró asistencia
+            # Verificar si registró asistencia en la fecha de hoy
             asistencia = db.query(Asistencia).filter(
                 Asistencia.user_id == usuario.id,
                 Asistencia.fecha == fecha_hoy
@@ -118,6 +118,7 @@ async def calcular_horas_diarias():
     db = get_db()
     
     try:
+        # Fecha del día actual (el job se ejecuta después del cierre de turnos)
         fecha_hoy = date.today()
 
         # Obtener todas las asistencias del día actual con entrada y salida
@@ -186,7 +187,6 @@ async def calcular_horas_diarias():
                             horas_requeridas=horas_requeridas
                         )
                         alertas_enviadas += 1
-
         db.commit()
         print(f"  ✅ Alertas de jornada enviadas: {alertas_enviadas}")
         
@@ -291,28 +291,16 @@ async def generar_reporte_diario():
         fecha_hoy = date.today()
 
         # Generar reporte para el día actual
+        # Enviar el correo automáticamente desde el service para evitar duplicados
         resultado = await reportes_service.generar_reporte_diario(
             db=db,
             fecha=fecha_hoy,
             user_id=None,
             formato="both",
-            enviar_email=True  # enviar desde el service automáticamente; lo haremos aquí
+            enviar_email=True
         )
 
         if resultado.get("success"):
-            # Obtener administradores y sus emails
-            admins = db.query(User).join(Role).filter(Role.es_admin == True).all()
-            destinatarios = [admin.email for admin in admins if admin.email]
-
-            if destinatarios:
-                enviado = await reportes_service.enviar_reporte_por_correo(resultado, destinatarios)
-                if enviado:
-                    print(f"  ✅ Reporte diario enviado a {len(destinatarios)} administradores")
-                else:
-                    print("  ❌ Falló el envío del reporte diario por correo")
-            else:
-                print("  ℹ️ No se encontraron administradores con email para enviar el reporte")
-
             print(f"  ✅ Reporte diario generado: {resultado.get('total_registros', 0)} registros")
             print(f"     Archivos: {list(resultado.get('archivos', {}).keys())}")
         else:
@@ -475,6 +463,7 @@ async def cerrar_asistencias_y_marcar_faltas():
 
     try:
         fecha_hoy = date.today()
+        ahora = datetime.now()
         dia_semana = fecha_hoy.strftime("%A").lower()
 
         # Mapeo de días en inglés a español
@@ -516,33 +505,69 @@ async def cerrar_asistencias_y_marcar_faltas():
                     Asistencia.fecha == fecha_hoy,
                     Asistencia.horario_id == horario.id
                 ).first()
-
                 if asistencia:
-                    # Cerrar asistencias abiertas (entrada sin salida)
+                    # Cerrar asistencias abiertas (entrada sin salida) SOLO si ya pasó la hora de salida programada
                     if asistencia.hora_entrada and not asistencia.hora_salida:
-                        asistencia.hora_salida = datetime.now().time()
-                        asistencia.estado = EstadoAsistencia.PRESENTE
-                        asistencias_cerradas += 1
+                        # Calcular datetime de salida programada
+                        salida_programada = datetime.combine(fecha_hoy, horario.hora_salida)
+                        # Si el horario es nocturno y la salida es antes de la entrada, la salida corresponde al día siguiente
+                        if horario.hora_salida < horario.hora_entrada:
+                            salida_programada += timedelta(days=1)
 
-                        # Notificar al administrador
-                        await notificacion_service.notificar_cierre_asistencia(
-                            db=db,
-                            user_id=usuario.id,
-                            user_email=usuario.email,
-                            user_name=usuario.name,
-                            fecha=fecha_hoy,
-                            horario=horario
-                        )
+                        # Solo cerrar si ya pasó la salida programada
+                        if ahora >= salida_programada:
+                            # Determinar si es el último horario del turno para aplicar ventana de gracia
+                            mismos_turno = db.query(Horario).filter(
+                                Horario.user_id == usuario.id,
+                                Horario.dia_semana == dia_enum,
+                                Horario.turno_id == horario.turno_id,
+                                Horario.activo == True
+                            ).all()
+                            ultimo_hora_entrada = max([h.hora_entrada for h in mismos_turno]) if mismos_turno else horario.hora_entrada
+                            es_ultimo = horario.hora_entrada == ultimo_hora_entrada
+
+                            # Cerrar usando la hora de salida programada (no la hora actual)
+                            asistencia.hora_salida = horario.hora_salida
+                            asistencia.estado = EstadoAsistencia.PRESENTE
+                            asistencias_cerradas += 1
+
+                            # Agregar observación indicando cierre por sistema y ventana de gracia si aplica
+                            grace_hours = getattr(settings, 'GRACE_HORAS_SALIDA', 2)
+                            obs = f"Cerrado por sistema a la salida programada {salida_programada.isoformat()}."
+                            if es_ultimo:
+                                obs += f" Se permite registrar salida hasta {grace_hours} horas después (ventana hasta { (salida_programada + timedelta(hours=grace_hours)).isoformat() })."
+                            asistencia.observaciones = (asistencia.observaciones or "") + " " + obs
+
+                            # Notificar al administrador
+                            await notificacion_service.notificar_cierre_asistencia(
+                                db=db,
+                                user_id=usuario.id,
+                                user_email=usuario.email,
+                                user_name=usuario.name,
+                                fecha=fecha_hoy,
+                                horario=horario
+                            )
+                        else:
+                            # No cerrar aún, la salida programada no ha ocurrido
+                            pass
                 else:
-                    # Marcar falta si no hay asistencia
-                    nueva_asistencia = Asistencia(
-                        user_id=usuario.id,
-                        horario_id=horario.id,
-                        fecha=fecha_hoy,
-                        estado=EstadoAsistencia.AUSENTE
-                    )
-                    db.add(nueva_asistencia)
-                    faltas_marcadas += 1
+                    # Marcar falta si no hay asistencia y ya pasó la hora de salida programada
+                    salida_programada = datetime.combine(fecha_hoy, horario.hora_salida)
+                    if horario.hora_salida < horario.hora_entrada:
+                        salida_programada += timedelta(days=1)
+
+                    if ahora >= salida_programada:
+                        nueva_asistencia = Asistencia(
+                            user_id=usuario.id,
+                            horario_id=horario.id,
+                            fecha=fecha_hoy,
+                            estado=EstadoAsistencia.AUSENTE
+                        )
+                        db.add(nueva_asistencia)
+                        faltas_marcadas += 1
+                    else:
+                        # No marcar falta aún porque el horario todavía no ha finalizado
+                        pass
 
         db.commit()
         print(f"  ✅ Asistencias cerradas: {asistencias_cerradas}")

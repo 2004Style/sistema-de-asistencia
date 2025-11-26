@@ -46,6 +46,7 @@ class User(BaseModel):
     role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     huella = Column(Text, nullable=True)  # Huella encriptada en base64 con formato: "<slot>|<datos_encriptados>"
+    facial_recognize = Column(Boolean, default=False, nullable=False)
     
     # Relaciones
     # Use la referencia por nombre de clase simple para evitar errores de

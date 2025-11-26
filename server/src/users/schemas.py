@@ -84,6 +84,7 @@ class UserResponse(UserBase):
     updated_at: Optional[datetime] = None
     isAdmin: bool
     isSupervisor: bool
+    facial_recognize: bool
     
     model_config = {"from_attributes": True}
 

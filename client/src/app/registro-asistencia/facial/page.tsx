@@ -148,7 +148,7 @@ function ReconocimientoFacialContent() {
 
     const volver = () => {
         detenerCamara();
-        router.replace("/registro-asistencia");
+        router.back();
     };
 
     return (

@@ -35,7 +35,7 @@ const clientRoutes = {
     title: "Client",
     url: "#",
     icon: User,
-    isActive: false,
+    isActive: true,
     items: [
         {
             title: "Asistencias",
@@ -69,7 +69,7 @@ const adminRoutes = {
     title: "Adminitrador",
     url: "#",
     icon: ShieldUser,
-    isActive: false,
+    isActive: true,
     items: [
         {
             title: "Dashboard",

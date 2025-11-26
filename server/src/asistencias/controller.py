@@ -246,7 +246,7 @@ async def actualizar_asistencia_manual(
 # ENDPOINTS DE CONSULTA
 # ============================================================================
 
-@router.get("/")
+@router.get("")
 async def listar_todas_asistencias(
     page: int = Query(1, ge=1, description="Número de página"),
     page_size: int = Query(10, ge=1, le=100, description="Tamaño de página"),

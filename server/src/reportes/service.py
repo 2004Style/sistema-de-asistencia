@@ -26,7 +26,7 @@ from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
 from src.asistencias.model import Asistencia, EstadoAsistencia
 from src.users.model import User
 from src.roles.model import Role
-from src.horarios.model import Horario
+from src.horarios.model import Horario, DiaSemana
 from src.turnos.model import Turno
 from src.config.settings import get_settings
 from src.email.service import email_service
@@ -102,16 +102,42 @@ class ReportesService:
                 # Calculate worked hours
                 horas_trabajadas = 0
                 if asistencia.hora_entrada and asistencia.hora_salida:
-                    entrada = datetime.combine(date.today(), asistencia.hora_entrada)
-                    salida = datetime.combine(date.today(), asistencia.hora_salida)
+                    # Usar la fecha de la asistencia para calcular la diferencia de horas
+                    entrada = datetime.combine(asistencia.fecha, asistencia.hora_entrada)
+                    salida = datetime.combine(asistencia.fecha, asistencia.hora_salida)
+                    # Manejar caso de salida al día siguiente
+                    if salida < entrada:
+                        salida += timedelta(days=1)
                     diferencia = salida - entrada
                     horas_trabajadas = diferencia.total_seconds() / 3600
                 
                 # Get expected hours
-                horario = db.query(Horario).filter(
-                    Horario.user_id == asistencia.user_id,
-                    Horario.activo == True
-                ).first()
+                # Intentar obtener el horario correspondiente al día de la asistencia
+                dia_semana_nombre = asistencia.fecha.strftime("%A").lower()
+                dias_map = {
+                    "monday": DiaSemana.LUNES,
+                    "tuesday": DiaSemana.MARTES,
+                    "wednesday": DiaSemana.MIERCOLES,
+                    "thursday": DiaSemana.JUEVES,
+                    "friday": DiaSemana.VIERNES,
+                    "saturday": DiaSemana.SABADO,
+                    "sunday": DiaSemana.DOMINGO
+                }
+                dia_enum = dias_map.get(dia_semana_nombre)
+
+                horario = None
+                if dia_enum:
+                    horario = db.query(Horario).filter(
+                        Horario.user_id == asistencia.user_id,
+                        Horario.dia_semana == dia_enum,
+                        Horario.activo == True
+                    ).first()
+                # Fallback: si no se encuentra un horario específico, obtener cualquier horario activo
+                if not horario:
+                    horario = db.query(Horario).filter(
+                        Horario.user_id == asistencia.user_id,
+                        Horario.activo == True
+                    ).first()
                 
                 horas_requeridas = horario.horas_requeridas / 60 if horario else 8
                 
